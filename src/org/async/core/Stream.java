@@ -20,7 +20,11 @@
 package org.async.core;
 
 import java.util.LinkedList;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 
 
 public abstract class Stream extends Dispatcher {
@@ -52,7 +56,38 @@ public abstract class Stream extends Dispatcher {
         _bufferOut = ByteBuffer.wrap(new byte[out]);
         return;
     }
-    public void push (ByteBuffer data) {
+    public final void connect (SocketAddress addr) throws Throwable {
+        SocketChannel channel = SocketChannel.open();
+        channel.configureBlocking(false);
+        _channel = channel;
+        _add();
+        if (channel.connect(addr)) {
+            _connected = true;
+            handleConnect();
+        } else {
+            _writable = SelectionKey.OP_CONNECT;
+        }
+    }
+    public final int recv (ByteBuffer buffer) throws Throwable {
+        int received = ((ByteChannel) _channel).read(buffer);
+        if (received == -1) {
+            close();
+            handleClose();
+        } else if (received > 0) {
+            bytesIn = bytesIn + received;
+            whenIn = _loop._now;
+        }
+        return received;
+    }
+    public final int send (ByteBuffer buffer) throws Throwable {
+        int sent = ((ByteChannel) _channel).write(buffer);
+        if (sent > 0) {
+            bytesOut = bytesOut + sent;
+            whenOut = _loop._now;
+        }
+        return sent;
+    }
+    public final void push (ByteBuffer data) {
         _fifoOut.add(data);
     }
     public void pull () throws Throwable {
@@ -63,8 +98,6 @@ public abstract class Stream extends Dispatcher {
             _bufferIn.compact();
         }
     }
-    public abstract void collect () throws Throwable;
-    public abstract boolean produce () throws Throwable;
     public boolean readable () {
         return !(_stalledIn || (_bufferIn.remaining() == 0));
     }
@@ -95,4 +128,6 @@ public abstract class Stream extends Dispatcher {
             close();
         }
     }
+    public abstract void collect () throws Throwable;
+    public abstract boolean produce () throws Throwable;
 }

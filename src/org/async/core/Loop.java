@@ -66,8 +66,7 @@ public final class Loop {
          * Logs a message to STDERR as one line prefixed by the category.
          */
         public void err (String category, String message) {
-            System.err.print(category);
-            System.err.println(message);
+            System.err.println(category + ": " + message);
         }
         /**
          * Print a stacktrace of the error throwed to STDERR.
