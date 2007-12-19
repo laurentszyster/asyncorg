@@ -23,11 +23,14 @@ package org.async.core;
 import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
-/**
- * Conveniences for the common application case where one loop is enough.
- * 
- */
 public final class Static {
+    /**
+     * Convenience for the common application case where one loop is enough.
+     */
+    public static Loop loop = new Loop();
+    
+    // TODO: move to Utils ?
+    
     public static final String UTF8 = "UTF-8";
     public static final byte[] encode(String unicode, String encoding) {
         try {
@@ -62,5 +65,4 @@ public final class Static {
     public static final Iterator iter (Object[] items) {
         return new ObjectIterator(items);
     }
-    public static Loop loop = new Loop();
 }

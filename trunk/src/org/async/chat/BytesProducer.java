@@ -17,9 +17,8 @@
  *  
  */
 
-package org.async.chat.producers;
+package org.async.chat;
 
-import org.async.chat.Producer;
 import org.async.core.Static;
 
 import java.util.Iterator;
