@@ -19,7 +19,7 @@
 
 package org.async.chat;
 
-import org.async.Static;
+import org.async.core.Bytes;
 import org.async.core.Stream;
 
 import java.nio.ByteBuffer;
@@ -101,7 +101,7 @@ public abstract class Dispatcher extends Stream {
             } else { // look for a terminator
                 pos = _bufferIn.position();
                 byte[] needle = (byte[]) _terminator;
-                int found = Static.find(needle, _bufferIn.array(), pos);
+                int found = Bytes.find(needle, _bufferIn.array(), pos);
                 if (found < 0) { // not found, look for a prefix at the end.
                     found = _findPrefixAtEnd(_bufferIn, needle);
                     if (found == 0) {
