@@ -36,21 +36,6 @@ import org.async.core.Stream;
  * of asynchronous netstring client and server channels. 
  */
 public abstract class Dispatcher extends Stream {
-    public class BufferUTF8 implements Collector {
-        private static final String _UTF8 = "UTF-8";
-        private StringBuffer _sb = new StringBuffer();
-        public boolean collect (byte[] data) throws Throwable {
-            _sb.append(new String(data, _UTF8));
-            return false;
-        }
-        public boolean terminate (byte[] data) throws Throwable {
-            _sb.append(new String(data, _UTF8));
-            return false;
-        }
-        public String toString() {
-            return _sb.toString();
-        }
-    }
     protected int _terminator = 0;
     protected Collector _collector;
     public final void push (byte[] data) {
@@ -64,8 +49,12 @@ public abstract class Dispatcher extends Stream {
         buffer.put((byte)',');
         _fifoOut.add(buffer);
     }
-    public abstract Collector handleCollect (int length);
-    public abstract boolean handleCollected (Collector netstring);
+    public abstract 
+        Collector handleCollect (int length) throws Throwable;
+    
+    public abstract void 
+        handleCollected (Collector netstring) throws Throwable;
+    
     public final void collect () throws Throwable {
         int prev, pos;
         int lb = _bufferIn.limit();

@@ -17,23 +17,24 @@
  *  
  */
 
-package org.async.chat.collectors;
+package org.async.chat;
 
-import org.async.chat.Collector;
 
-public class StringsCollector implements Collector {
-    protected StringBuffer _sb = new StringBuffer();
-    protected String _encoding = "UTF-8";
-    public StringsCollector (String encoding) {
-        _encoding = encoding;
+public class GuardCollector implements Collector {
+    protected Collector _guarded;
+    protected int _limit;
+    public GuardCollector (Collector guarded, int limit) {
+        _guarded = guarded;
+        _limit = limit;
     }
     public void handleData(byte[] data) throws Throwable {
-        _sb.append(new String(data, _encoding));
+        _limit = _limit - data.length;
+        if (_limit < 0) {
+            return;
+        }
+        _guarded.handleData(data);
     }
     public boolean handleTerminator() throws Throwable {
-        return true;
-    }
-    public String toString() {
-        return _sb.toString();
+        return (_limit < 0);
     }
 }

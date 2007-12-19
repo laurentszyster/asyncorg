@@ -20,8 +20,11 @@
 package org.async;
 
 import org.async.core.Static;
+import org.async.core.Netstring;
 import org.async.net.Collector;
 import org.async.net.Dispatcher;
+
+import java.io.OutputStream;
 
 /**
  * Simple concurrent network logs, although not obvious at first: 
@@ -72,18 +75,31 @@ import org.async.net.Dispatcher;
  * 
 */
 public class Netlogger extends Dispatcher {
+    protected static OutputStream _os;
+    protected static final class Trunk implements Collector {
+        public byte[] tail = null;
+        public boolean collect (byte[] data) throws Throwable {
+            return false;
+        }
+        public boolean terminate (byte[] data) throws Throwable {
+            tail = data;
+            return false;
+        }
+    }
+    protected Trunk _collector = new Trunk();
     public Object apply (Object value) throws Throwable {
         return null;
     }
     public void handleConnect() {
     }
-    public Collector handleCollect(int length) {
-        return null;
+    public Collector handleCollect(int length) throws Throwable {
+        return _collector;
     }
-    public boolean handleCollected(Collector collected) {
-        return false;
+    public void handleCollected(Collector collected) throws Throwable {
+        _os.write(_collector.tail);
     }
     public void handleClose() {
+        // TODO: log something here ...
     }
     public static final void main (String args[]) throws Throwable {
         Static.loop.dispatch();
