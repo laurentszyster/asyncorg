@@ -273,7 +273,7 @@ public final class Loop {
                 exits = new ArrayList();
                 while (exit.hasNext()) {
                     fun = ((Function) exit.next());
-                    if (((Boolean) fun.apply(this)).booleanValue()) {
+                    if (((Boolean) fun.apply(e)).booleanValue()) {
                         exits.add(fun);
                     };
                 }

@@ -112,21 +112,19 @@ public abstract class Dispatcher extends Call {
     public final void log (Throwable exception) {
         _loop.log.traceback(exception);
     }
-    public final void bind (SocketAddress addr) throws IOException {
+    public final void bind (SocketAddress addr) throws Throwable {
         DatagramChannel channel = DatagramChannel.open();
         channel.configureBlocking(false);
         channel.socket().bind(addr);
         _channel = channel;
-        createSocket();
         _add();
     }
-    public final void listen (SocketAddress addr) throws IOException {
+    public final void listen (SocketAddress addr) throws Throwable {
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
         channel.socket().bind(addr);
         channel.socket().setReuseAddress(true);
         _channel = channel;
-        createSocket();
         _add();
         _readable = SelectionKey.OP_ACCEPT;
     }
@@ -134,7 +132,6 @@ public abstract class Dispatcher extends Call {
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         _channel = channel;
-        createSocket();
         _add();
         if (channel.connect(addr)) {
             _connected = true;
@@ -148,7 +145,6 @@ public abstract class Dispatcher extends Call {
         SocketChannel accepted = channel.accept();
         accepted.configureBlocking(false);
         dispatcher._channel = accepted;
-        dispatcher.createSocket();
         dispatcher._connected = true;
         dispatcher._add();
         dispatcher.apply(this);
@@ -203,10 +199,6 @@ public abstract class Dispatcher extends Call {
         }
     }
     // To override ...
-    /**
-     * Create the dispatcher's socket.
-     */
-    public abstract void createSocket();
     /**
      * Sets the writable status of this dispatcher in its loop's selector. 
      * 
