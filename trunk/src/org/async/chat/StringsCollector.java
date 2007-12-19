@@ -21,18 +21,17 @@ package org.async.chat;
 
 
 public class StringsCollector implements Collector {
-    protected StringBuffer _sb = new StringBuffer();
-    protected String _encoding = "UTF-8";
-    public StringsCollector (String encoding) {
+    protected StringBuffer _buffer;
+    protected String _encoding;
+    public StringsCollector (StringBuffer buffer, String encoding) {
+        _buffer = buffer;
         _encoding = encoding;
     }
     public void handleData(byte[] data) throws Throwable {
-        _sb.append(new String(data, _encoding));
+        _buffer.append(new String(data, _encoding));
     }
     public boolean handleTerminator() throws Throwable {
+        _buffer = null;
         return true;
-    }
-    public String toString() {
-        return _sb.toString();
     }
 }
