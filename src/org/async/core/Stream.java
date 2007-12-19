@@ -19,12 +19,8 @@
 
 package org.async.core;
 
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
-
 import java.util.LinkedList;
-import java.net.Socket;
-import java.net.SocketException;
+import java.nio.ByteBuffer;
 
 
 public abstract class Stream extends Dispatcher {
@@ -32,6 +28,30 @@ public abstract class Stream extends Dispatcher {
     protected ByteBuffer _bufferIn;
     protected ByteBuffer _bufferOut;
     protected LinkedList _fifoOut = new LinkedList();
+    public Stream () {
+        super();
+        _bufferIn = ByteBuffer.wrap(new byte[16384]);
+        _bufferOut = ByteBuffer.wrap(new byte[16384]);
+        return;
+    }
+    public Stream(int in, int out) {
+        super();
+        _bufferIn = ByteBuffer.wrap(new byte[in]);
+        _bufferOut = ByteBuffer.wrap(new byte[out]);
+        return;
+    }
+    public Stream (Loop loop) {
+        super(loop);
+        _bufferIn = ByteBuffer.wrap(new byte[16384]);
+        _bufferOut = ByteBuffer.wrap(new byte[16384]);
+        return;
+    }
+    public Stream(Loop loop, int in, int out) {
+        super(loop);
+        _bufferIn = ByteBuffer.wrap(new byte[in]);
+        _bufferOut = ByteBuffer.wrap(new byte[out]);
+        return;
+    }
     public void push (ByteBuffer data) {
         _fifoOut.add(data);
     }
@@ -45,27 +65,11 @@ public abstract class Stream extends Dispatcher {
     }
     public abstract void collect () throws Throwable;
     public abstract boolean produce () throws Throwable;
-    public void createSocket() {
-        int in, out; 
-        Socket socket = ((SocketChannel) _channel).socket();
-        try {
-            in = socket.getReceiveBufferSize();
-        } catch (SocketException e) {
-            in = 16384;
-        }
-        _bufferIn = ByteBuffer.wrap(new byte[in]);
-        try {
-            out = socket.getSendBufferSize();
-        } catch (SocketException e) {
-            out = 16384;
-        }
-        _bufferOut = ByteBuffer.wrap(new byte[out]);
-    }
     public boolean readable () {
         return !(_stalledIn || (_bufferIn.remaining() == 0));
     }
     public final void handleAccept () throws Throwable {
-        log("Unexpected accept event", "DEBUG: ");
+        throw new Error("Unexpected accept event");
     }
     public final void handleWrite () throws Throwable {
         if (produce()) {
