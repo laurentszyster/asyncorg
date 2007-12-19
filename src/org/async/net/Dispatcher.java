@@ -38,6 +38,9 @@ import org.async.core.Stream;
 public abstract class Dispatcher extends Stream {
     protected int _terminator = 0;
     protected Collector _collector;
+    public Dispatcher (int in, int out) {
+        super(in, out);
+    }
     public final void push (byte[] data) {
         byte[] length = Integer.toString(data.length).getBytes();
         ByteBuffer buffer = ByteBuffer.allocate(
@@ -136,5 +139,11 @@ public abstract class Dispatcher extends Stream {
             }
         }
         return true;
+    }
+    public void handleConnect() {
+        log("DEBUG", "handleConnect");
+    }
+    public void handleClose() {
+        log("DEBUG", "handleClose");
     }
 }
