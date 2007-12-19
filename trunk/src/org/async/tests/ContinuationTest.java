@@ -1,8 +1,8 @@
 package org.async.tests;
 
-import org.async.Static;
 import org.async.core.Call;
 import org.async.core.Function;
+import org.async.core.Static;
 
 public class ContinuationTest {
     

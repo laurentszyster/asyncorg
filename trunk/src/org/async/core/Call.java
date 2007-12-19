@@ -22,7 +22,6 @@ package org.async.core;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import org.async.Static;
 
 /**
  * Practical asynchronous continuations.

@@ -1,8 +1,8 @@
 package org.async.tests;
 
-import org.async.Static;
 import org.async.chat.Dispatcher;
 import org.async.chat.producers.*;
+import org.async.core.Static;
 
 import java.net.SocketAddress;
 import java.net.InetSocketAddress;
