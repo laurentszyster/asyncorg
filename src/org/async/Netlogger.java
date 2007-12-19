@@ -20,11 +20,14 @@
 package org.async;
 
 import org.async.core.Static;
+import org.async.core.Listen;
 import org.async.core.Netstring;
 import org.async.net.Collector;
 import org.async.net.Dispatcher;
 
 import java.io.OutputStream;
+import java.io.FileOutputStream;
+import java.net.InetSocketAddress;
 
 /**
  * Simple concurrent network logs, although not obvious at first: 
@@ -74,34 +77,60 @@ import java.io.OutputStream;
  * an extensible range of network application peers.
  * 
 */
-public class Netlogger extends Dispatcher {
-    protected static OutputStream _os;
-    protected static final class Trunk implements Collector {
-        public byte[] tail = null;
-        public boolean collect (byte[] data) throws Throwable {
-            return false;
+public final class Netlogger {
+
+    public static OutputStream stdout = System.out;
+    
+    protected static final class Server extends Listen {
+        public void handleAccept() throws Throwable {
+            accept(new Channel());
         }
-        public boolean terminate (byte[] data) throws Throwable {
-            tail = data;
-            return false;
+        public void handleClose() throws Throwable {
         }
     }
-    protected Trunk _collector = new Trunk();
-    public Object apply (Object value) throws Throwable {
-        return null;
-    }
-    public void handleConnect() {
-    }
-    public Collector handleCollect(int length) throws Throwable {
-        return _collector;
-    }
-    public void handleCollected(Collector collected) throws Throwable {
-        _os.write(_collector.tail);
-    }
-    public void handleClose() {
-        // TODO: log something here ...
+        
+    protected static final class Channel extends Dispatcher {
+        public Channel () {
+            super(16384, 0);
+        }
+        public static final class Trunk implements Collector {
+            public byte[] tail = null;
+            public final boolean collect (byte[] data) throws Throwable {
+                return false;
+            }
+            public final boolean terminate (byte[] data) throws Throwable {
+                tail = data;
+                return false;
+            }
+        }
+        public Trunk collector = new Trunk();
+        public final Object apply (Object value) throws Throwable {
+            return null;
+        }
+        public final Collector handleCollect(int length) throws Throwable {
+            return collector;
+        }
+        public final void handleCollected(Collector collected) throws Throwable {
+            Netstring.write(stdout, collector.tail);
+            stdout.flush();
+        }
+        public final void handleClose() {
+            // silence the log ...
+        }
     }
     public static final void main (String args[]) throws Throwable {
-        Static.loop.dispatch();
+        if (args.length > 2) {
+            stdout = new FileOutputStream(args[2]);
+        }
+        try {
+            (new Server()).listen(new InetSocketAddress(
+                (args.length > 0) ? args[0]: "127.0.0.2", 
+                (args.length > 1) ? Integer.parseInt(args[1]): 12345
+                ));
+            Static.loop.dispatch();
+        } finally {
+            stdout.close();
+        }
+        System.exit(0);
     }
 }
