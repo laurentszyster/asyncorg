@@ -1,9 +1,7 @@
 package org.async.tests;
 
 import org.async.chat.Dispatcher;
-import org.async.chat.ScheduledProducer;
 import org.async.chat.StringsProducer;
-import org.async.chat.producers.*;
 import org.async.core.Static;
 
 import java.net.SocketAddress;
