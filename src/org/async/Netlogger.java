@@ -115,23 +115,20 @@ public final class Netlogger {
         }
         public final void handleCollected() throws Throwable {
             Netstring.write(System.out, collector.tail);
+            System.out.flush();
         }
         public final void handleClose() {
             collector = null; 
         }
     }
     public static final void main (String args[]) throws Throwable {
-        try {
-            Server server = new Server();
-            server.listen(new InetSocketAddress(
-                (args.length > 0) ? args[0]: "127.0.0.2", 
-                (args.length > 1) ? Integer.parseInt(args[1]): 12345
-                ));
-            Static.loop.exits.add(server);
-            Static.loop.dispatch();
-        } finally {
-            System.out.flush();
-        }
+        Server server = new Server();
+        server.listen(new InetSocketAddress(
+            (args.length > 0) ? args[0]: "127.0.0.2", 
+            (args.length > 1) ? Integer.parseInt(args[1]): 12345
+            ));
+        Static.loop.exits.add(server);
+        Static.loop.dispatch();
         System.exit(0);
     }
 }
