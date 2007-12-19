@@ -30,6 +30,8 @@ import java.util.TreeSet;
 import java.util.LinkedList;
 import java.util.Iterator;
 
+import java.lang.Runtime;
+
 /**
  * An asynchronous loop around NIO selectable sockets, events scheduled 
  * in time and defered continuations of finalized instances. 
@@ -44,7 +46,58 @@ import java.util.Iterator;
  */
 public final class Loop {
     
-    protected static final class Exit extends Exception {} 
+    protected static final class Exit extends Exception {
+        public Exit(String message) {
+            super(message);
+        }
+    } 
+    
+    /**
+     * See http://www.ibm.com/developerworks/java/library/i-signalhandling/
+     * 
+     * In essence, the JVM has little clue about signal handling and its API
+     * have been designed for that brain-damaged undeterministic threading.
+     * 
+     * So, this is an ugly but practical hack to throw an Exit exception
+     * from within the a asynchronous loop, then wait for it to complete
+     * before this thread stops and that the JVM shutdown completes.
+     * 
+     */
+    protected static class ExitHook extends Thread {
+        private boolean _flag = false;
+        private Object _monitor = new Object();
+        public ExitHook() {
+            Runtime.getRuntime().addShutdownHook(this);
+        }
+        public synchronized void set () {
+            _flag = true;
+        }
+        public synchronized boolean get () {
+            if (_flag) {
+                _flag = false;
+                return true;
+            } else {
+                return false;
+            }
+        }
+        public final void run () {
+            set();
+            try {
+                synchronized (_monitor) {
+                    _monitor.wait();
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        } 
+        public void shutdown () {
+            synchronized (_monitor) {
+                _monitor.notify();
+            }
+        }
+    }
+    
+    protected ExitHook _hook = null;
    
     protected long _now;
     protected Selector _selector;
@@ -85,6 +138,7 @@ public final class Loop {
     public final void log (Throwable exception) {
         log.traceback(exception);
     }
+    
     /**
      * The list of <code>Function</code> applied when an <code>Exit</code> 
      * exception was throwed in the loop.
@@ -121,6 +175,7 @@ public final class Loop {
      */
     public Loop () {
         _now = System.currentTimeMillis();
+        _hook = new ExitHook();
     }
     public long now () {
         return _now;
@@ -157,7 +212,7 @@ public final class Loop {
                 return;
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new Exit();
+                throw new Exit("InterruptedException");
             }
         } else {
             try {
@@ -252,6 +307,7 @@ public final class Loop {
             return true;
         }
     }
+    
     /**
      * Loop until all network I/O, events in time and continuations are
      * dispatched or an <code>AsyncLoop.Exit</code> exception is throwed
@@ -264,6 +320,9 @@ public final class Loop {
         while (_run()) {
             try {
                 _io();
+                if (_hook != null && _hook.get()) {
+                    throw new Loop.Exit("SIGINT");
+                }
                 _clock ();
                 _continue ();
             } catch (Exit e) {
@@ -285,6 +344,9 @@ public final class Loop {
             _selector.close();
         } finally {
             _selector = null;
+        }
+        synchronized (_hook) {
+            _hook.shutdown();
         }
     }
 }
