@@ -43,6 +43,8 @@ import java.util.Iterator;
  * 
  */
 public final class Loop {
+    
+    protected static final class Exit extends Exception {} 
    
     protected long _now;
     protected Selector _selector;
@@ -85,10 +87,10 @@ public final class Loop {
         log.traceback(exception);
     }
     /**
-     * The <code>Catch</code> applied when an <code>Exit</code> exception
-     * was throwed in the loop.
+     * The list of <code>Function</code> applied when an <code>Exit</code> 
+     * exception was throwed in the loop.
      */
-    public Catch exit = null;
+    public ArrayList exits = new ArrayList();
     /**
      * A measure of this loop's precision, set by default to 100 milliseconds.
      * It is used by the loop to sleep that much whenever there are no I/O
@@ -256,12 +258,9 @@ public final class Loop {
      * dispatched or an <code>AsyncLoop.Exit</code> exception is throwed
      * and not catched.
      */
-    public final void dispatch () {
-        if (_selector == null) try {
+    public final void dispatch () throws Throwable {
+        if (_selector == null) {
             _selector = Selector.open();
-        } catch (IOException e) {
-            log.traceback(e);
-            return;
         }
         while (_run()) {
             try {
@@ -269,15 +268,22 @@ public final class Loop {
                 _clock ();
                 _continue ();
             } catch (Exit e) {
-                if (exit == null || !exit.apply(this)) {
+                Function fun; 
+                Iterator exit = exits.iterator();
+                exits = new ArrayList();
+                while (exit.hasNext()) {
+                    fun = ((Function) exit.next());
+                    if (((Boolean) fun.apply(this)).booleanValue()) {
+                        exits.add(fun);
+                    };
+                }
+                if (exits.isEmpty()) {
                     break;
                 }
             }
         }
         if (_dispatched.isEmpty()) try {
             _selector.close();
-        } catch (IOException e) {
-            log.traceback(e);
         } finally {
             _selector = null;
         }

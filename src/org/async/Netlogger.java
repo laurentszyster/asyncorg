@@ -84,7 +84,7 @@ public class Netlogger extends Dispatcher {
     }
     public void handleClose() {
     }
-    public static final void main (String args[]) {
+    public static final void main (String args[]) throws Throwable {
         Static.loop.dispatch();
     }
 }

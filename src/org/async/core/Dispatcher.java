@@ -67,7 +67,7 @@ public abstract class Dispatcher extends Call {
     protected int _writable = SelectionKey.OP_WRITE;
     protected int _readable = SelectionKey.OP_READ;
     protected boolean _connected = false;
-    protected final void _handle () throws Exit {
+    protected final void _handle () throws Loop.Exit {
         try {
             if (_key.isConnectable() && !_connected) {
                 ((SocketChannel) _channel).finishConnect();
@@ -86,7 +86,7 @@ public abstract class Dispatcher extends Call {
                 }
                 handleRead();
             }
-        } catch (Exit e) {
+        } catch (Loop.Exit e) {
             throw e;
         } catch (Throwable e) {
             handleError(e);
