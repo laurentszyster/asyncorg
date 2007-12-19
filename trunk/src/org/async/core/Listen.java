@@ -1,21 +1,37 @@
 package org.async.core;
 
-import java.util.HashMap;
+import java.net.SocketAddress;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 
 public abstract class Listen extends Dispatcher {
     protected boolean _accepting = true;
-    protected HashMap _channels = new HashMap();
-    public Object apply (Object value) throws Throwable {
-        return null;
+    public final void listen (SocketAddress addr) throws Throwable {
+        ServerSocketChannel channel = ServerSocketChannel.open();
+        channel.configureBlocking(false);
+        channel.socket().bind(addr);
+        channel.socket().setReuseAddress(true);
+        _channel = channel;
+        _add();
+        _readable = SelectionKey.OP_ACCEPT;
+    }
+    public final void accept (Dispatcher dispatcher) throws Throwable {
+        ServerSocketChannel channel = (ServerSocketChannel) _channel;
+        SocketChannel accepted = channel.accept();
+        accepted.configureBlocking(false);
+        dispatcher._channel = accepted;
+        dispatcher._add();
+        dispatcher.apply(this);
     }
     public boolean writable () {
         return false;
     } 
     public boolean readable () {
-        return _accepting && _connected;
+        return _accepting;
     }
     public void handleConnect() throws Throwable {
-        throw new Error("Unexpected read event");
+        throw new Error("Unexpected connect event");
     }
     public void handleRead() throws Throwable {
         throw new Error("Unexpected read event");

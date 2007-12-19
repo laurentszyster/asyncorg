@@ -22,11 +22,10 @@ package org.async;
 import org.async.core.Static;
 import org.async.core.Listen;
 import org.async.core.Netstring;
+
 import org.async.net.Collector;
 import org.async.net.Dispatcher;
 
-import java.io.OutputStream;
-import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
 
 /**
@@ -79,13 +78,17 @@ import java.net.InetSocketAddress;
 */
 public final class Netlogger {
 
-    public static OutputStream stdout = System.out;
-    
     protected static final class Server extends Listen {
+        public Object apply (Object value) throws Throwable {
+            log("DEBUG", "Shutdown");
+            close();
+            return Boolean.FALSE;
+        }
         public void handleAccept() throws Throwable {
             accept(new Channel());
         }
         public void handleClose() throws Throwable {
+            log("ERROR", "Unexpected close event");
         }
     }
         
@@ -110,26 +113,24 @@ public final class Netlogger {
         public final Collector handleCollect(int length) throws Throwable {
             return collector;
         }
-        public final void handleCollected(Collector collected) throws Throwable {
-            Netstring.write(stdout, collector.tail);
-            stdout.flush();
+        public final void handleCollected() throws Throwable {
+            Netstring.write(System.out, collector.tail);
         }
         public final void handleClose() {
-            // silence the log ...
+            collector = null; 
         }
     }
     public static final void main (String args[]) throws Throwable {
-        if (args.length > 2) {
-            stdout = new FileOutputStream(args[2]);
-        }
         try {
-            (new Server()).listen(new InetSocketAddress(
+            Server server = new Server();
+            server.listen(new InetSocketAddress(
                 (args.length > 0) ? args[0]: "127.0.0.2", 
                 (args.length > 1) ? Integer.parseInt(args[1]): 12345
                 ));
+            Static.loop.exits.add(server);
             Static.loop.dispatch();
         } finally {
-            stdout.close();
+            System.out.flush();
         }
         System.exit(0);
     }

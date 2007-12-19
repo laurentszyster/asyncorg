@@ -52,11 +52,9 @@ public abstract class Dispatcher extends Stream {
         buffer.put((byte)',');
         _fifoOut.add(buffer);
     }
-    public abstract 
-        Collector handleCollect (int length) throws Throwable;
+    public abstract Collector handleCollect (int length) throws Throwable;
     
-    public abstract void 
-        handleCollected (Collector netstring) throws Throwable;
+    public abstract void handleCollected () throws Throwable;
     
     public final void collect () throws Throwable {
         int prev, pos;
@@ -72,7 +70,7 @@ public abstract class Dispatcher extends Stream {
                 _stalledIn = _collector.terminate(
                     _bufferIn.get(new byte[next-1]).array()
                     );
-                handleCollected(_collector);
+                handleCollected();
                 if (_stalledIn) {
                     _terminator = 0;
                     return;
