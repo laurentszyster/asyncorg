@@ -46,6 +46,19 @@ import java.lang.Runtime;
  */
 public final class Loop {
     
+    private static final class _STDOE implements Loginfo {
+        public void out (String message) {
+            System.out.println(message);
+        }
+        public void err (String category, String message) {
+            System.err.println(category + ": " + message);
+        }
+        public void traceback (Throwable error) {
+            error.printStackTrace(System.err);
+        }
+    }
+    private static final Loginfo _stdoe = new _STDOE();
+    
     protected static final class Exit extends Exception {
         public Exit(String message) {
             super(message);
@@ -105,40 +118,7 @@ public final class Loop {
     protected TreeSet _scheduled = new TreeSet();
     protected LinkedList _continued =  new LinkedList();
     
-    /**
-     * The default <code>Loginfo.Logger</code> implementation.
-     */
-    private static final class _STDOE implements Loginfo {
-        /**
-         * Logs a message as a line to STDOUT using the default encoding.
-         */
-        public void out (String message) {
-            System.out.println(message);
-        }
-        /**
-         * Logs a message to STDERR as one line prefixed by the category.
-         */
-        public void err (String category, String message) {
-            System.err.println(category + ": " + message);
-        }
-        /**
-         * Print a stacktrace of the error throwed to STDERR.
-         */
-        public void traceback (Throwable error) {
-            error.printStackTrace(System.err);
-        }
-    }
-    public Loginfo log = new _STDOE();
-    public final void log (String message) {
-        log.out(message);
-    }
-    public final void log (String message, String info) {
-        log.err(message, info);
-    }
-    public final void log (Throwable exception) {
-        log.traceback(exception);
-    }
-    
+    public Loginfo log = _stdoe;
     /**
      * The list of <code>Function</code> applied when an <code>Exit</code> 
      * exception was throwed in the loop.
@@ -180,6 +160,16 @@ public final class Loop {
     public long now () {
         return _now;
     }
+    public final void log (String message) {
+        log.out(message);
+    }
+    public final void log (String message, String info) {
+        log.err(message, info);
+    }
+    public final void log (Throwable exception) {
+        log.traceback(exception);
+    }
+    
     private final void _io () throws Exit {
         // register, set interest or cancel selection keys for all dispatchers.
         _now = System.currentTimeMillis();
