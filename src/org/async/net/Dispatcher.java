@@ -38,6 +38,9 @@ import org.async.core.Stream;
 public abstract class Dispatcher extends Stream {
     protected int _terminator = 0;
     protected Collector _collector;
+    public Dispatcher () {
+        super();
+    }
     public Dispatcher (int in, int out) {
         super(in, out);
     }
