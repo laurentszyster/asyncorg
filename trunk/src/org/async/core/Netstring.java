@@ -69,14 +69,17 @@ import java.nio.BufferOverflowException;
  */
 public final class Netstring {
     
-    private static final String 
-    _unexpected_end = "unexpected InputStream's end";
-    private static final String 
-    _invalid_prologue = "invalid netstring prologue"; 
-    private static final String 
-    _invalid_epilogue = "invalid netstring epilogue"; 
-    private static final String 
-    _too_long = "too long netstring";
+    public static final String 
+    ERROR_UNEXPECTED_END = "unexpected netstring end";
+    
+    public static final String 
+    ERROR_INVALID_PROLOGUE = "invalid netstring prologue"; 
+    
+    public static final String 
+    ERROR_INVALID_EPILOGUE = "missing comma";
+    
+    public static final String 
+    ERROR_TOO_LONG = "too long netstring";
     
     protected static final class NetstringIterator implements Iterator {
         private Object _next;
@@ -101,7 +104,7 @@ public final class Netstring {
                 if (c == 58) {
                     break; 
                 } else if (c < 48 || c > 57) {
-                    _error = _invalid_prologue; 
+                    _error = ERROR_INVALID_PROLOGUE; 
                     return null;
                 }
                 pos ++;
@@ -123,7 +126,7 @@ public final class Netstring {
                     return new String(_buffer, pos, len);
                 }
             } else {
-                _error = _invalid_epilogue; return null;
+                _error = ERROR_INVALID_EPILOGUE; return null;
             }
         }
         public final boolean hasNext () {
@@ -301,13 +304,13 @@ public final class Netstring {
                     if (c == 58) {
                         break; 
                     } else if (c < 48 || c > 57)
-                        throw new NoSuchElementException(_invalid_prologue);
+                        throw new NoSuchElementException(ERROR_INVALID_PROLOGUE);
                     else if (c == -1)
                         break;
                     else if (read < _buffer.length)
                         _buffer[read] = (byte) c;
                     else
-                        throw new NoSuchElementException(_too_long);
+                        throw new NoSuchElementException(ERROR_TOO_LONG);
                     read ++;
                 } while (true);
                 if (read == 0) {
@@ -316,15 +319,15 @@ public final class Netstring {
                 }
                 len = Integer.parseInt(new String(_buffer, 0, read));
                 if (len > _limit)
-                    throw new NoSuchElementException(_too_long);
+                    throw new NoSuchElementException(ERROR_TOO_LONG);
                 
                 byte[] bytes = new byte[len];
                 read = _is.read(bytes);
                 if (read < len)
-                    throw new NoSuchElementException(_unexpected_end);
+                    throw new NoSuchElementException(ERROR_UNEXPECTED_END);
                 
                 if (_is.read() != 44)
-                    throw new NoSuchElementException(_invalid_epilogue);
+                    throw new NoSuchElementException(ERROR_INVALID_EPILOGUE);
                 
                 return bytes;
                 

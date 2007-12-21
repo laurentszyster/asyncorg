@@ -78,24 +78,12 @@ import java.net.InetSocketAddress;
 */
 public final class Netlogger {
 
-    protected static final class Server extends Listen {
-        public Object apply (Object value) throws Throwable {
-            log("DEBUG", "Shutdown");
-            close();
-            return Boolean.FALSE;
-        }
-        public void handleAccept() throws Throwable {
-            accept(new Channel());
-        }
-        public void handleClose() throws Throwable {
-            log("ERROR", "Unexpected close event");
-        }
-    }
-        
     protected static final class Channel extends Dispatcher {
+        
         public Channel () {
             super(16384, 0);
         }
+        
         public static final class Trunk implements Collector {
             public byte[] tail = null;
             public final boolean collect (byte[] data) throws Throwable {
@@ -106,22 +94,48 @@ public final class Netlogger {
                 return false;
             }
         }
+        
         public Trunk collector = new Trunk();
+        
         public final Object apply (Object value) throws Throwable {
             return null;
         }
+        
         public final Collector handleCollect(int length) throws Throwable {
             return collector;
         }
+        
         public final void handleCollected() throws Throwable {
             Netstring.write(System.out, collector.tail);
             System.out.flush();
         }
+        
         public final void handleClose() {
             collector = null; 
         }
+
     }
+    
+    protected static final class Server extends Listen {
+        
+        public Object apply (Object value) throws Throwable {
+            log("DEBUG", "Shutdown");
+            close();
+            return Boolean.FALSE;
+        }
+        
+        public void handleAccept() throws Throwable {
+            accept(new Channel());
+        }
+        
+        public void handleClose() throws Throwable {
+            log("ERROR", "Unexpected close event");
+        }
+        
+    }
+        
     public static final void main (String args[]) throws Throwable {
+        Static.loop.hookShutdown();
         Server server = new Server();
         server.listen(new InetSocketAddress(
             (args.length > 0) ? args[0]: "127.0.0.2", 
@@ -131,4 +145,5 @@ public final class Netlogger {
         Static.loop.dispatch();
         System.exit(0);
     }
+    
 }

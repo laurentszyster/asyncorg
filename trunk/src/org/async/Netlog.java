@@ -72,12 +72,13 @@ public class Netlog implements Function, Loginfo {
     }
     protected final void _attach(Loop loop) {
         _loop = loop;
-        _wrapped = _loop.log; 
+        _wrapped = _loop.setLogger(this); 
         _loop.exits.add(this);
-        _loop.log = this;
     }
     public final void connect(SocketAddress addr) {
         
+    }
+    public final void disconnect() {
     }
     public final void connect(SocketAddress addr, String category) {
         if (category.equals("TRACEBACK")) {
@@ -86,22 +87,31 @@ public class Netlog implements Function, Loginfo {
             
         }
     }
+    public final void disconnect(String[] categories) {
+    }
     public final Object apply(Object value) {
-        _out.closeWhenDone();
-        _traceback.closeWhenDone();
-        Iterator category = _categories.values().iterator();
-        while (category.hasNext()) {
-            ((Channel) category.next()).closeWhenDone();
+        try { // try to close all channels ...
+            if (_out != null) {
+                _out.closeWhenDone();
+            }
+            if (_traceback != null) {
+                _traceback.closeWhenDone();
+            }
+            Iterator category = _categories.values().iterator();
+            while (category.hasNext()) {
+                ((Channel) category.next()).closeWhenDone();
+            }
+            _loop.setLogger(_wrapped);
+            return null;
+        } finally { // ... and make sure to break all channel references
+            _wrapped = null; 
+            _out = _traceback = null;
+            _categories = null;
         }
-        _loop.log = _wrapped;
-        _wrapped = null; 
-        _loop = null;
-        _out = _traceback = null;
-        _categories = null;
-        return null;
     }
     public final void out (String message) {
-        if (_out == null) {
+        // Send as one netstring if an STDOUT channel has been connected
+        if (_out == null) { 
             _wrapped.out(message);
         } else {
             _out.push(Static.encode(message, Static.UTF8));

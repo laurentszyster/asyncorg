@@ -47,11 +47,11 @@ public abstract class Dispatcher extends Call {
     protected SelectionKey _key = null;
     protected int _index;
     protected final void _add () {
-        _index = _loop._dispatched.size();
-        _loop._dispatched.add(this);
+        _index = loop._dispatched.size();
+        loop._dispatched.add(this);
     }
     protected final void _remove () {
-        _loop._dispatched.remove(_index);
+        loop._dispatched.remove(_index);
         _channel = null;
         _key.cancel();
         _key.attach(null);
@@ -92,18 +92,22 @@ public abstract class Dispatcher extends Call {
     public long whenOut = -1;
     public long bytesIn = 0;
     public long bytesOut = 0;
-    public Dispatcher() {}
+    public Dispatcher() {
+        super(null);
+    }
     public Dispatcher(Loop loop) {
-        _loop = loop;
+        super(null);
+        this.loop = loop;
     }
     public final void log (String message) {
-        _loop.log.out(this.toString() + " " + message);
+        loop.log(this.toString() + " " + message);
     }
     public final void log (String category, String message) {
-        _loop.log.err(category, this.toString() + " " + message);
+        loop.log(category, this.toString() + " " + message);
     }
-    public final void log (Throwable exception) {
-        _loop.log.traceback(exception);
+    public final void log (Throwable error) {
+        loop.log("TRACEBACK", this.toString() + " " + error.getMessage());
+        loop.log(error);
     }
     public final void close () {
         try {
