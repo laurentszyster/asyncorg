@@ -29,7 +29,7 @@ public class AsyncChatTest extends Dispatcher {
         push(defered);
     }
     public void handleData (byte[] data) throws Throwable {
-        log(new String(data, "UTF-8"));
+        loop.log(new String(data, "UTF-8"));
     }
     public boolean handleTerminator () throws Throwable {
         log("DEBUG", "terminator");

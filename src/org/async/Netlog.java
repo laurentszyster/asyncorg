@@ -19,6 +19,7 @@
 
 package org.async;
 
+import org.async.core.Bytes;
 import org.async.core.Loop;
 import org.async.core.Static;
 import org.async.core.Loginfo;
@@ -114,7 +115,7 @@ public class Netlog implements Function, Loginfo {
         if (_out == null) { 
             _wrapped.out(message);
         } else {
-            _out.push(Static.encode(message, Static.UTF8));
+            _out.push(Bytes.encode(message, Bytes.UTF8));
         }
     }
     public final void err (String category, String message) {
@@ -122,14 +123,14 @@ public class Netlog implements Function, Loginfo {
         if (_err == null) {
             _wrapped.err(category, message);
         } else {
-            _err.push(Static.encode(message, Static.UTF8));
+            _err.push(Bytes.encode(message, Bytes.UTF8));
         }
     }
     public final void traceback (Throwable error) {
         if (_traceback == null) {
             _wrapped.traceback(error);
         } else {
-            _traceback.push(Static.encode(error.getMessage(), Static.UTF8));
+            _traceback.push(Bytes.encode(error.getMessage(), Bytes.UTF8));
         }
     }
 }

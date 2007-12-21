@@ -20,7 +20,6 @@
 package org.async.core;
 
 
-import java.io.UnsupportedEncodingException;
 import java.util.Iterator;
 
 public final class Static {
@@ -31,21 +30,6 @@ public final class Static {
     
     // TODO: move to Utils ?
     
-    public static final String UTF8 = "UTF-8";
-    public static final byte[] encode(String unicode, String encoding) {
-        try {
-            return unicode.getBytes(encoding);
-        } catch (UnsupportedEncodingException e) {
-            return unicode.getBytes();
-        }
-    }
-    public static final String decode(byte[] bytes, String encoding) {
-        try {
-            return new String (bytes, encoding);
-        } catch (UnsupportedEncodingException e) {
-            return new String (bytes);
-        }
-    }
     protected static class ObjectIterator implements Iterator {
         private Object[] _objects;
         private int _index = -1;
