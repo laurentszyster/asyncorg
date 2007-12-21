@@ -263,7 +263,7 @@ public final class Netstring {
         ArrayList netstrings = new ArrayList();
         byte[] digits, buffer;
         while (strings.hasNext()) {
-            buffer = Static.encode((String) strings.next(), encoding);
+            buffer = Bytes.encode((String) strings.next(), encoding);
             digits = Integer.toString(buffer.length).getBytes();
             chunk = chunk + buffer.length + digits.length + 2;
             netstrings.add(new byte[][]{digits, buffer});

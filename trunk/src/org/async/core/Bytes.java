@@ -19,13 +19,14 @@
 
 package org.async.core;
 
+import java.io.UnsupportedEncodingException;
+
 /**
  * Functional conveniences to support 8-bit bytes protocols.
  */
 public class Bytes {
 
     public static final int find (byte[] what, byte[] in, int from) {
-        // so faster in C, so why does the JVM came without this?
         int i;
         int limit = in.length - what.length;
         for (; from < limit; from++) {
@@ -41,6 +42,24 @@ public class Bytes {
             }
         }
         return -1;
+    }
+
+    public static final String UTF8 = "UTF-8";
+
+    public static final byte[] encode(String unicode, String encoding) {
+        try {
+            return unicode.getBytes(encoding);
+        } catch (UnsupportedEncodingException e) {
+            return unicode.getBytes();
+        }
+    }
+
+    public static final String decode(byte[] bytes, String encoding) {
+        try {
+            return new String (bytes, encoding);
+        } catch (UnsupportedEncodingException e) {
+            return new String (bytes);
+        }
     }
 
 }

@@ -99,9 +99,6 @@ public abstract class Dispatcher extends Call {
         super(null);
         this.loop = loop;
     }
-    public final void log (String message) {
-        loop.log(this.toString() + " " + message);
-    }
     public final void log (String category, String message) {
         loop.log(category, this.toString() + " " + message);
     }
