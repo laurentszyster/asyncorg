@@ -76,10 +76,10 @@ public final class Loop {
      * before this thread stops and that the JVM shutdown completes.
      * 
      */
-    protected static class ExitHook extends Thread {
+    protected static class ShutdownHook extends Thread {
         private boolean _flag = false;
         private Object _monitor = new Object();
-        public ExitHook() {
+        public ShutdownHook() {
             Runtime.getRuntime().addShutdownHook(this);
         }
         public synchronized void set () {
@@ -110,7 +110,7 @@ public final class Loop {
         }
     }
     
-    protected ExitHook _hook = null;
+    protected ShutdownHook _hook = null;
    
     protected long _now;
     protected Selector _selector;
@@ -118,18 +118,18 @@ public final class Loop {
     protected TreeSet _scheduled = new TreeSet();
     protected LinkedList _continued =  new LinkedList();
     
-    public Loginfo log = _stdoe;
-    /**
-     * The list of <code>Function</code> applied when an <code>Exit</code> 
-     * exception was throwed in the loop.
-     */
-    public ArrayList exits = new ArrayList();
+    protected Loginfo _log = _stdoe;
     /**
      * A measure of this loop's precision, set by default to 100 milliseconds.
      * It is used by the loop to sleep that much whenever there are no I/O
      * to dispatch and as a timeout for its I/O selector otherwise. 
      */
-    public int precision = 100;
+    protected int _precision = 100;
+    /**
+     * The number of readable or writable dispatchers in the last run of
+     * this loop. 
+     */
+    protected int _concurrent = 0;
     /**
      * A limit on the maximum of <code>AsyncCore</code> dispatchers that can 
      * be registered concurrently in this loop's selector. By default it
@@ -140,12 +140,12 @@ public final class Loop {
      * 
      * @p Note that setting <code>concurrency</code> to 
      */
-    public int concurrency = 512;
+    protected int _concurrency = 512;
     /**
-     * The number of readable or writable dispatchers in the last run of
-     * this loop. 
+     * The list of <code>Function</code> applied when an <code>Exit</code> 
+     * exception was throwed in the loop.
      */
-    public int concurrent = 0;
+    public ArrayList exits = new ArrayList();
     
     /**
      * 
@@ -155,29 +155,78 @@ public final class Loop {
      */
     public Loop () {
         _now = System.currentTimeMillis();
-        _hook = new ExitHook();
     }
-    public long now () {
+    public final void hookShutdown () {
+        _hook = new ShutdownHook();
+    }
+    public final Loginfo setLogger(Loginfo log) {
+        Loginfo previous = _log;
+        if (log == null) {
+            _log = _stdoe;
+        } else {
+            _log = log;
+        }
+        return previous;
+    }
+    public final void setPrecision (int milliseconds) throws Error {
+        if (milliseconds < 10) {
+            throw new Error("Precision lower than 10 milliseconds");
+        }
+        _precision = milliseconds;
+    }
+    public final long now () {
         return _now;
     }
     public final void log (String message) {
-        log.out(message);
+        _log.out(message);
     }
     public final void log (String message, String info) {
-        log.err(message, info);
+        _log.err(message, info);
     }
     public final void log (Throwable exception) {
-        log.traceback(exception);
+        _log.traceback(exception);
     }
-    
-    private final void _io () throws Exit {
+    public final int concurrency () {
+        return _concurrency;
+    }
+    public final int precision () {
+        return _precision;
+    }
+    /**
+     * Get the <code>TreeSet</code> of <code>Scheduled</code> events in time.
+     * 
+     * @return an ordered set of scheduled events in time.
+     */
+    public final TreeSet scheduled () {
+        return _scheduled;
+    }
+    /**
+     * Schedule a function's application at an approximate time.
+     * 
+     * @p See <code>Scheduled.Function</code>.
+     * 
+     * @param when in milliseconds
+     * @param function to apply
+     */
+    public final void schedule (long when, Function function) {
+        _scheduled.add(new Scheduled._Function(when, function));
+    }
+    /**
+     * Schedule a function's appliction in an approximate interval.
+     * 
+     * @param milliseconds
+     * @param function
+     */
+    public final void timeout (int milliseconds, Function function) {
+        _scheduled.add(new Scheduled._Function(_now + milliseconds, function));
+    }
+    private final void _dispatch_io () throws Exit {
         // register, set interest or cancel selection keys for all dispatchers.
-        _now = System.currentTimeMillis();
-        concurrent = 0;
+        _concurrent = 0;
         int ops;
         Dispatcher dispatcher;
         Iterator dispatchers = _dispatched.iterator();
-        while (dispatchers.hasNext() && concurrent < concurrency) {
+        while (dispatchers.hasNext() && _concurrent < _concurrency) {
             dispatcher = (Dispatcher) dispatchers.next();
             ops = (
                 (dispatcher.writable() ? dispatcher._writable : 0) + 
@@ -193,12 +242,12 @@ public final class Loop {
                 dispatcher._key.interestOps(ops);
             }
             if (ops > 0) {
-                concurrent++;
+                _concurrent++;
             }
         }
-        if (concurrent == 0) { // try to sleep ...  
+        if (_concurrent == 0) { // try to sleep ...  
             try {
-                Thread.sleep(precision);
+                Thread.sleep(_precision);
                 return;
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -206,9 +255,9 @@ public final class Loop {
             }
         } else {
             try {
-                _selector.select(precision);
+                _selector.select(_precision);
             } catch (IOException e) {
-                log.traceback(e);
+                _log.traceback(e);
             }
         }
         // handle connect, write, accept and read events
@@ -218,26 +267,7 @@ public final class Loop {
             ((Dispatcher)((SelectionKey) it.next()).attachment())._handle();
         }
     }
-    /**
-     * Schedule an event in time.
-     * 
-     * @param event scheduled
-     */
-    public final void schedule (Scheduled event) {
-        _scheduled.add(event);
-    }
-    /**
-     * Schedule a function's application in time.
-     * 
-     * @p See <code>Scheduled.Function</code>.
-     * 
-     * @param when in milliseconds
-     * @param function to apply
-     */
-    public final void schedule (long when, Function function) {
-        _scheduled.add(new Scheduled._Function(when, function));
-    }
-    private final void _clock() throws Exit {
+    private final void _dispatch_scheduled() throws Exit {
         long recurr;
         Scheduled event;
         _now = System.currentTimeMillis();
@@ -257,7 +287,7 @@ public final class Loop {
             } catch (Exit e) {
                 throw e;
             } catch (Throwable e) {
-                log.traceback(e);
+                _log.traceback(e);
             }
         }
     }
@@ -271,22 +301,23 @@ public final class Loop {
         System.gc();
         return !(_continued.isEmpty());
     }
-    private final void _continue () {
-        _now = System.currentTimeMillis();
+    private final void _dispatch_continuations () throws Exit {
         Call finalized;
         while (!_continued.isEmpty()) {
             finalized = ((Call) _continued.removeFirst());
             try {
-                finalized.continuation.apply(finalized); // call/cc ;-)
+                finalized.cc();
+            } catch (Exit e) {
+                throw e;
             } catch (Throwable e) {
-                log.traceback(e);
+                _log.traceback(e);
             } finally {
                 finalized.continuation = null;
             }
         }
         finalized = null; // just to be on the safe side of finalization ;-)
     }
-    private final boolean _run () {
+    private final boolean _notEmpty () {
         if (!_dispatched.isEmpty()) {
             return true;
         } else if (!_scheduled.isEmpty()) {
@@ -307,14 +338,15 @@ public final class Loop {
         if (_selector == null) {
             _selector = Selector.open();
         }
-        while (_run()) {
+        while (_notEmpty()) {
             try {
-                _io();
+                _now = System.currentTimeMillis();
+                _dispatch_io();
                 if (_hook != null && _hook.get()) {
                     throw new Loop.Exit("SIGINT");
                 }
-                _clock ();
-                _continue ();
+                _dispatch_scheduled ();
+                _dispatch_continuations ();
             } catch (Exit e) {
                 Function fun; 
                 Iterator exit = exits.iterator();
@@ -335,8 +367,10 @@ public final class Loop {
         } finally {
             _selector = null;
         }
-        synchronized (_hook) {
-            _hook.shutdown();
+        if (_hook != null) {
+            synchronized (_hook) {
+                _hook.shutdown();
+            }
         }
     }
 }

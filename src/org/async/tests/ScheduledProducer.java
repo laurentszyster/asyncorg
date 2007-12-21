@@ -20,6 +20,7 @@
 package org.async.tests;
 
 import org.async.chat.Producer;
+import org.async.chat.StringsProducer;
 import org.async.core.Function;
 
 /**
@@ -29,7 +30,15 @@ import org.async.core.Function;
  * @p Synopsis
  * 
  * @p This class can be directly applied to defer a producer already pushed
- * in an output queue.
+ * in an output queue:
+ * 
+ * @pre ScheduledProducer defered = new ScheduledProducer(
+ *        StringsProducer.wrap(
+ *            new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
+ *            )
+ *        );
+ *dispatcher.loop.schedule(_loop.now() + 3000, defered);
+ *dispatcher.push(defered);
  * 
  * @p It can also be extended with another implementation of its functional
  * interface, for instance to schedule recurring state transitions (think

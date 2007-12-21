@@ -25,7 +25,7 @@ public class AsyncChatTest extends Dispatcher {
                 new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
                 )
             );
-        _loop.schedule(_loop.now() + 3000, defered);
+        loop.schedule(loop.now() + 3000, defered);
         push(defered);
     }
     public void handleData (byte[] data) throws Throwable {
@@ -46,7 +46,7 @@ public class AsyncChatTest extends Dispatcher {
                 );
             Static.loop.dispatch();
         } catch (Throwable e) {
-            Static.loop.log.traceback(e);
+            Static.loop.log(e);
         }
     }
 }

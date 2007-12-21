@@ -18,6 +18,7 @@ public class ContinuationTest {
     public static final class Continued extends Call {
         private String _name;
         public Continued (String name) {
+            super(null);
             _name = name;
             continuation = log;
         }

@@ -75,7 +75,7 @@ public abstract class Stream extends Dispatcher {
             handleClose();
         } else if (received > 0) {
             bytesIn = bytesIn + received;
-            whenIn = _loop._now;
+            whenIn = loop._now;
         }
         return received;
     }
@@ -83,7 +83,7 @@ public abstract class Stream extends Dispatcher {
         int sent = ((ByteChannel) _channel).write(buffer);
         if (sent > 0) {
             bytesOut = bytesOut + sent;
-            whenOut = _loop._now;
+            whenOut = loop._now;
         }
         return sent;
     }

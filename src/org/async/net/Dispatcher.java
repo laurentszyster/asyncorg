@@ -23,17 +23,19 @@ import java.nio.ByteBuffer;
 import java.nio.BufferOverflowException;
 import java.nio.channels.SocketChannel;
 
+import org.async.core.Loop;
 import org.async.core.Stream;
+import org.async.core.Netstring;
 
 /**
  * A <code>Stream</code> dispatcher implementation for <a 
  * href="http://cr.yp.to/protocols/netstring.txt"
- * >netstring</a> network peers.
+ * >netstring</a> applications.
  * 
  * @h3 Synopsis
  * 
- * @p See org.async.Netlog and org.async.Netlogger for actual implementations 
- * of asynchronous netstring client and server channels. 
+ * @p See <code>Netlog</code> and <code>Netlogger</code> for implementations 
+ * of netstring client and server channels. 
  */
 public abstract class Dispatcher extends Stream {
     protected int _terminator = 0;
@@ -44,15 +46,21 @@ public abstract class Dispatcher extends Stream {
     public Dispatcher (int in, int out) {
         super(in, out);
     }
+    public Dispatcher (Loop loop) {
+        super(loop);
+    }
+    public Dispatcher (Loop loop, int in, int out) {
+        super(loop, in, out);
+    }
     public final void push (byte[] data) {
         byte[] length = Integer.toString(data.length).getBytes();
         ByteBuffer buffer = ByteBuffer.allocate(
             data.length + length.length + 2
             );
         buffer.put(length);
-        buffer.put((byte)':');
+        buffer.put((byte)58);
         buffer.put(data);
-        buffer.put((byte)',');
+        buffer.put((byte)44);
         _fifoOut.add(buffer);
     }
     public abstract Collector handleCollect (int length) throws Throwable;
@@ -60,50 +68,83 @@ public abstract class Dispatcher extends Stream {
     public abstract void handleCollected () throws Throwable;
     
     public final void collect () throws Throwable {
-        int prev, pos;
+        byte[] data;
+        int prev, next, pos;
         int lb = _bufferIn.limit();
-        int next = _terminator;
-        if (next > 0) {
-            if (next > lb) {
-                _stalledIn = _collector.collect(_bufferIn.array());
-                _terminator = next - lb;
-                _bufferIn.reset();
+        if (_terminator > 0) {
+            if (_terminator > lb) {
+                data = new byte[lb];
+                _bufferIn.get(data);
+                _stalledIn = _collector.collect(data);
+                _terminator = _terminator - lb;
                 return;
-            } else if (_bufferIn.get(next-1) == ',') {
-                _stalledIn = _collector.terminate(
-                    _bufferIn.get(new byte[next-1]).array()
-                    );
+            } else if (_bufferIn.get(_terminator - 1) == 44) {
+                data = new byte[_terminator - 1];
+                _bufferIn.get(data);
+                _bufferIn.position(_terminator + 1);
+                _stalledIn = _collector.terminate(data);
                 handleCollected();
+                _terminator = 0;
                 if (_stalledIn) {
-                    _terminator = 0;
                     return;
                 }
             } else {
-                throw new Exception("3 missing comma");
+                throw new Exception(Netstring.ERROR_INVALID_EPILOGUE);
             }
-            prev = next;
+            prev = _terminator;
         } else {
             prev = 0;
         }
+        byte[] digits = new byte[10];
+        int i;
+        byte c;
         while (prev < lb) {
-            pos = -1;
-            for (int i=prev; i<lb; i++) {
-                if (_bufferIn.get(i) == ':') {
-                    pos = i;
-                    break;
+            for (i=0; i < 10; i++) {
+                c = _bufferIn.get(prev + i);
+                if (c == 58) {
+                    break; 
+                } else if (c < 48 || c > 57) {
+                    throw new Exception(Netstring.ERROR_INVALID_PROLOGUE); 
+                } else {
+                    digits[i] = c;
                 }
             }
-            if (pos < 0) {
-                if (prev > 0) {
-                    
-                }
-            } else {
-                
+            if (i == 10) {
+                throw new Exception(Netstring.ERROR_TOO_LONG); 
             }
+            pos = prev + i;
+            if (pos == lb) { // Not found!
+                break;
+            } else { // Found!
+                pos = pos + 1;
+                next = pos + Integer.parseInt(new String(
+                    digits, 0, i
+                    )) + 2;
+                if (next > lb) {
+                    if (pos < lb) {
+                        data = new byte[lb - pos];
+                        _bufferIn.get(data);
+                        _bufferIn.position(pos);
+                        _stalledIn = _collector.collect(data);
+                    }
+                    _terminator = next - lb;
+                    return;
+                } else if (_bufferIn.get(next - 1) == 44){
+                    data = new byte[next - 1 - pos];
+                    _bufferIn.get(data);
+                    _bufferIn.position(next);
+                    _stalledIn = _collector.terminate(data);
+                    if (_stalledIn) {
+                        _terminator = 0;
+                        return;
+                    }
+                } else {
+                    throw new Exception(Netstring.ERROR_INVALID_PROLOGUE); 
+                }
+            }
+            prev = next;
         }
-        _stalledIn = false;
         _terminator = 0;
-        _bufferIn.reset();
     }
     public boolean writable () {
         return !(

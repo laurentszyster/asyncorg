@@ -24,36 +24,26 @@ import java.util.Iterator;
 
 
 /**
- * Practical asynchronous continuations.
+ * Practical asynchronous continuations, kinda coroutine meets closures
+ * in a Java loop. Slowly, unobviously and yet damn practical in I/O bound
+ * stateful network applications experiencing high levels of concurrency and 
+ * latency between processes. 
  * 
  * @h3 Synopsis
  * 
  * @p The purpose of <code>Call</code> is to program workflows of 
- * concurrent I/O-bound processes. And do it as simply as possible:
- * 
- * @pre import org.async.core.Call;
- *  
- *Call.join(new Call[]{
- *    smtp.mailto("admin@home", "Started ..."),
- *    Call.chain(new Call[]{
- *        http.get("http://www./index.html"),
- *        http.post("http://127.0.0.1/index?"),
- *        }),
- *    
- *    }, Call.LogOut)
- *    .continuation = smtp.mailto("admin@home", "... done!");
- * 
- * @h3 Is this the call-with-current-continuation from Lisp?
+ * concurrent I/O-bound processes, passing a current state to each
+ * continuations.
  * 
  * @h3 Not CALL/CC 
  * 
- * @p Yes, <code>Call</code> looks like an ugly implementation of LISP's
- * <a 
+ * @p By name and purpose <code>Call</code> looks like an ugly implementation 
+ * of LISP's <a 
  * href="http://community.schemewiki.org/?call-with-current-continuation"
- * >call/cc</a>'s idea. Here it is piggy-backed on the expected behaviour 
- * of the simplest JVM's garbage collector. It may be an damned unorthodox 
- * hack but it does provides practical coroutines to <code>AsyncLoop</code> 
- * applications (and for nothing else, I'm afraid).
+ * >call/cc</a>. Here it is piggy-backed on the simplest behaviour of the  
+ * expected from a JVM's garbage collector, but it does nevertheless provides 
+ * practical coroutines to <code>AsyncLoop</code> applications (and for 
+ * nothing else, I'm afraid).
  * 
  * @p Network workflow are statefull processes which depend on I/O. They 
  * spend most of their time waiting for some input to complete or some 
@@ -64,36 +54,28 @@ import java.util.Iterator;
  * interleaved in one asynchronous loop is simple enough to run as fast and 
  * reliably as statefull entreprise workflow applications demand. 
  * 
- * @h3 Caveat
- * 
- * @p Don't mix with threads, or at least not in a stock JVM.
- * 
- * @p Like a lot of j-spelled thing, the JVM's memory management, garbage
- * collection and therefore its finalization API are "worse than failure"
- * when threading gets into the picture.
- * 
- * @p Contrary to what Sun marketeers and engineers pretend, the fact that
- * the HotSpot JVM has six different garbage collectors is just the symptom
- * of a severely broken design. Each new release of the JVM comes with a new
- * patch on that wooden leg and a new salvo of hype.
- * 
- * @p Luckily, avoiding threads altogether makes the default garbage collector
- * of a compliant JVM behave right enough for <code>Continuation</code> to 
- * work. Unfortunately there is no guarantee as to which state continuations
- * will be once their function is called.
- * 
  */
 public abstract class Call implements Function {
-    protected Loop _loop = Static.loop; 
-    protected Object _current = null; // state shared between calls.
+    private Object _current = null; // state shared between calls.
+    protected Loop loop = Static.loop; // this goes deep ...
     public Function continuation = null;
+    public Call(Object current) {
+        _current = current;
+    }
     /**
      * Defer an asynchronous call to this continuation's function if there 
      * is one.
      */
     public final void finalize () {
         if (continuation != null) {
-            _loop._continued.add(this);
+            loop._continued.add(this);
+        }
+    }
+    protected final void cc () throws Throwable {
+        if (continuation instanceof Call) {
+            ((Call) continuation)._current = continuation.apply(_current);
+        } else {
+            continuation.apply(_current);
         }
     }
     public static final Call tail (Call call) {
@@ -105,16 +87,22 @@ public abstract class Call implements Function {
     public static class Fork extends Call {
         protected ArrayList _branches;  
         public Fork () {
+            super(null);
             _branches = new ArrayList();
         }
         public Fork add (Function function) {
             _branches.add(function);
             return this;
         }
-        public final Object apply (Object value) throws Throwable {
+        public final Object apply (Object current) throws Throwable {
             Iterator continued = _branches.iterator();
             while (continued.hasNext()) {
-                ((Function) continued.next()).apply(value);
+                Object fun = continued.next();
+                if (fun instanceof Call) {
+                    ((Call) fun).cc();
+                } else {
+                    ((Function) fun).apply(current);
+                }
             }
             _branches = null;
             return null;
@@ -142,6 +130,7 @@ public abstract class Call implements Function {
     public static class Step extends Call {
         protected Call _head, _tail;
         public Step (Call[] continuations) {
+            super(null);
             _head = continuations[0];
             Call next = _head;
             for (int i=1; i<continuations.length; i++) {
@@ -150,12 +139,12 @@ public abstract class Call implements Function {
             }
             _tail = tail(next);
         }
-        public final Object apply (Object value) {
+        public final Object apply (Object current) {
             if (_head == null) {
                 _tail.continuation = this;
                 _head = _tail = null;
             } else {
-                
+                ; // TODO: ???
             }
             return null;
         }
@@ -167,17 +156,18 @@ public abstract class Call implements Function {
         protected Call[] _continuations;
         protected Function _join = null;
         public Join (Call[] continuations, Function join) {
+            super(null);
             _continuations = continuations;
             _join = join;
         }
-        public final Object apply (Object continued) throws Throwable {
+        public final Object apply (Object current) throws Throwable {
             if (_continuations != null) {
                 for (int i=0; i < _continuations.length; i++) {
                     _continuations[i].continuation = this;
                 }
                 _continuations = null;
             } else if (_join != null){
-                _join.apply(continued);
+                _join.apply(current);
             }
             return null;
         }
@@ -186,5 +176,27 @@ public abstract class Call implements Function {
         Call[] continuations, Function function 
         ) {
         return new Join(continuations, function);
+    }
+    public static final class Sleep extends Call {
+        private static final class _Scheduled extends Scheduled {
+            Function _call;
+            public _Scheduled(int milliseconds, Function call) {
+                when = milliseconds;
+                _call = call;
+            }
+            public long apply () {
+                _call = null;
+                return -1;
+            }
+        }
+        private int _milliseconds;
+        public Sleep(int milliseconds) {
+            super(null);
+            _milliseconds = milliseconds;
+        }
+        public final Object apply (Object current) {
+            loop._scheduled.add(new _Scheduled(_milliseconds, continuation));
+            return null;
+        }
     }
 }
