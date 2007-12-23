@@ -1,6 +1,5 @@
 package org.async.tests;
 
-import org.async.core.Static;
 import org.async.net.Collector;
 import org.async.net.Dispatcher;
 

@@ -20,10 +20,8 @@
 package org.async.net;
 
 import java.nio.ByteBuffer;
-import java.nio.BufferOverflowException;
 import java.nio.channels.SocketChannel;
 
-import org.async.chat.Producer;
 import org.async.core.Loop;
 import org.async.core.Stream;
 import org.async.core.Netstring;
@@ -119,21 +117,21 @@ public abstract class Dispatcher extends Stream {
             if (c != 58) { // Not found!
                 break;
             } else { // Found!
+                _bufferIn.position(pos+1);
                 next = pos + Integer.parseInt(new String(
                     digits, 0, i
                     )) + 2;
                 _collector = handleCollect(next);
                 if (next > lb) {
                     if (pos < lb) {
-                        data = new byte[lb - pos];
+                        data = new byte[lb - pos - 2];
                         _bufferIn.get(data);
-                        _bufferIn.position(pos);
                         _stalledIn = _collector.collect(data);
                     }
                     _terminator = next - lb;
                     return;
                 } else if (_bufferIn.get(next - 1) == 44){
-                    data = new byte[next - pos];
+                    data = new byte[next - pos - 2];
                     _bufferIn.get(data);
                     _bufferIn.position(next);
                     _terminator = 0;
