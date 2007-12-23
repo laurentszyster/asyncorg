@@ -32,11 +32,12 @@ public final class AsyncNetCollectTest extends Dispatcher {
         _bufferIn.put(((String) input).getBytes());
         _bufferIn.flip();
         collect();
+        _bufferIn.compact();
         return null;
     }
     public static final void main (String[] args) throws Throwable {
-        (new AsyncNetCollectTest()).apply(
-            "3:one,3:two,5:three,"
-            );
+        AsyncNetCollectTest net = new AsyncNetCollectTest();
+        net.apply("3:one,3:two,5:th");
+        net.apply("ree,");
     } 
 }

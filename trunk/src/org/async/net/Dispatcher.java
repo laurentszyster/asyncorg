@@ -80,11 +80,11 @@ public abstract class Dispatcher extends Stream {
                 _stalledIn = _collector.collect(data);
                 _terminator = _terminator - lb;
                 return;
-            } else if (_bufferIn.get(_terminator - 1) == 44) {
-                data = new byte[_terminator - 1];
+            } else if (_bufferIn.get(_terminator) == 44) {
+                data = new byte[_terminator];
                 _bufferIn.get(data);
-                _bufferIn.position(_terminator + 1);
-                _terminator = 0;
+                _bufferIn.position(_terminator);
+                _terminator = lb;
                 _stalledIn = _collector.terminate(data);
                 handleCollected();
                 if (_stalledIn) {
