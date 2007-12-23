@@ -23,7 +23,6 @@ import org.async.core.Bytes;
 import org.async.core.Stream;
 
 import java.nio.ByteBuffer;
-import java.nio.BufferOverflowException;
 
 public abstract class Dispatcher extends Stream {
     protected Object _terminator;

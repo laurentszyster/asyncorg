@@ -20,7 +20,6 @@
 package org.async.tests;
 
 import org.async.chat.Producer;
-import org.async.chat.StringsProducer;
 import org.async.core.Function;
 
 /**
