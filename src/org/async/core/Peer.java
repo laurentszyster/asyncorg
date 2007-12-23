@@ -19,7 +19,7 @@ public abstract class Peer extends Dispatcher {
         int received = buffer.position() - start;
         if (received > 0) {
             bytesIn = bytesIn + received;
-            whenIn = loop._now;
+            whenIn = _loop._now;
         }
         return from;
     }
@@ -28,7 +28,7 @@ public abstract class Peer extends Dispatcher {
         int sent = ((DatagramChannel) _channel).send(buffer, addr);
         if (sent > 0) {
             bytesOut = bytesOut + sent;
-            whenOut = loop._now;
+            whenOut = _loop._now;
         }
         return sent;
     }

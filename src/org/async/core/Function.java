@@ -18,6 +18,17 @@
  */
 package org.async.core;
 
+/**
+ * The simplest possible first class of function in Java.
+ * 
+ * @pre class Print extends Function {
+ *    public Object apply (Object input) throws Throwable {
+ *        System.out(argument.toString());
+ *    }
+ *}  
+ *
+ * 
+ */
 public interface Function {
-    public Object apply (Object argument) throws Throwable;
+    public Object apply (Object input) throws Throwable;
 }

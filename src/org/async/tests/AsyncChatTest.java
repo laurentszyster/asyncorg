@@ -19,25 +19,25 @@ public class AsyncChatTest extends Dispatcher {
         return null;
     }
     public void handleConnect() throws Throwable {
-        log("DEBUG", "connected");
+        log("connected");
         ScheduledProducer defered = new ScheduledProducer(
             StringsProducer.wrap(
                 new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
                 )
             );
-        loop.schedule(loop.now() + 3000, defered);
+        _loop.schedule(_loop.now() + 3000, defered);
         push(defered);
     }
     public void handleData (byte[] data) throws Throwable {
-        loop.log(new String(data, "UTF-8"));
+        _loop.log(new String(data, "UTF-8"));
     }
     public boolean handleTerminator () throws Throwable {
-        log("DEBUG", "terminator");
+        log("terminator");
         setTerminator();
         return false;
     }
     public void handleClose() throws Throwable {
-        log("DEBUG", "closed");
+        log("closed");
     }
     public static final void main (String[] args) throws Throwable {
         try {

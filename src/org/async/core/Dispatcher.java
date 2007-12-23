@@ -46,12 +46,13 @@ public abstract class Dispatcher extends Call {
     protected AbstractSelectableChannel _channel = null;
     protected SelectionKey _key = null;
     protected int _index;
+    protected String _name;
     protected final void _add () {
-        _index = loop._dispatched.size();
-        loop._dispatched.add(this);
+        _index = _loop._dispatched.size();
+        _loop._dispatched.add(this);
     }
     protected final void _remove () {
-        loop._dispatched.remove(_index);
+        _loop._dispatched.remove(_index);
         _channel = null;
         _key.cancel();
         _key.attach(null);
@@ -70,7 +71,9 @@ public abstract class Dispatcher extends Call {
             } else if (_key.isWritable()) {
                 handleWrite();
             }
-            if (_key.isAcceptable()) {
+            if (_key == null) {
+                return;
+            } else if (_key.isAcceptable()) {
                 handleAccept();
             } else if (_key.isReadable()) {
                 if (!_connected) {
@@ -92,19 +95,19 @@ public abstract class Dispatcher extends Call {
     public long whenOut = -1;
     public long bytesIn = 0;
     public long bytesOut = 0;
-    public Dispatcher() {
-        super(null);
+    protected Dispatcher () {
+        _name = this.toString();
     }
     public Dispatcher(Loop loop) {
-        super(null);
-        this.loop = loop;
+        _name = this.toString();
+        this._loop = loop;
     }
-    public final void log (String category, String message) {
-        loop.log(category, this.toString() + " " + message);
+    public final void log (String message) {
+        _loop.log(_name, message);
     }
     public final void log (Throwable error) {
-        loop.log("TRACEBACK", this.toString() + " " + error.getMessage());
-        loop.log(error);
+        _loop.log(_name, error.getMessage());
+        _loop.log(error);
     }
     public final void close () {
         try {
