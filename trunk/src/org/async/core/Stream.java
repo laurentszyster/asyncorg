@@ -21,6 +21,8 @@ package org.async.core;
 
 import java.util.LinkedList;
 import java.net.SocketAddress;
+import java.io.IOException;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SelectionKey;
@@ -69,13 +71,18 @@ public abstract class Stream extends Dispatcher {
         }
     }
     public final int recv (ByteBuffer buffer) throws Throwable {
-        int received = ((ByteChannel) _channel).read(buffer);
+        int received = -1;
+        try {
+            received = ((ByteChannel) _channel).read(buffer);
+        } catch (IOException e) {
+            // ... simply close on IOException
+        }
         if (received == -1) {
             close();
             handleClose();
         } else if (received > 0) {
             bytesIn = bytesIn + received;
-            whenIn = loop._now;
+            whenIn = _loop._now;
         }
         return received;
     }
@@ -83,7 +90,7 @@ public abstract class Stream extends Dispatcher {
         int sent = ((ByteChannel) _channel).write(buffer);
         if (sent > 0) {
             bytesOut = bytesOut + sent;
-            whenOut = loop._now;
+            whenOut = _loop._now;
         }
         return sent;
     }
@@ -120,6 +127,18 @@ public abstract class Stream extends Dispatcher {
             collect();
             _bufferIn.compact();
         }
+    }
+    protected final boolean _fillOut (ByteBuffer data) {
+        try {
+            _bufferOut.put(data.array()); // .put(data) fails on position() :-(
+        } catch (BufferOverflowException e) {
+            int left = _bufferOut.remaining(); 
+            _bufferOut.put(data.array(), 0, left);
+            data.position(left);
+            _fifoOut.addFirst(data.slice());
+            return true;
+        }
+        return false;
     }
     public final void closeWhenDone () {
         if (writable()) {

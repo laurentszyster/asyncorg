@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.BufferOverflowException;
 import java.nio.channels.SocketChannel;
 
+import org.async.chat.Producer;
 import org.async.core.Loop;
 import org.async.core.Stream;
 import org.async.core.Netstring;
@@ -39,18 +40,21 @@ import org.async.core.Netstring;
  */
 public abstract class Dispatcher extends Stream {
     protected int _terminator = 0;
+    protected int _limit = 10;
     protected Collector _collector;
     public Dispatcher () {
         super();
     }
-    public Dispatcher (int in, int out) {
+    public Dispatcher (int in, int out, int limit) {
         super(in, out);
+        _limit = limit;
     }
     public Dispatcher (Loop loop) {
         super(loop);
     }
-    public Dispatcher (Loop loop, int in, int out) {
+    public Dispatcher (Loop loop, int in, int out, int limit) {
         super(loop, in, out);
+        _limit = limit;
     }
     public final void push (byte[] data) {
         byte[] length = Integer.toString(data.length).getBytes();
@@ -82,9 +86,9 @@ public abstract class Dispatcher extends Stream {
                 data = new byte[_terminator - 1];
                 _bufferIn.get(data);
                 _bufferIn.position(_terminator + 1);
+                _terminator = 0;
                 _stalledIn = _collector.terminate(data);
                 handleCollected();
-                _terminator = 0;
                 if (_stalledIn) {
                     return;
                 }
@@ -97,10 +101,10 @@ public abstract class Dispatcher extends Stream {
         }
         byte[] digits = new byte[10];
         int i;
-        byte c;
+        byte c = 0;
         while (prev < lb) {
-            for (i=0; i < 10; i++) {
-                c = _bufferIn.get(prev + i);
+            for (i=0, pos=prev; i < _limit; i++, pos++) {
+                c = _bufferIn.get(pos);
                 if (c == 58) {
                     break; 
                 } else if (c < 48 || c > 57) {
@@ -109,17 +113,16 @@ public abstract class Dispatcher extends Stream {
                     digits[i] = c;
                 }
             }
-            if (i == 10) {
+            if (i == _limit) {
                 throw new Exception(Netstring.ERROR_TOO_LONG); 
             }
-            pos = prev + i;
-            if (pos == lb) { // Not found!
+            if (c != 58) { // Not found!
                 break;
             } else { // Found!
-                pos = pos + 1;
                 next = pos + Integer.parseInt(new String(
                     digits, 0, i
                     )) + 2;
+                _collector = handleCollect(next);
                 if (next > lb) {
                     if (pos < lb) {
                         data = new byte[lb - pos];
@@ -130,12 +133,13 @@ public abstract class Dispatcher extends Stream {
                     _terminator = next - lb;
                     return;
                 } else if (_bufferIn.get(next - 1) == 44){
-                    data = new byte[next - 1 - pos];
+                    data = new byte[next - pos];
                     _bufferIn.get(data);
                     _bufferIn.position(next);
+                    _terminator = 0;
                     _stalledIn = _collector.terminate(data);
+                    handleCollected();
                     if (_stalledIn) {
-                        _terminator = 0;
                         return;
                     }
                 } else {
@@ -148,19 +152,16 @@ public abstract class Dispatcher extends Stream {
     }
     public boolean writable () {
         return !(
-            _bufferOut.position() == 0 && 
+            _bufferOut.remaining() == 0 && 
             _fifoOut.isEmpty() && 
             ((SocketChannel)_channel).isConnected()
             );
     }
     public final boolean produce () {
-        int mark = _bufferOut.limit();
-        _bufferOut.limit(_bufferOut.capacity());
-        _bufferOut.position(mark);
-        ByteBuffer data;
+        Object first;
         while (!_fifoOut.isEmpty()) {
-            data = (ByteBuffer) _fifoOut.removeFirst();
-            if (data == null) {
+            first = _fifoOut.removeFirst();
+            if (first == null) {
                 if (_bufferOut.position() == 0) {
                     _bufferOut.limit(0);
                     return false;
@@ -168,24 +169,10 @@ public abstract class Dispatcher extends Stream {
                     _fifoOut.addFirst(null); // we'll be done soon ...
                     break;
                 }
-            } else {
-                try {
-                    _bufferOut.put(data);
-                } catch (BufferOverflowException e) {
-                    int left = _bufferOut.remaining(); 
-                    _bufferOut.put(data.array(), 0, left);
-                    data.position(left);
-                    _fifoOut.addFirst(data.slice());
-                    break;
-                }
+            } else if (_fillOut((ByteBuffer) first)) {
+                break; 
             }
         }
         return true;
-    }
-    public void handleConnect() {
-        log("DEBUG", "handleConnect");
-    }
-    public void handleClose() {
-        log("DEBUG", "handleClose");
     }
 }

@@ -138,18 +138,6 @@ public abstract class Dispatcher extends Stream {
                 );
         }
     }
-    protected final boolean _fillOut (ByteBuffer data) {
-        try {
-            _bufferOut.put(data);
-        } catch (BufferOverflowException e) {
-            int left = _bufferOut.remaining(); 
-            _bufferOut.put(data.array(), 0, left);
-            data.position(left);
-            _fifoOut.addFirst(data.slice());
-            return true;
-        }
-        return false;
-    }
     public final boolean produce () throws Throwable {
         Object first;
         while (!_fifoOut.isEmpty()) {

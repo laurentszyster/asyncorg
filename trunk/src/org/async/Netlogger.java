@@ -81,7 +81,7 @@ public final class Netlogger {
     protected static final class Channel extends Dispatcher {
         
         public Channel () {
-            super(16384, 0);
+            super(16384, 0, 5); // limit to 99999 bytes lines
         }
         
         public static final class Trunk implements Collector {
@@ -101,6 +101,10 @@ public final class Netlogger {
             return null;
         }
         
+        public final void handleConnect() {
+            log("connected");
+        }
+        
         public final Collector handleCollect(int length) throws Throwable {
             return collector;
         }
@@ -111,6 +115,7 @@ public final class Netlogger {
         }
         
         public final void handleClose() {
+            log("closed");
             collector = null; 
         }
 
@@ -119,7 +124,7 @@ public final class Netlogger {
     protected static final class Server extends Listen {
         
         public Object apply (Object value) throws Throwable {
-            log("DEBUG", "Shutdown");
+            log("Shutdown");
             close();
             return Boolean.FALSE;
         }
@@ -129,7 +134,7 @@ public final class Netlogger {
         }
         
         public void handleClose() throws Throwable {
-            log("ERROR", "Unexpected close event");
+            log("Unexpected close event");
         }
         
     }

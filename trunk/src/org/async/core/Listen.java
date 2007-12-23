@@ -19,10 +19,12 @@ public abstract class Listen extends Dispatcher {
     public final void accept (Dispatcher dispatcher) throws Throwable {
         ServerSocketChannel channel = (ServerSocketChannel) _channel;
         SocketChannel accepted = channel.accept();
-        accepted.configureBlocking(false);
-        dispatcher._channel = accepted;
-        dispatcher._add();
-        dispatcher.apply(this);
+        if (accepted != null) {
+            accepted.configureBlocking(false);
+            dispatcher._channel = accepted;
+            dispatcher._add();
+            dispatcher.apply(this);
+        }
     }
     public boolean writable () {
         return false;

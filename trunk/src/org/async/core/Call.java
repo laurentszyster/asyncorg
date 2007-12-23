@@ -56,19 +56,16 @@ import java.util.Iterator;
  * 
  */
 public abstract class Call implements Function {
-    private Object _current = null; // state shared between calls.
-    protected Loop loop = Static.loop; // this goes deep ...
+    protected Object _current = null; // state shared between calls.
+    protected Loop _loop = Static.loop;
     public Function continuation = null;
-    public Call(Object current) {
-        _current = current;
-    }
     /**
      * Defer an asynchronous call to this continuation's function if there 
      * is one.
      */
     public final void finalize () {
         if (continuation != null) {
-            loop._continued.add(this);
+            _loop._continued.add(this);
         }
     }
     protected final void cc () throws Throwable {
@@ -84,13 +81,21 @@ public abstract class Call implements Function {
         }
         return call;
     }
-    public static class Fork extends Call {
+    public static final class Closure extends Call {
+        public Closure (Loop loop) {
+            _loop = loop;
+        }
+        public final Object apply (Object current) {
+            _current = current;
+            return null;
+        }
+    }
+    public static final class Fork extends Call {
         protected ArrayList _branches;  
         public Fork () {
-            super(null);
             _branches = new ArrayList();
         }
-        public Fork add (Function function) {
+        public final Fork add (Function function) {
             _branches.add(function);
             return this;
         }
@@ -127,10 +132,9 @@ public abstract class Call implements Function {
             branched.continuation = branches;
         }
     }
-    public static class Step extends Call {
+    public static final class Step extends Call {
         protected Call _head, _tail;
         public Step (Call[] continuations) {
-            super(null);
             _head = continuations[0];
             Call next = _head;
             for (int i=1; i<continuations.length; i++) {
@@ -142,7 +146,7 @@ public abstract class Call implements Function {
         public final Object apply (Object current) {
             if (_head == null) {
                 _tail.continuation = this;
-                _head = _tail = null;
+                _tail = null;
             } else {
                 ; // TODO: ???
             }
@@ -152,11 +156,10 @@ public abstract class Call implements Function {
     public static final Step step (Call[] continuations) {
         return new Step(continuations);
     }
-    public static class Join extends Call {
+    public static final class Join extends Call {
         protected Call[] _continuations;
         protected Function _join = null;
         public Join (Call[] continuations, Function join) {
-            super(null);
             _continuations = continuations;
             _join = join;
         }
@@ -178,7 +181,7 @@ public abstract class Call implements Function {
         return new Join(continuations, function);
     }
     public static final class Sleep extends Call {
-        private static final class _Scheduled extends Scheduled {
+        protected static final class _Scheduled extends Scheduled {
             Function _call;
             public _Scheduled(int milliseconds, Function call) {
                 when = milliseconds;
@@ -189,13 +192,12 @@ public abstract class Call implements Function {
                 return -1;
             }
         }
-        private int _milliseconds;
+        protected int _milliseconds;
         public Sleep(int milliseconds) {
-            super(null);
             _milliseconds = milliseconds;
         }
         public final Object apply (Object current) {
-            loop._scheduled.add(new _Scheduled(_milliseconds, continuation));
+            _loop._scheduled.add(new _Scheduled(_milliseconds, continuation));
             return null;
         }
     }
