@@ -62,6 +62,7 @@ public abstract class Stream extends Dispatcher {
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         _channel = channel;
+        _addr = addr;
         _add();
         if (channel.connect(addr)) {
             _connected = true;

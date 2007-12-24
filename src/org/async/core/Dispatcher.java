@@ -23,6 +23,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 
+import java.net.SocketAddress;
+
 import java.io.IOException;
 
 
@@ -43,16 +45,15 @@ public abstract class Dispatcher extends Call {
     // protected interfaces between AsyncLoop._io and AsynCore, may
     // vary to support something else than <code>java.nio.channels</code>
     //
+    protected SocketAddress _addr; 
     protected AbstractSelectableChannel _channel = null;
     protected SelectionKey _key = null;
-    protected int _index;
     protected String _name;
     protected final void _add () {
-        _index = _loop._dispatched.size();
-        _loop._dispatched.add(this);
+        _loop._dispatched.put(this._name, this);
     }
     protected final void _remove () {
-        _loop._dispatched.remove(_index);
+        _loop._dispatched.remove(_name);
         _channel = null;
         _key.cancel();
         _key.attach(null);
@@ -95,12 +96,15 @@ public abstract class Dispatcher extends Call {
     public long whenOut = -1;
     public long bytesIn = 0;
     public long bytesOut = 0;
-    protected Dispatcher () {
+    public Dispatcher () {
         _name = this.toString();
     }
     public Dispatcher(Loop loop) {
         _name = this.toString();
         this._loop = loop;
+    }
+    public final boolean connected () {
+        return _connected;
     }
     public final void log (String message) {
         _loop.log(_name, message);

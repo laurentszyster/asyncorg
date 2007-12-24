@@ -26,6 +26,7 @@ import java.nio.channels.ClosedChannelException;
 import java.io.IOException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.TreeSet;
 import java.util.LinkedList;
 import java.util.Iterator;
@@ -51,7 +52,7 @@ public final class Loop {
             System.out.println(message);
         }
         public void err (String category, String message) {
-            System.err.println(category + ": " + message);
+            System.err.println(category + " " + message);
         }
         public void traceback (Throwable error) {
             error.printStackTrace(System.err);
@@ -114,7 +115,7 @@ public final class Loop {
    
     protected long _now;
     protected Selector _selector;
-    protected ArrayList _dispatched = new ArrayList();
+    protected HashMap _dispatched = new HashMap();
     protected TreeSet _scheduled = new TreeSet();
     protected LinkedList _continued =  new LinkedList();
     
@@ -225,7 +226,7 @@ public final class Loop {
         _concurrent = 0;
         int ops;
         Dispatcher dispatcher;
-        Iterator dispatchers = _dispatched.iterator();
+        Iterator dispatchers = _dispatched.values().iterator();
         while (dispatchers.hasNext() && _concurrent < _concurrency) {
             dispatcher = (Dispatcher) dispatchers.next();
             ops = (

@@ -10,6 +10,7 @@ public abstract class Peer extends Dispatcher {
         channel.configureBlocking(false);
         channel.socket().bind(addr);
         _channel = channel;
+        _addr = addr;
         _add();
     }
     public final SocketAddress recvfrom (ByteBuffer buffer) 
