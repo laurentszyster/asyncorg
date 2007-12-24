@@ -152,7 +152,7 @@ public abstract class Dispatcher extends Stream {
         return !(
             _bufferOut.remaining() == 0 && 
             _fifoOut.isEmpty() && 
-            ((SocketChannel)_channel).isConnected()
+            _connected
             );
     }
     public final boolean produce () {

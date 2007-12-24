@@ -13,6 +13,7 @@ public abstract class Listen extends Dispatcher {
         channel.socket().bind(addr);
         channel.socket().setReuseAddress(true);
         _channel = channel;
+        _addr = addr;
         _add();
         _readable = SelectionKey.OP_ACCEPT;
     }
@@ -22,6 +23,7 @@ public abstract class Listen extends Dispatcher {
         if (accepted != null) {
             accepted.configureBlocking(false);
             dispatcher._channel = accepted;
+            dispatcher._addr = accepted.socket().getLocalSocketAddress();
             dispatcher._add();
             dispatcher.apply(this);
         }
