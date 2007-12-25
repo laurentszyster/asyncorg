@@ -8,12 +8,16 @@ import java.nio.channels.SocketChannel;
 public abstract class Listen extends Dispatcher {
     protected boolean _accepting = true;
     public final void listen (SocketAddress addr) throws Throwable {
+        _name = (getClass().getName() + "@" + addr.toString());
+        _addr = addr;
+        listen();
+    }
+    public final void listen () throws Throwable {
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
-        channel.socket().bind(addr);
+        channel.socket().bind(_addr);
         channel.socket().setReuseAddress(true);
         _channel = channel;
-        _addr = addr;
         _add();
         _readable = SelectionKey.OP_ACCEPT;
     }
@@ -23,7 +27,11 @@ public abstract class Listen extends Dispatcher {
         if (accepted != null) {
             accepted.configureBlocking(false);
             dispatcher._channel = accepted;
-            dispatcher._addr = accepted.socket().getLocalSocketAddress();
+            dispatcher._addr = accepted.socket().getRemoteSocketAddress();;
+            dispatcher._name = (
+                dispatcher.getClass().getName() + 
+                "@" + dispatcher._addr.toString()
+                );
             dispatcher._add();
             dispatcher.apply(this);
         }

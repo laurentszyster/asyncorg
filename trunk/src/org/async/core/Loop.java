@@ -221,6 +221,15 @@ public final class Loop {
     public final void timeout (int milliseconds, Function function) {
         _scheduled.add(new Scheduled._Function(_now + milliseconds, function));
     }
+    private static final void _sleep (int milliseconds) throws Exit {
+        try {
+            Thread.sleep(milliseconds);
+            return;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new Exit("InterruptedException");
+        }
+    }
     private final void _dispatch_io () throws Exit {
         // register, set interest or cancel selection keys for all dispatchers.
         _concurrent = 0;
@@ -246,20 +255,19 @@ public final class Loop {
                 _concurrent++;
             }
         }
-        if (_concurrent == 0) { // try to sleep ...  
-            try {
-                Thread.sleep(_precision);
-                return;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new Exit("InterruptedException");
-            }
+        if (_concurrent == 0) {
+            _sleep(_precision);
+            _now = System.currentTimeMillis();
+            return;
         } else {
             try {
-                _selector.select(_precision);
+                if (_selector.selectNow() == 0) {
+                    _sleep(_precision);
+                } 
             } catch (IOException e) {
                 _log.traceback(e);
             }
+            _now = System.currentTimeMillis();
         }
         // handle connect, write, accept and read events
         _now = System.currentTimeMillis();
@@ -271,7 +279,6 @@ public final class Loop {
     private final void _dispatch_scheduled() throws Exit {
         long recurr;
         Scheduled event;
-        _now = System.currentTimeMillis();
         Iterator events = _scheduled.iterator();
         while (events.hasNext()) {
             event = (Scheduled) events.next();
@@ -341,7 +348,6 @@ public final class Loop {
         }
         while (_notEmpty()) {
             try {
-                _now = System.currentTimeMillis();
                 _dispatch_io();
                 if (_hook != null && _hook.get()) {
                     throw new Loop.Exit("SIGINT");
