@@ -29,7 +29,7 @@ import org.async.net.Dispatcher;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 
 /**
  * A <code>Loginfo</code> implementation that logs netstrings to a server.
@@ -56,12 +56,12 @@ public class Netlog implements Function, Loginfo {
         public final void handleClose() throws Throwable {
             if (!_fifoOut.isEmpty()) {
                 _bufferOut.clear();
-                connect(_addr); // reconnect on failure ...
+                connect(); // reconnect on failure ...
             }
         }
         public final void push (String data) throws Throwable {
             if (_channel == null) {
-                connect(_addr); // reconnect closed channel ...
+                connect(); // reconnect closed channel ...
             }
             push(Bytes.encode(data, Bytes.UTF8));
         }
@@ -84,18 +84,18 @@ public class Netlog implements Function, Loginfo {
     }
     protected final void _detach () {
         if (_wrapped != null) try { // try to close all channels ...
-            disconnect();
             _loop.setLogger(_wrapped);
+            disconnect();
         } finally { // ... and make sure to break all channel references
             _wrapped = null; 
             _out = _traceback = null;
             _categories = null;
         }
     }
-    public final void connect(SocketAddress addr) throws Throwable {
+    public final void connect(InetSocketAddress addr) throws Throwable {
         _out.connect(addr);
     }
-    public final void connect(SocketAddress addr, String category) 
+    public final void connect(InetSocketAddress addr, String category) 
     throws Throwable {
         if (category.equals("TRACEBACK")) {
             _traceback.connect(addr);

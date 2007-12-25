@@ -59,12 +59,16 @@ public abstract class Stream extends Dispatcher {
         return;
     }
     public final void connect (SocketAddress addr) throws Throwable {
+        _name = getClass().getName() + "@" + addr.toString();
+        _addr = addr;
+        connect();
+    }
+    public final void connect () throws Throwable {
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         _channel = channel;
-        _addr = addr;
         _add();
-        if (channel.connect(addr)) {
+        if (channel.connect(_addr)) {
             _connected = true;
             handleConnect();
         } else {
