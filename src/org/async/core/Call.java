@@ -35,28 +35,27 @@ import java.util.Iterator;
  * concurrent I/O-bound processes, passing a current state to each
  * continuations.
  * 
- * @h3 Not CALL/CC 
+ * @pre ...
+ * 
+ * @h3 Practical coroutines for I/O bound processes 
+ * 
+ * @p Network workflow are statefull processes which depend on I/O. They 
+ * spend most of their time waiting for some input to complete or some 
+ * output to start. The combination of fast non-blocking I/O and slow 
+ * continuations interleaved in one asynchronous loop is simple enough to run 
+ * as fast and reliably as statefull entreprise workflow applications demand. 
  * 
  * @p By name and purpose <code>Call</code> looks like an ugly implementation 
  * of LISP's <a 
  * href="http://community.schemewiki.org/?call-with-current-continuation"
  * >call/cc</a>. Here it is piggy-backed on the simplest behaviour of the  
  * expected from a JVM's garbage collector, but it does nevertheless provides 
- * practical coroutines to <code>AsyncLoop</code> applications (and for 
+ * practical coroutines to <code>org.async</code> applications (and for 
  * nothing else, I'm afraid).
- * 
- * @p Network workflow are statefull processes which depend on I/O. They 
- * spend most of their time waiting for some input to complete or some 
- * output to start. Holding their concurrent workflow state does not require 
- * speed but integrity and it consumes a lot less CPU but RAM.
- * 
- * @p The combination of fast non-blocking I/O and slow continuations
- * interleaved in one asynchronous loop is simple enough to run as fast and 
- * reliably as statefull entreprise workflow applications demand. 
  * 
  */
 public abstract class Call implements Function {
-    protected Object _current = null; // state shared between calls.
+    protected Object _closure = null; // state shared between calls.
     protected Loop _loop = Static.loop;
     public Function continuation = null;
     /**
@@ -70,9 +69,9 @@ public abstract class Call implements Function {
     }
     protected final void cc () throws Throwable {
         if (continuation instanceof Call) {
-            ((Call) continuation)._current = continuation.apply(_current);
+            ((Call) continuation)._closure = continuation.apply(_closure);
         } else {
-            continuation.apply(_current);
+            continuation.apply(_closure);
         }
     }
     public static final Call tail (Call call) {
@@ -86,7 +85,7 @@ public abstract class Call implements Function {
             _loop = loop;
         }
         public final Object apply (Object current) {
-            _current = current;
+            _closure = current;
             return null;
         }
     }

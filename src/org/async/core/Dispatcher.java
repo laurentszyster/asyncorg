@@ -179,20 +179,25 @@ public abstract class Dispatcher extends Call {
      * @throws Throwable
      * 
      * @p The purpose of this method is to handle case were something must be 
-     * done upon the peer closing the connection. For instance, to scavenge a 
-     * dispatcher by creating a new socket:
+     * done upon the peer closing the connection. 
      * 
-     * @pre private SocketAddress addr; 
-     *public final void handleClose() throws Throwable {
-     *    connect(addr);
+     * @p For instance, to scavenge a dispatcher by creating a new socket:
+     * 
+     * @pre public final void handleClose() throws Throwable {
+     *    connect();
      *}
      * 
-     * @p This method may also implement the end of a protocol.
+     * @p This method may also implement the end of a protocol where the
+     * peer is expected to close the connection. Or to handle an unexpected
+     * connection close before the end of a protocol.
      * 
      * @p Note that dispatchers closed by a call to their <code>close</code> 
      * method will not fire this event and therefore not call 
-     * <code>handleClose</code>. To handle the finalization of a dispatcher,
-     * assign a <code>Simple.Function</code> to its <code>continuation</code>.
+     * <code>handleClose</code>. 
+     * 
+     * @p To handle the finalization of a dispatcher, to do something once
+     * it has been closed, assign instead a <code>Simple.Function</code> to 
+     * its <code>continuation</code>.
      */
     public abstract void handleClose() throws Throwable;
     /**
