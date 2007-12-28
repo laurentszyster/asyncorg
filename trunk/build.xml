@@ -5,7 +5,7 @@
     <jar 
       jarfile="asyncorg-${version}-bin.jar" 
       basedir="bin"
-      includes="org/async/simple org/async/core org/async/chat org/async/net"
+      includes="org/async/simple/** org/async/core/** org/async/chat/** org/async/net/**"
       />
     <copy file="asyncorg-${version}-bin.jar" tofile="lib/asyncorg.jar"/>
   </target>
