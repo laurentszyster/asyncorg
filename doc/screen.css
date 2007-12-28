@@ -1,0 +1,96 @@
+button { 
+    font-weight: bold; color: #fff; background-color: #dde; 
+    cursor: pointer;
+    text-decoration: none;
+    }
+
+pre {
+    background-color: #eee;
+    padding: 1.5em;
+    margin-bottom: 1.5em; 
+    }
+
+a { color: #66f; text-decoration: none; }
+a:visited { color: #66f; }
+a:hover { color: #33f; text-decoration: underline; }
+a:active { color: #33f; }
+
+input, textarea, button {
+    font-size: 1em;
+    font-family: 
+        "Helvetica Neue", "Lucida Grande", Helvetica, Arial, Verdana, 
+        sans-serif; 
+    border: none;
+    padding: 0em 0em 0em 0em;
+    margin: 0em 0em 0em 0em;
+} 
+input, textarea { background-color:#fff; }
+textarea { 
+    font-family: 
+       'courier new', 'andale mono', 'monotype.com', 'lucida console', 
+       monospace; 
+    font-size: 1.5;
+    line-height: 1.5;
+}
+
+button {
+    background-color: #cce; 
+	color: #fff;
+	font-weight: bold;
+	}
+button:hover { 
+    background-color: #99f; color: #fff; 
+}
+button:active { 
+    background-color: #66f; color: #fff; 
+}
+
+.print {display: none;}
+.container { margin-left: 30px;}
+.strong { font-weight: bold; }
+.field { float: left; }
+
+div.error { background-color: #fee; padding: 1.5em; margin-bottom: 1.5em; }
+div.error pre { background-color: #fee; padding: 0em; margin: 1.5em 0 0 0; }
+
+#Subject { height: 100%; }
+
+input.number { text-align: right; }
+input.error { background-color: #ffd; }
+textarea.error { background-color: #ffd; }
+
+a.action { text-decoration: none; cursor: pointer; }
+span.action { text-decoration: none; cursor: pointer; }
+div.actions { text-align: right; }
+
+div.form { padding: 1.5em 20px 1.5em 20px; background-color: #eef; }
+div.field { float: left; }
+
+button.disabled { background-color: #ddd; }
+button.disabled:hover { background-color: #ddd; color: #fff; }
+button.disabled:active { background-color: #ddd; color: #fff; }
+
+h2 input { width: 100%; }
+
+div.actions span.action { color: #99f; }
+div.actions span.action:hover { color: #66f; }
+
+div.column button, 
+div.column input.pcre, 
+div.column input.number, 
+div.column textarea.string,
+div.column textarea.null {
+    width: 100%;
+    }
+div.column textarea.string,
+div.column textarea.null {
+    height: 100%;
+    }
+div.box input, 
+div.box textarea { 
+    background-color: #fff; 
+    }
+
+div.column input.boolean { width: 20px; }
+
+div.box div.actions {margin-top: 1em;}

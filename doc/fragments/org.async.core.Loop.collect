@@ -1,0 +1,2 @@
+<div class="javaMethods"><h2>Loop</h2><div><h3><span class="javaMethod public final">collect</span> () → boolean</h3><p>Collect the VM's garbage and returns wether <code>Call</code>s
+ were collected or not.</p><dl><di></di><di><dt>Return</dt><dd><code>true</code> if <code>Call</code>s were collected</dd></di></dl><hr></hr></div></div>

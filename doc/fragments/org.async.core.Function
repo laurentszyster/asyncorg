@@ -1,0 +1,6 @@
+<div class="javaInterface"><h2>Function</h2><p>The simplest possible first class function in Java.</p><h3>Synopsis</h3><p>...</p><pre>Function print = new Function () {
+    public Object apply (Object input) throws Throwable {
+        System.out(argument.toString());
+    }
+};
+print.apply(&quot;hello functional world!&quot;);</pre><p>...</p></div>

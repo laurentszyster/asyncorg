@@ -1,0 +1,3 @@
+<div class="javaPackage"><h2>Package Overview</h2><h3>Implementations</h3><dl><di><dt>Strings</dt><dd></dd></di><di><dt>Objects</dt><dd>Functional conveniences to extend <code>List</code>, update <code>Map</code> 
+ and iterate through list and map values using <code>Object</code> arrays.</dd></di><di><dt>FileClassLoader</dt><dd>A really simple class file loader, for applications that need to reload
+ simple parts or restrict loadable classes to a filesystem path.</dd></di><di><dt>Bytes</dt><dd>Functional conveniences to support 8-bit bytes protocols.</dd></di></dl></div>

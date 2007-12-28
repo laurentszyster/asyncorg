@@ -1,0 +1,2 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public abstract">handleConnect</span> ()</h3><p>Handle a connect event, when the dispatcher's socket is connected
+ to its peer.</p><dl><di></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><hr></hr></div></div>

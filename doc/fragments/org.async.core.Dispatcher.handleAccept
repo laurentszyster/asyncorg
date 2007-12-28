@@ -1,0 +1,2 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public abstract">handleAccept</span> ()</h3><p>Handle an accept event, when the dispatcher is readable and its
+ listening socket .</p><dl><di></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><p>Note that this method is not expected</p><hr></hr></div></div>

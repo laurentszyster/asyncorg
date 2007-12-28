@@ -1,0 +1,5 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public final">recv</span> (buffer) → int</h3><p>Try to read from this dispatcher's socket, fill a byte buffer, account
+ and return the number of bytes received or -1 if a close event was
+ signaled by the socket.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>ByteBuffer</code> - <span>buffer</span> <span>to read into</span></div></dd></di><di><dt>Return</dt><dd>the number of bytes received, -1 if the dispatcher was closed</dd></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><p>Note that this method may <code>close</code> the dispatcher and 
+ call its <code>handleClose</code> method if an <code>IOException</code> 
+ occurs or a close event was signaled by the socket.</p><hr></hr></div></div>

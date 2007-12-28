@@ -1,0 +1,1 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public final">connected</span> () → boolean</h3><p>Find out wether this dispatcher is connected or not.</p><dl><di></di><di><dt>Return</dt><dd>true if the dispatcher is connected</dd></di></dl><hr></hr></div></div>

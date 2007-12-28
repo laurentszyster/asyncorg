@@ -1,0 +1,2 @@
+<div class="javaMethods"><h2>Scheduled</h2><div><h3><span class="javaMethod public final">compareTo</span> (object) → int</h3><p>Compare this event's scheduled time to another one.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>Object</code> - <span>object</span> <span>to compare</span></div></dd></di><di><dt>Return</dt><dd>-1, 1 and 0 if this event is scheduled before, after or at the
+         time as the one compared to</dd></di></dl><hr></hr></div></div>

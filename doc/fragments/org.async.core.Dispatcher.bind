@@ -1,0 +1,3 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public final">bind</span> (address)</h3><p>Set the dispatcher address, update the dispatcher's name to the
+ address string representation and try to bind a socket to that
+ address.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>SocketAddress</code> - <span>address</span> <span>to bind to</span></div></dd></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><hr></hr></div><div><h3><span class="javaMethod public final">bind</span> ()</h3><p>Bind this dispatcher to its socket current address.</p><dl><di></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><hr></hr></div></div>

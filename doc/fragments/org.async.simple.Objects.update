@@ -1,0 +1,8 @@
+<div class="javaMethods"><h2>Objects</h2><div><h3><span class="javaMethod public static final">update</span> (map, pairs) → Map</h3><p>Update a <code>Map</code> with the keys and values sequence found in
+ an even <code>Object</code> array.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>Map</code> - <span>map</span> <span>to update</span></div><div class="parameter"><code>java.lang.Object[]</code> - <span>pairs</span> <span>of key and value to add</span></div></dd></di><di><dt>Return</dt><dd>the updated <code>Map</code></dd></di></dl><pre>HashMap map = Simple.update(new HashMap(), new Object[]{
+     &quot;A&quot;, &quot;test&quot;, 
+     &quot;B&quot;, true, 
+     &quot;C&quot;: new Integer(1), 
+     &quot;D&quot;, false
+     });</pre><p>This method is convenient to instanciate or update dictionaries 
+ with a clearer syntax than using a sequence of <code>Map.put</code>.</p><hr></hr></div></div>
