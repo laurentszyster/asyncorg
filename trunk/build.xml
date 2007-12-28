@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="asyncorg" default="jar">
+  <property file="packages.properties"/>
+  <target name="jar">
+    <jar 
+      jarfile="asyncorg-${version}-bin.jar" 
+      basedir="bin"
+      includes="org/async/simple org/async/core org/async/chat org/async/net"
+      />
+    <copy file="asyncorg-${version}-bin.jar" tofile="lib/asyncorg.jar"/>
+  </target>
+  <target name="doc">
+    <delete dir="doc/fragments"/>
+    <delete dir="doc/tests"/>
+    <javadoc 
+      docletpath="lib/asyncorg.jar;lib/less4j-protocols.jar;lib/smalljs.jar;lib/xp.jar"
+      doclet="org.less4j.protocols.Doctest"
+      packagenames="org.async.simple, org.async.core, org.async.chat, org.async.net" 
+      source="1.4" 
+      sourcepath="src" 
+      classpath="lib/less4j-protocols.jar;lib/smalljs.jar;lib/xp.jar;lib/servlet-api.jar;/jdk1.5.0_11/lib/tools.jar" 
+      access="public" 
+      >
+    </javadoc>
+  </target>
+</project>
