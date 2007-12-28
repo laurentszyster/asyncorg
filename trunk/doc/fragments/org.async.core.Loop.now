@@ -1,0 +1,1 @@
+<div class="javaMethods"><h2>Loop</h2><div><h3><span class="javaMethod public final">now</span> () → long</h3><p>Return this loop's current time in milliseconds.</p><dl><di></di><di><dt>Return</dt><dd>a time in milliseconds</dd></di></dl><hr></hr></div></div>

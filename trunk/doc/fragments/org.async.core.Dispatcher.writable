@@ -1,0 +1,3 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public abstract">writable</span> () → boolean</h3><p>Sets the writable status of this dispatcher in its loop's selector.</p><dl><di></di><di><dt>Return</dt><dd><code>true</code> if the dispatcher is writable.</dd></di></dl><pre>public final int writable() {
+    return true;
+}</pre><hr></hr></div></div>

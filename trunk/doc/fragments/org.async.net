@@ -1,0 +1,1 @@
+<div class="javaPackage"><h2>Package Overview</h2><h3>Interfaces</h3><dl><di><dt>Collector</dt><dd></dd></di></dl><h3>Implementations</h3><dl><di><dt>Dispatcher</dt><dd>A <code>Stream</code> dispatcher implementation for <a href="http://cr.yp.to/protocols/netstring.txt">netstring</a> applications.</dd></di></dl></div>

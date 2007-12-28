@@ -1,0 +1,18 @@
+#javadocSidebar {display: none;}
+
+table.tags { 
+	width: 100%; 
+	}
+tr.return > td:first-child {
+	font-weight: bold;
+	}
+tr.throws > td:first-child {
+	font-style: italic;
+	}
+div.synopsis, div.test {
+	white-space: pre; 
+	font-family: 'Courier New', 'Courier', Fixed;
+	background-color: #EEEEEE;
+    padding: 1.5em;
+    margin-bottom: 1.5em;
+	}

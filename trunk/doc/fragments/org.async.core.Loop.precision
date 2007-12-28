@@ -1,0 +1,4 @@
+<div class="javaMethods"><h2>Loop</h2><div><h3><span class="javaMethod public final">precision</span> () → int</h3><p>...</p><dl><di></di><di><dt>Return</dt><dd></dd></di></dl><p>A measure of this loop's precision, set by default to 100ms.
+ It is used by the loop to sleep that much whenever there are no I/O
+ to dispatch, keeping the loop from exhausting the CPU when there are
+ no I/O to handle.</p><hr></hr></div></div>

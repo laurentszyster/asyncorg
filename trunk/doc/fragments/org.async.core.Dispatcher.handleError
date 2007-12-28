@@ -1,0 +1,4 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public">handleError</span> (error)</h3><p>Handle anything throwed by an I/O handler and catched in 
+ <code>Async.dispatch</code>, by default log a traceback and
+ close the dispatcher.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>Throwable</code> - <span>error</span> <span>throwed by an I/O handler</span></div></dd></di></dl><p>Note that this is the only non-abstract handler method of
+ <code>AsyncCore</code>, one that its applications may not implement.</p><hr></hr></div></div>

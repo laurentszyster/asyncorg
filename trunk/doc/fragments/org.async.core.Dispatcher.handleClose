@@ -1,0 +1,10 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public abstract">handleClose</span> ()</h3><p>Handle the close event, when a peer closes a readable connection.</p><dl><di></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><p>The purpose of this method is to handle case were something must be 
+ done upon the peer closing the connection.</p><p>For instance, to scavenge a dispatcher by creating a new socket:</p><pre>public final void handleClose() throws Throwable {
+    connect();
+}</pre><p>This method may also implement the end of a protocol where the
+ peer is expected to close the connection. Or to handle an unexpected
+ connection close before the end of a protocol.</p><p>Note that dispatchers closed by a call to their <code>close</code> 
+ method will not fire this event and therefore not call 
+ <code>handleClose</code>.</p><p>To handle the finalization of a dispatcher, to do something once
+ it has been closed, assign instead a <code>Simple.Function</code> to 
+ its <code>continuation</code>.</p><hr></hr></div></div>

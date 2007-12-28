@@ -1,0 +1,3 @@
+<div class="javaMethods"><h2>Loop</h2><div><h3><span class="javaMethod public final">dispatch</span> ()</h3><p>Loop until all network I/O, events in time and continuations are
+ dispatched or an <code>Loop.Exit</code> exception is throwed
+ and not catched.</p><dl><di></di></dl><hr></hr></div></div>

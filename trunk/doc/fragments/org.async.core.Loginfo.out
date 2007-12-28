@@ -1,0 +1,1 @@
+<div class="javaMethods"><h2>Loginfo</h2><div><h3><span class="javaMethod public">out</span> (message)</h3><p>Logs out an uncategorized message string.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>String</code> - <span>message</span> <span>to log out</span></div></dd></di></dl><hr></hr></div></div>

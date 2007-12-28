@@ -1,0 +1,4 @@
+<div class="javaClass"><h2>Dispatcher</h2><p>A base abstract class for all dispatchers in <code>org.async</code>.</p><div><h3><span class="javaConstructor public">Dispatcher</span> ()</h3><p>Create a new dispatcher to be added to the <code>Static.loop</code>.</p><dl><di></di></dl><hr></hr></div><div><h3><span class="javaConstructor public">Dispatcher</span> (loop)</h3><p>Create a new dispatcher to be added to a given <code>Loop</code>.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>Loop</code> - <span>loop</span> <span>of this dispatcher</span></div></dd></di></dl><hr></hr></div><h3>Note</h3><p>This class provides a (much) more concise and practical API than 
+ <code>java.nio.channels</code>, without the complications required by the 
+ presence of threads. Note that it comes with the basic meters demanded by 
+ inactivity timeouts, bandwith throttling and I/O accounting.</p></div>

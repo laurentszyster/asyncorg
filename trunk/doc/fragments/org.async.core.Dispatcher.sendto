@@ -1,0 +1,2 @@
+<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public final">sendto</span> (ByteBuffer, SocketAddress) → int</h3><p>Try to write a buffer's content to a given address, account
+ and return the number of bytes sent.</p><dl><di><dt>Parameters</dt><dd></dd></di><di><dt>Return</dt><dd>the number of bytes sent</dd></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><hr></hr></div></div>

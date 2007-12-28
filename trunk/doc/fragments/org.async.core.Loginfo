@@ -1,0 +1,14 @@
+<div class="javaInterface"><h2>Loginfo</h2><p>A logger interface for unobtrusive and flexible logging.</p><h3>Synopsis</h3><p>By default all loops use the default logger implemented above,
+ logging CRLF delimited lines, uncategorized messages to STDOUT,
+ categorized messages and tracebacks to STDERR.</p><pre>private static final class _STDOE implements Loginfo {
+    public final void out (String message) {
+        System.out.println(message);
+    }
+    public final void err (String category, String message) {
+        System.err.println(category + &quot; &quot; + message);
+    }
+    public final void traceback (Throwable error) {
+        error.printStackTrace(System.err);
+    }
+}</pre><p>Instances of <code>Loginfo</code> implementations are attached to a 
+ <code>Loop</code> using its <code>setLogger</code> method.</p><pre>Static.loop.setLogger(new _STDOE());</pre><p>...</p></div>

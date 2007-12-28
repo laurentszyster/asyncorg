@@ -1,0 +1,20 @@
+<div class="javaMethods"><h2>Strings</h2><div><h3><span class="javaMethod public static final">split</span> (text, pattern) → Iterator</h3><p>Returns an <code>Iterator</code> that splits a string with a single
+ character as fast an lean as possible in Java (without a PCRE and
+ for a maybe too simple use case).</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>String</code> - <span>text</span> <span>to split</span></div><div class="parameter"><code>char</code> - <span>pattern</span> <span>used to split input</span></div></dd></di><di><dt>Return</dt><dd>an <code>Iterator</code> of <code>String</code></dd></di></dl><pre>Iterator strings = Simple.split(&quot;one two three&quot;, ' ');</pre><div class="test"><pre>strings = Simple.split(&quot;one two three&quot;, ' ');
+return (
+    strings.next() == &quot;one&quot; &amp;&amp;
+    strings.next() == &quot;two&quot; &amp;&amp;
+    strings.next() == &quot;three&quot;
+    );</pre><div class="error">ReferenceError: &quot;Simple&quot; n'est pas défini (9b14e8e590cf221fd3b3b8359a76e4ffe8971ee5#4)</div></div><hr></hr></div><div><h3><span class="javaMethod public static final">split</span> (text, pattern) → Iterator</h3><p>Returns an <code>Iterator</code> that splits a string with a regular
+ expression but - unlike the standard Java API and like Python's re - 
+ does the right thing and also iterates through the expression groups.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>String</code> - <span>text</span> <span>to split</span></div><div class="parameter"><code>Pattern</code> - <span>pattern</span> <span>used to split input</span></div></dd></di><di><dt>Return</dt><dd>an <code>Iterator</code> of <code>String</code></dd></di></dl><pre>Iterator strings = Simple.split(
+    &quot;one\t  and  \r\n three&quot;, Pattern.compile(&quot;\\s+(and|or)\\s+&quot;)
+    );</pre><div class="test"><pre>importClass(Packages.java.util.regex.Pattern)
+strings = Simple.split(
+    &quot;one\t  and  \r\n three&quot;, Pattern.compile(&quot;\\s+(and|or)\\s+&quot;)
+    );
+return (
+    strings.next() == &quot;one&quot; &amp;&amp;
+    strings.next() == &quot;and&quot; &amp;&amp;
+    strings.next() == &quot;three&quot;
+    );</pre><div class="error">ReferenceError: &quot;Simple&quot; n'est pas défini (f6a2a053065fd9d4cccf2cdbdb2cbd95360ff3bd#5)</div></div><hr></hr></div></div>

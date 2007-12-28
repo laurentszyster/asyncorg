@@ -1,0 +1,1 @@
+<div class="javaMethods"><h2>Loginfo</h2><div><h3><span class="javaMethod public">traceback</span> (error)</h3><p>Logs an exception traceback.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>Throwable</code> - <span>error</span> <span>throwed</span></div></dd></di></dl><hr></hr></div></div>
