@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 
 import org.async.core.Loop;
 import org.async.core.Stream;
-import org.async.protocols.Netstring;
 
 /**
  * A <code>Stream</code> dispatcher implementation for <a 
@@ -36,6 +35,19 @@ import org.async.protocols.Netstring;
  * of netstring client and server channels. 
  */
 public abstract class Dispatcher extends Stream {
+    
+    private static final String 
+    ERROR_UNEXPECTED_END = "unexpected netstring end";
+    
+    private static final String 
+    ERROR_INVALID_PROLOGUE = "invalid netstring prologue"; 
+    
+    private static final String 
+    ERROR_INVALID_EPILOGUE = "missing comma";
+    
+    private static final String 
+    ERROR_TOO_LONG = "too long netstring";
+    
     protected int _terminator = 0;
     protected int _limit = 10;
     protected Collector _collector;
@@ -90,7 +102,7 @@ public abstract class Dispatcher extends Stream {
                     return;
                 }
             } else {
-                throw new Exception(Netstring.ERROR_INVALID_EPILOGUE);
+                throw new Exception(ERROR_INVALID_EPILOGUE);
             }
             prev = _terminator;
         } else {
@@ -105,13 +117,13 @@ public abstract class Dispatcher extends Stream {
                 if (c == 58) {
                     break; 
                 } else if (c < 48 || c > 57) {
-                    throw new Exception(Netstring.ERROR_INVALID_PROLOGUE); 
+                    throw new Exception(ERROR_INVALID_PROLOGUE); 
                 } else {
                     digits[i] = c;
                 }
             }
             if (i == _limit) {
-                throw new Exception(Netstring.ERROR_TOO_LONG); 
+                throw new Exception(ERROR_TOO_LONG); 
             }
             if (c != 58) { // Not found!
                 break;
@@ -140,7 +152,7 @@ public abstract class Dispatcher extends Stream {
                         return;
                     }
                 } else {
-                    throw new Exception(Netstring.ERROR_INVALID_PROLOGUE); 
+                    throw new Exception(ERROR_INVALID_PROLOGUE); 
                 }
             }
             prev = next;
