@@ -19,8 +19,8 @@
 
 package org.async.chat;
 
-import org.async.core.Bytes;
 import org.async.core.Stream;
+import org.async.simple.Bytes;
 
 import java.nio.ByteBuffer;
 

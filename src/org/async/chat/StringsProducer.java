@@ -19,7 +19,7 @@
 
 package org.async.chat;
 
-import org.async.core.Static;
+import org.async.simple.Objects;
 
 import java.util.Iterator;
 
@@ -29,6 +29,7 @@ import java.util.Iterator;
  * 
  */
 public class StringsProducer implements Producer {
+    // TODO: replace by a less naive encoder ...
     protected Iterator _strings;
     protected String _encoding;
     public StringsProducer(Iterator strings, String encoding) {
@@ -63,6 +64,6 @@ public class StringsProducer implements Producer {
      */
     public static final 
     StringsProducer wrap (String[] strings, String encoding) {
-        return new StringsProducer(Static.iter(strings), encoding);
+        return new StringsProducer(Objects.iter(strings), encoding);
     }
 }

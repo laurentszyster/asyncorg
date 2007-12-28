@@ -120,27 +120,12 @@ public final class Loop {
     protected LinkedList _continued =  new LinkedList();
     
     protected Loginfo _log = _stdoe;
-    /**
-     * A measure of this loop's precision, set by default to 100 milliseconds.
-     * It is used by the loop to sleep that much whenever there are no I/O
-     * to dispatch and as a timeout for its I/O selector otherwise. 
-     */
     protected int _precision = 100;
     /**
      * The number of readable or writable dispatchers in the last run of
      * this loop. 
      */
     protected int _concurrent = 0;
-    /**
-     * A limit on the maximum of <code>AsyncCore</code> dispatchers that can 
-     * be registered concurrently in this loop's selector. By default it
-     * is set to 512, a common limit set by some OS on the number of file
-     * descriptors passed to the <code>select</code> call.
-     * 
-     * @pre loop.concurrency = 4096;
-     * 
-     * @p Note that setting <code>concurrency</code> to 
-     */
     protected int _concurrency = 512;
     /**
      * The list of <code>Function</code> applied when an <code>Exit</code> 
@@ -149,47 +134,111 @@ public final class Loop {
     public ArrayList exits = new ArrayList();
     
     /**
+     * ...
      * 
-     * @pre AsyncLoop.loop = new AsyncLoop();
-     * loop.schedule(new Scheduled())
-     *
+     * @pre Loop.loop = new Loop();
+     * 
      */
     public Loop () {
         _now = System.currentTimeMillis();
     }
+    /**
+     * Hook this loop's exit to the JVM shutdown procedure and enable a
+     * gracefull shutdown signaled by SIGINT (aka CTRL-C).
+     * 
+     */
     public final void hookShutdown () {
         _hook = new ShutdownHook();
     }
-    public final Loginfo setLogger(Loginfo log) {
+    /**
+     * Set this loop's <code>Loginfo</code> logger or reset it to the default
+     * implementation (i.e.: STDOUT and STDERR) if the logger is 
+     * <code>null</code>, return the previous logger.
+     * 
+     * @param logger to set, null to reset the default
+     * @return the previous logger
+     */
+    public final Loginfo setLogger(Loginfo logger) {
         Loginfo previous = _log;
-        if (log == null) {
+        if (logger == null) {
             _log = _stdoe;
         } else {
-            _log = log;
+            _log = logger;
         }
         return previous;
     }
-    public final void setPrecision (int milliseconds) throws Error {
+    /**
+     * Set this loop's precision in milliseconds and return the previous 
+     * precision.
+     * 
+     * @param milliseconds of precision
+     * @return the previous precision
+     * @throws Error if the precision set is lower than 10ms
+     */
+    public final int setPrecision (int milliseconds) throws Error {
         if (milliseconds < 10) {
             throw new Error("Precision lower than 10 milliseconds");
         }
+        int previous = _precision;
         _precision = milliseconds;
+        return previous;
     }
+    /**
+     * Return this loop's current time in milliseconds.
+     * 
+     * @return a time in milliseconds
+     */
     public final long now () {
         return _now;
     }
+    /**
+     * Log a message via this loop's logger.
+     * 
+     * @param message to log out
+     */
     public final void log (String message) {
         _log.out(message);
     }
-    public final void log (String message, String info) {
-        _log.err(message, info);
+    /**
+     * Log a categorized message via this loop's logger.
+     * 
+     * @param category of the message
+     * @param message to log out
+     */
+    public final void log (String category, String message) {
+        _log.err(category, message);
     }
-    public final void log (Throwable exception) {
-        _log.traceback(exception);
+    /**
+     * Log a throwable's stack trace via this loop's logger.
+     * 
+     * @param error to trace back
+     */
+    public final void log (Throwable error) {
+        _log.traceback(error);
     }
+    /**
+     * Get this loop's maximum concurrency level.
+     * 
+     * @return the maximum number of dispatchers selected in a single run 
+     * 
+     * @p A limit on the maximum of dispatchers that can be registered 
+     * concurrently in this loop's selector. By default it is set to 512, 
+     * a common limit set by some OS on the number of file descriptors passed 
+     * to the <code>select</code> call.
+     */
     public final int concurrency () {
         return _concurrency;
     }
+    /**
+     * ...
+     * 
+     * @return
+     * 
+     * @p A measure of this loop's precision, set by default to 100ms.
+     * It is used by the loop to sleep that much whenever there are no I/O
+     * to dispatch, keeping the loop from exhausting the CPU when there are
+     * no I/O to handle. 
+     */
     public final int precision () {
         return _precision;
     }
@@ -204,8 +253,6 @@ public final class Loop {
     /**
      * Schedule a function's application at an approximate time.
      * 
-     * @p See <code>Scheduled.Function</code>.
-     * 
      * @param when in milliseconds
      * @param function to apply
      */
@@ -213,10 +260,10 @@ public final class Loop {
         _scheduled.add(new Scheduled._Function(when, function));
     }
     /**
-     * Schedule a function's appliction in an approximate interval.
+     * Schedule a function's application in an approximate timeout interval.
      * 
-     * @param milliseconds
-     * @param function
+     * @param milliseconds to wait
+     * @param function to apply
      */
     public final void timeout (int milliseconds, Function function) {
         _scheduled.add(new Scheduled._Function(_now + milliseconds, function));
@@ -287,7 +334,7 @@ public final class Loop {
             }
             events.remove();
             try {
-                recurr = event.apply();
+                recurr = event.apply(this);
                 if (recurr > -1) {
                     event.when = recurr;
                     _scheduled.add(event);
@@ -300,10 +347,10 @@ public final class Loop {
         }
     }
     /**
-     * Collect the VM's garbage and returns wether <code>Continuation</code>s
+     * Collect the VM's garbage and returns wether <code>Call</code>s
      * were collected or not.
      * 
-     * @return <code>true</code> if <code>Continuation</code>s were collected
+     * @return <code>true</code> if <code>Call</code>s were collected
      */
     public final boolean collect () {
         System.gc();
@@ -339,7 +386,7 @@ public final class Loop {
     
     /**
      * Loop until all network I/O, events in time and continuations are
-     * dispatched or an <code>AsyncLoop.Exit</code> exception is throwed
+     * dispatched or an <code>Loop.Exit</code> exception is throwed
      * and not catched.
      */
     public final void dispatch () throws Throwable {

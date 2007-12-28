@@ -19,16 +19,29 @@
 package org.async.core;
 
 /**
- * The simplest possible first class of function in Java.
+ * The simplest possible first class function in Java.
  * 
- * @pre class Print extends Function {
+ * @h3 Synopsis
+ * 
+ * @p ...
+ * 
+ * @pre Function print = new Function () {
  *    public Object apply (Object input) throws Throwable {
  *        System.out(argument.toString());
  *    }
- *}  
+ *};
+ *print.apply("hello functional world!");
  *
+ * @p ...
  * 
  */
 public interface Function {
+    /**
+     * Apply the function.
+     * 
+     * @param input of the function
+     * @return an <code>Object</code> or <code>null</code>
+     * @throws Throwable
+     */
     public Object apply (Object input) throws Throwable;
 }

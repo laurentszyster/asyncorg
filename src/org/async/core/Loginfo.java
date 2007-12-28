@@ -21,6 +21,31 @@ package org.async.core;
 
 /**
  * A logger interface for unobtrusive and flexible logging.
+ * 
+ * @h3 Synopsis
+ * 
+ * @p By default all loops use the default logger implemented above,
+ * logging CRLF delimited lines, uncategorized messages to STDOUT,
+ * categorized messages and tracebacks to STDERR.
+ * 
+ * @pre private static final class _STDOE implements Loginfo {
+ *    public final void out (String message) {
+ *        System.out.println(message);
+ *    }
+ *    public final void err (String category, String message) {
+ *        System.err.println(category + " " + message);
+ *    }
+ *    public final void traceback (Throwable error) {
+ *        error.printStackTrace(System.err);
+ *    }
+ *}
+ * 
+ * @p Instances of <code>Loginfo</code> implementations are attached to a 
+ * <code>Loop</code> using its <code>setLogger</code> method. 
+ * 
+ * @pre Static.loop.setLogger(new _STDOE());
+ * 
+ * @p ...
  */
 public interface Loginfo {
     /**
@@ -32,10 +57,10 @@ public interface Loginfo {
     /**
      * Logs a message and category strings.
      * 
-     * @param message to log
      * @param category of the message
+     * @param message to log
      */
-    public void err (String message, String category);
+    public void err (String category, String message);
     /**
      * Logs an exception traceback.
      * 

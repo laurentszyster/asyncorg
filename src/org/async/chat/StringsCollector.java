@@ -21,6 +21,7 @@ package org.async.chat;
 
 
 public class StringsCollector implements Collector {
+    // TODO: replace by a less naive decoder ...
     protected StringBuffer _buffer;
     protected String _encoding;
     public StringsCollector (StringBuffer buffer, String encoding) {
@@ -28,7 +29,7 @@ public class StringsCollector implements Collector {
         _encoding = encoding;
     }
     public void handleData(byte[] data) throws Throwable {
-        _buffer.append(new String(data, _encoding));
+        _buffer.append(new String(data, _encoding)); 
     }
     public boolean handleTerminator() throws Throwable {
         _buffer = null;

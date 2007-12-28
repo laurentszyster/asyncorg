@@ -19,7 +19,7 @@
 
 package org.async.chat;
 
-import org.async.core.Static;
+import org.async.simple.Objects;
 
 import java.util.Iterator;
 
@@ -58,6 +58,6 @@ public class BytesProducer implements Producer {
      */
     public static final 
     BytesProducer wrap (byte[][] bytes) {
-        return new BytesProducer(Static.iter(bytes));
+        return new BytesProducer(Objects.iter(bytes));
     }
 }

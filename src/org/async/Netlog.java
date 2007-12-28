@@ -19,13 +19,13 @@
 
 package org.async;
 
-import org.async.core.Bytes;
 import org.async.core.Loop;
 import org.async.core.Static;
 import org.async.core.Loginfo;
 import org.async.core.Function;
 import org.async.net.Collector;
 import org.async.net.Dispatcher;
+import org.async.simple.Bytes;
 
 import java.util.HashMap;
 import java.util.Iterator;

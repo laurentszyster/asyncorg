@@ -21,10 +21,10 @@ package org.async;
 
 import org.async.core.Static;
 import org.async.core.Listen;
-import org.async.core.Netstring;
 
 import org.async.net.Collector;
 import org.async.net.Dispatcher;
+import org.async.protocols.Netstring;
 
 import java.net.InetSocketAddress;
 
