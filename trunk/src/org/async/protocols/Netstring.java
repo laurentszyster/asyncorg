@@ -17,7 +17,7 @@
  *  
  */
 
-package org.async.core;
+package org.async.protocols;
 
 import java.util.Iterator;
 import java.util.ArrayList;
@@ -30,6 +30,8 @@ import java.io.UnsupportedEncodingException;
 
 import java.nio.ByteBuffer;
 import java.nio.BufferOverflowException;
+
+import org.async.simple.Bytes;
 
 /**
  * Functional conveniences to support <a 

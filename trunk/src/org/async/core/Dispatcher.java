@@ -19,6 +19,9 @@
 
 package org.async.core;
 
+import java.nio.ByteBuffer;
+import java.nio.channels.ByteChannel;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
@@ -31,13 +34,12 @@ import java.io.IOException;
 /**
  * A base abstract class for all dispatchers in <code>org.async</code>.
  * 
- * @p This class provides a (much) more concise and practical API than what 
- * <code>java.nio.channels</code> offers for asynchronous socket, without the 
- * complications required by the presence of threads and the absence
- * of the good multiplexing couple provided by <code>AsyncLoop</code>.
+ * @h3 Note
  * 
- * @p It comes with the basic meters demanded by inactivity timeouts, bandwith 
- * throttling and I/O accounting.
+ * @p This class provides a (much) more concise and practical API than 
+ * <code>java.nio.channels</code>, without the complications required by the 
+ * presence of threads. Note that it comes with the basic meters demanded by 
+ * inactivity timeouts, bandwith throttling and I/O accounting.
  * 
  */
 public abstract class Dispatcher extends Call {
@@ -49,6 +51,9 @@ public abstract class Dispatcher extends Call {
     protected AbstractSelectableChannel _channel = null;
     protected SelectionKey _key = null;
     protected String _name;
+    protected int _writable = SelectionKey.OP_WRITE;
+    protected int _readable = SelectionKey.OP_READ;
+    protected boolean _connected = false;
     protected final void _add () {
         _loop._dispatched.put(this._name, this);
     }
@@ -59,9 +64,6 @@ public abstract class Dispatcher extends Call {
         _key.attach(null);
         _key = null;
     }
-    protected int _writable = SelectionKey.OP_WRITE;
-    protected int _readable = SelectionKey.OP_READ;
-    protected boolean _connected = false;
     protected final void _handle () throws Loop.Exit {
         try {
             if (_key.isConnectable() && !_connected) {
@@ -92,27 +94,231 @@ public abstract class Dispatcher extends Call {
     // 
     // Application Programming Interfaces
     //
+    /**
+     * Time in milliseconds at which the <code>Dispatcher</code> was
+     * instanciated.
+     */
+    public long when;
+    /**
+     * Time in milliseconds at which the last call to <code>recv</code> or
+     * <code>recvfrom</code> was made, or <code>-1</code> if none were
+     * ever made.
+     */
     public long whenIn = -1;
+    /**
+     * Time in milliseconds at which the last call to <code>send</code> or
+     * <code>sendto</code> was made, or <code>-1</code> if none were
+     * ever made.
+     */
     public long whenOut = -1;
+    /**
+     * Number of bytes received.
+     */
     public long bytesIn = 0;
+    /**
+     * Number of bytes sent.
+     */
     public long bytesOut = 0;
+    /**
+     * Create a new dispatcher to be added to the <code>Static.loop</code>.
+     *
+     */
     public Dispatcher () {
         _name = this.toString();
+        when = Static.loop._now;
     }
+    /**
+     * Create a new dispatcher to be added to a given <code>Loop</code>.
+     *
+     * @param loop of this dispatcher
+     */
     public Dispatcher(Loop loop) {
         _name = this.toString();
         this._loop = loop;
+        when = loop._now;
     }
-    public final boolean connected () {
-        return _connected;
-    }
+    /**
+     * Log a message to this dispatcher's loop logging interface, categorized
+     * by this dispatcher's name.
+     * 
+     * @param message to log
+     */
     public final void log (String message) {
         _loop.log(_name, message);
     }
+    /**
+     * Log an error message categorized by this dispatcher's name and log
+     * the error's traceback.
+     * 
+     * @param error to log
+     */
     public final void log (Throwable error) {
         _loop.log(_name, error.getMessage());
         _loop.log(error);
     }
+    /**
+     * Find out wether this dispatcher is connected or not.
+     * 
+     * @return true if the dispatcher is connected
+     */
+    public final boolean connected () {
+        return _connected;
+    }
+    /**
+     * Set the dispatcher address, update the dispatcher's name to the
+     * address string representation and try to connect a socket to that
+     * address.
+     * 
+     * @param address to connect
+     * @throws Throwable
+     */
+    public final void connect (SocketAddress address) throws Throwable {
+        _name = getClass().getName() + "@" + address.toString();
+        _addr = address;
+        connect();
+    }
+    /**
+     * Try to connect to this dispatcher's current address.
+     * 
+     * @throws Throwable
+     */
+    public final void connect () throws Throwable {
+        SocketChannel channel = SocketChannel.open();
+        channel.configureBlocking(false);
+        _channel = channel;
+        _add();
+        if (channel.connect(_addr)) {
+            _connected = true;
+            handleConnect();
+        } else {
+            _writable = SelectionKey.OP_CONNECT;
+        }
+    }
+    /**
+     * Try to read from this dispatcher's socket, fill a byte buffer, account
+     * and return the number of bytes received or -1 if a close event was
+     * signaled by the socket. 
+     * 
+     * @param buffer to read into
+     * @return the number of bytes received, -1 if the dispatcher was closed
+     * @throws Throwable
+     * 
+     * @p Note that this method may <code>close</code> the dispatcher and 
+     * call its <code>handleClose</code> method if an <code>IOException</code> 
+     * occurs or a close event was signaled by the socket.
+     * 
+     */
+    public final int recv (ByteBuffer buffer) throws Throwable {
+        int received = -1;
+        try {
+            received = ((ByteChannel) _channel).read(buffer);
+        } catch (IOException e) {
+            // ... simply close on IOException
+        }
+        if (received == -1) {
+            close();
+            handleClose();
+        } else if (received > 0) {
+            bytesIn = bytesIn + received;
+            whenIn = _loop._now;
+        }
+        return received;
+    }
+    /**
+     * Try to write a buffer's remaining to this dispatcher's socket, account
+     * and return the number of bytes sent. 
+     * 
+     * @param buffer to write from
+     * @return the number of bytes sent
+     * @throws Throwable
+     */
+    public final int send (ByteBuffer buffer) throws Throwable {
+        int sent = ((ByteChannel) _channel).write(buffer);
+        if (sent > 0) {
+            bytesOut = bytesOut + sent;
+            whenOut = _loop._now;
+        }
+        return sent;
+    }
+    /**
+     * Set the dispatcher address, update the dispatcher's name to the
+     * address string representation and try to bind a socket to that
+     * address.
+     * 
+     * @param address to bind to
+     * @throws Throwable
+     */
+    public final void bind (SocketAddress address) throws Throwable {
+        _addr = address;
+        _name = getClass().getName() + "@" + address.toString();
+        bind();
+    }
+    /**
+     * Bind this dispatcher to its socket current address.
+     * 
+     * @param address to bind to
+     * @throws Throwable
+     */
+    public final void bind () throws Throwable {
+        DatagramChannel channel = DatagramChannel.open();
+        channel.configureBlocking(false);
+        channel.socket().bind(_addr);
+        _channel = channel;
+        _add();
+    }
+    /**
+     * Try to read a datagram from this dispatcher's socket into a byte 
+     * buffer, account the number of bytes received and return the address 
+     * of the peer or null if no datagram was available. 
+     * 
+     * @param buffer to read into
+     * @return the <code>SocketAddress</code> of the sending peer or null
+     * @throws Throwable
+     * 
+     * @p Note that this method may <code>close</code> the dispatcher and 
+     * call its <code>handleClose</code> method if an <code>IOException</code> 
+     * occurs.
+     * 
+     */
+    public final SocketAddress recvfrom (ByteBuffer buffer) 
+    throws Throwable {
+        SocketAddress from = null;
+        int start = buffer.position();
+        try {
+            from = ((DatagramChannel) _channel).receive(buffer);
+        } catch (IOException e) {
+            close();
+            handleClose();
+        }
+        if (from != null) { // read event & nothing to read ? 
+            int received = buffer.position() - start;
+            if (received > 0) {
+                bytesIn = bytesIn + received;
+                whenIn = _loop._now;
+            }
+        }
+        return from;
+    }
+    /**
+     * Try to write a buffer's content to a given address, account
+     * and return the number of bytes sent. 
+     * 
+     * @param buffer to write from
+     * @return the number of bytes sent
+     * @throws Throwable
+     */
+    public final int sendto (ByteBuffer buffer, SocketAddress addr) 
+    throws Throwable {
+        int sent = ((DatagramChannel) _channel).send(buffer, addr);
+        if (sent > 0) {
+            bytesOut = bytesOut + sent;
+            whenOut = _loop._now;
+        }
+        return sent;
+    }
+    /**
+     * Try to close this dispatcher's socket or log an error traceback.
+     */
     public final void close () {
         try {
             _channel.close();

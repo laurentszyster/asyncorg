@@ -20,33 +20,10 @@
 package org.async.core;
 
 
-import java.util.Iterator;
 
 public final class Static {
     /**
      * Convenience for the common application case where one loop is enough.
      */
     public static Loop loop = new Loop();
-    
-    // TODO: move to Utils ?
-    
-    protected static class ObjectIterator implements Iterator {
-        private Object[] _objects;
-        private int _index = -1;
-        public ObjectIterator (Object[] objects) {
-            _objects = objects;
-        }
-        public boolean hasNext () {
-            return _index + 1 < _objects.length;
-        }
-        public Object next () {
-            _index++; return _objects[_index];
-        }
-        public void remove () {
-            /* optional interface? what else now ...*/
-        }
-    }
-    public static final Iterator iter (Object[] items) {
-        return new ObjectIterator(items);
-    }
 }

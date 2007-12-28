@@ -19,11 +19,24 @@
 
 package org.async.core;
 
-
+/**
+ * ...
+ * 
+ */
 public abstract class Scheduled implements Comparable {
+    /**
+     * The time at which this event was scheduled, in milliseconds.
+     */
     public long when = 0;
-    public final int compareTo (Object o) {
-        Scheduled event = (Scheduled) o;
+    /**
+     * Compare this event's scheduled time to another one.
+     * 
+     * @param object to compare
+     * @return -1, 1 and 0 if this event is scheduled before, after or at the
+     *         time as the one compared to 
+     */
+    public final int compareTo (Object object) {
+        Scheduled event = (Scheduled) object;
         if (when < event.when) {
             return -1;
         } else if (when > event.when) {
@@ -32,14 +45,41 @@ public abstract class Scheduled implements Comparable {
             return 0;
         }
     };
-    public abstract long apply () throws Throwable;
+    /**
+     * The scheduled method to implement.
+     * 
+     * @return the time at which this event recur, or -1 if it does not
+     * @throws Throwable
+     * 
+     * @p ...
+     * 
+     * @pre public long apply(Loop loop) throws Throwable {
+     *    loop.log("scheduled", Long.toString(when));
+     *    return -1;
+     *}
+     * 
+     * @p ...
+     * 
+     * @pre private count = 0; 
+     *public long apply(Loop loop) throws Throwable {
+     *    loop.log("scheduled", Long.toString(when));
+     *    if (count < 3) {
+     *        count++;
+     *        return when + 3000; // reschedule in 3 seconds ...
+     *    } else {
+     *        return -1; // stop now.
+     *    }
+     *}
+     * 
+     */
+    public abstract long apply (Loop loop) throws Throwable;
     protected static final class _Function extends Scheduled {
         public Function function;
         public _Function (long when, Function function) {
             this.when = when;
             this.function = function;
         }
-        public final long apply () throws Throwable {
+        public final long apply (Loop loop) throws Throwable {
             Object result = function.apply(new Long(when));
             if (result instanceof Number) {
                 return ((Number) result).longValue();

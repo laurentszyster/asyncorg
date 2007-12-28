@@ -20,13 +20,8 @@
 package org.async.core;
 
 import java.util.LinkedList;
-import java.net.SocketAddress;
-import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ByteChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 
 
 public abstract class Stream extends Dispatcher {
@@ -57,47 +52,6 @@ public abstract class Stream extends Dispatcher {
         _bufferIn = ByteBuffer.wrap(new byte[in]);
         _bufferOut = ByteBuffer.wrap(new byte[out]);
         return;
-    }
-    public final void connect (SocketAddress addr) throws Throwable {
-        _name = getClass().getName() + "@" + addr.toString();
-        _addr = addr;
-        connect();
-    }
-    public final void connect () throws Throwable {
-        SocketChannel channel = SocketChannel.open();
-        channel.configureBlocking(false);
-        _channel = channel;
-        _add();
-        if (channel.connect(_addr)) {
-            _connected = true;
-            handleConnect();
-        } else {
-            _writable = SelectionKey.OP_CONNECT;
-        }
-    }
-    public final int recv (ByteBuffer buffer) throws Throwable {
-        int received = -1;
-        try {
-            received = ((ByteChannel) _channel).read(buffer);
-        } catch (IOException e) {
-            // ... simply close on IOException
-        }
-        if (received == -1) {
-            close();
-            handleClose();
-        } else if (received > 0) {
-            bytesIn = bytesIn + received;
-            whenIn = _loop._now;
-        }
-        return received;
-    }
-    public final int send (ByteBuffer buffer) throws Throwable {
-        int sent = ((ByteChannel) _channel).write(buffer);
-        if (sent > 0) {
-            bytesOut = bytesOut + sent;
-            whenOut = _loop._now;
-        }
-        return sent;
     }
     public final void push (ByteBuffer data) {
         _fifoOut.add(data);

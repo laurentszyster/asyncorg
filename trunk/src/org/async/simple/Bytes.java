@@ -17,15 +17,47 @@
  *  
  */
 
-package org.async.core;
+package org.async.simple;
 
 import java.io.UnsupportedEncodingException;
 
 /**
  * Functional conveniences to support 8-bit bytes protocols.
  */
-public class Bytes {
+public final class Bytes {
 
+    /**
+     * Find the starting position of a bytes string in another one.
+     * 
+     * @param what to search
+     * @param in a bytes string
+     * @param from the given position
+     * @return the starting position of a match or -1 if not found
+     * 
+     * @test return Bytes.find(
+     *    Bytes.encode("World", "UTF-8"), 
+     *    Bytes.encode("Hello World!", "UTF-8"), 
+     *    0
+     *    ) == 6;
+     *
+     * @test return Bytes.find(
+     *    Bytes.encode("World", "UTF-8"), 
+     *    Bytes.encode("Hello World!", "UTF-8"), 
+     *    5
+     *    ) == 6;
+     *    
+     * @test return Bytes.find(
+     *    Bytes.encode("World", "UTF-8"), 
+     *    Bytes.encode("Hello World!", "UTF-8"), 
+     *    7
+     *    ) == -1;
+     *    
+     * @test return Bytes.find(
+     *    Bytes.encode("world", "UTF-8"), 
+     *    Bytes.encode("Hello World!", "UTF-8"), 
+     *    0
+     *    ) == -1;
+     */
     public static final int find (byte[] what, byte[] in, int from) {
         int i;
         int limit = in.length - what.length;

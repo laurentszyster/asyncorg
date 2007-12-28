@@ -20,11 +20,10 @@
 package org.async.net;
 
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 import org.async.core.Loop;
 import org.async.core.Stream;
-import org.async.core.Netstring;
+import org.async.protocols.Netstring;
 
 /**
  * A <code>Stream</code> dispatcher implementation for <a 

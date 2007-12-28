@@ -186,7 +186,7 @@ public abstract class Call implements Function {
                 when = milliseconds;
                 _call = call;
             }
-            public long apply () {
+            public long apply (Loop loop) {
                 _call = null;
                 return -1;
             }
