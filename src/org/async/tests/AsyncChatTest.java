@@ -24,40 +24,14 @@ import org.async.chat.StringsProducer;
 import org.async.core.Function;
 import org.async.core.Static;
 
-import java.net.SocketAddress;
 import java.net.InetSocketAddress;
 
 public class AsyncChatTest extends Dispatcher {
     public Object apply (Object value) throws Throwable {
-        /*
-        push(StringsProducer.iter(
-            new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
-            ));
-        */
-        setTerminator("\r\n\r\n".getBytes());
-        connect((SocketAddress) value);
-        continuation = new Function () {
-            public final Object apply (Object input) throws Throwable {
-                Static.loop.log("finalized", (input==null) ? 
-                    "null": input.toString()
-                    );
-                return null;
-            }
-        };
         return null;
     }
     public void handleConnect() throws Throwable {
         log("connected");
-        push(StringsProducer.wrap(
-            new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
-            ));
-//        ScheduledProducer defered = new ScheduledProducer(
-//            StringsProducer.wrap(
-//                new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
-//                )
-//            );
-//        _loop.schedule(_loop.now() + 3000, defered);
-//        push(defered);
     }
     public void handleData (byte[] data) throws Throwable {
         _loop.log(new String(data, "UTF-8"));
@@ -72,9 +46,21 @@ public class AsyncChatTest extends Dispatcher {
     }
     public static final void main (String[] args) throws Throwable {
         try {
-            (new AsyncChatTest()).apply(
-                new InetSocketAddress("127.0.0.1", 8080)
-                );
+            AsyncChatTest chat = new AsyncChatTest();
+            chat.connect(new InetSocketAddress("127.0.0.1", 8080));
+            chat.push(StringsProducer.wrap(
+                new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
+                ));
+            chat.setTerminator("\r\n\r\n".getBytes());
+            chat.continuation = new Function () {
+                public final Object apply (Object input) throws Throwable {
+                    Static.loop.log("finalized", (input==null) ? 
+                        "null": input.toString()
+                        );
+                    return null;
+                }
+            };
+            chat = null;
             Static.loop.dispatch();
         } catch (Throwable e) {
             Static.loop.log(e);
