@@ -32,9 +32,9 @@ public final class Objects {
 
     /**
      * A convenience to extend a <code>List</code> from an array of 
-     * <code>Objects</code>.
+     * <code>Object[]</code>.
      * 
-     * @pre List sequence = Simple.extend(
+     * @pre List sequence = Objects.extend(
      *     new ArrayList(), new Object[]{"a", "b", "c"}
      *     );
      * 
@@ -49,9 +49,9 @@ public final class Objects {
     
     /**
      * A convenience to create an <code>ArrayList</code> from an array of 
-     * <code>Objects</code>.
+     * <code>Object[]</code>.
      * 
-     * @pre ArrayList sequence = Simple.list(
+     * @pre ArrayList sequence = Objects.list(
      *     new Object[]{"a", "b", "c"}
      *     );
      * 
@@ -67,9 +67,9 @@ public final class Objects {
     
     /**
      * A convenience to build a <code>HashSet</code> from an array of 
-     * <code>Objects</code>.
+     * <code>Object[]</code>.
      * 
-     * @pre HashSet set = Simple.set(new String[]{"a", "b", "c"});
+     * @pre HashSet set = Objects.set(new String[]{"a", "b", "c"});
      * 
      * @param items to add in the set 
      * @return a <code>HashSet</code>
@@ -84,7 +84,7 @@ public final class Objects {
     /**
      * A convenience to iterate around a "primitive" array. 
      * 
-     * @pre Iterator iter = Simple.iter(new Object[]{x, y, z});
+     * @pre Iterator iter = Objects.iter(new Object[]{x, y, z});
      *     
      * @p Usefull to iterate through final arrays, a prime construct in web
      * application controllers where check lists and filter sets made of
@@ -112,7 +112,7 @@ public final class Objects {
      * Update a <code>Map</code> with the keys and values sequence found in
      * an even <code>Object</code> array.
      * 
-     * @pre HashMap map = Simple.update(new HashMap(), new Object[]{
+     * @pre HashMap map = Objects.update(new HashMap(), new Object[]{
      *     "A", "test", 
      *     "B", true, 
      *     "C": new Integer(1), 
@@ -136,7 +136,7 @@ public final class Objects {
      * Update a new <code>HashMap</code> with the keys and values sequence 
      * found in an even <code>Object</code> array.
      * 
-     * @pre HashMap map = Simple.dict(new Object[]{
+     * @pre HashMap map = Objects.dict(new Object[]{
      *     "A", "test", 
      *     "B", true, 
      *     "C": new Integer(1), 
@@ -160,26 +160,26 @@ public final class Objects {
     /**
      * Iterate through arbitrary values in a <code>Map</code>.
      * 
-     * @pre HashMap map = Simple.dict(new Object[]{
+     * @pre HashMap map = Objects.dict(new Object[]{
      *    "A", "test", 
      *    "B", true, 
      *    "C": new Integer(1), 
      *    "D", false
      *    });
-     * Iterator values = Simple.iter(map, new Object[]{
+     * Iterator values = Objects.iter(map, new Object[]{
      *    "A", "C", "E"
      *    });
      * 
      * @p This method is convenient to extract an ordered set of named
      * values from a dictionary using a <code>Object</code> array.
      * 
-     * @test var map = Simple.dict([
+     * @test var map = Objects.dict([
      *    "A", "test", 
      *    "B", true, 
      *    "C", 1, 
      *    "D", false
      *    ]);
-     *var values = Simple.iter(map, ["A", "C", "E"]);
+     *var values = Objects.iter(map, ["A", "C", "E"]);
      *return (
      *    values.next() == "test" &&
      *    values.next() == 1 &&

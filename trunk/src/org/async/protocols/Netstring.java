@@ -44,29 +44,30 @@ import org.async.simple.Bytes;
  * network protocols (ie: where requests and responses can be sent and
  * received in asynchronous batches).
  * 
- * @pre import org.async.core.Netstring;
- *import java.net.Socket;
+ * @pre import org.async.protocols.Netstring;
  *import java.util.Iterator;
  *
- *Socket conn = new Socket("127.0.0.2", 3999)
  *try {
- *    // send two requests to ansqlite server
+ *    // send two netstring to STDOUT
  *    Netstring.write(
- *        conn.getOutputStream(), 
+ *        System.out, 
  *        "[\"CREATE TABLE relation (s, p, o, c)\", []]", "UTF-8"
  *        );
  *    Netstring.write(
- *        conn.getOutputStream(), 
+ *        System.out, 
  *        "[\"SELECT * FROM relation\", []]", "UTF-8"
  *        );
- *    // iterate through the responses received
+ *    // iterate through the netstrings received from STDIN by chunks
  *    Iterator netstring = new Netstring.read(
- *      conn.getInputStream(), 16384, "UTF-8"
+ *      System.in, 16384, "UTF-8"
  *      );
+ *    // print them as lines to STDERR
  *    while (netstring.hasNext())
- *        System.out.println (netstring.next());
+ *        System.err.println (netstring.next());
  *} finally {
- *    conn.close ();
+ *    System.in.close ();
+ *    System.out.close ();
+ *    System.err.close ();
  *}
  */
 public final class Netstring {

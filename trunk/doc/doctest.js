@@ -1,5 +1,5 @@
 var javadoc = {
-    title: 'asyncorg',
+    title: 'doctestj',
     packages: {},
     classes: {},
     index: {},
@@ -26,7 +26,7 @@ javadoc.linkHTML = function (sb, fqn, text) {
     sb.push('" onclick="javadoc.get(');
     sb.push(HTML.cdata(JSON.encode(fqn)));
     sb.push(');">');
-    sb.push(HTML.cdata(text));
+    sb.push(HTML.cdata((text=='$') ? '$': text.replace('$', '.'))); 
     sb.push('</a>');
     return sb;
 };
@@ -137,7 +137,7 @@ javadoc.classHTML = function (fqn, sb, properties) {
 };
 javadoc.objectLink = function (element) {
     var fqn, text = HTML.text(element);
-    var fqns = javadoc.index[text];
+    var fqns = javadoc.index[text.replace('.', '$')];
     if (fqns && fqns.length == 1)
         fqn = fqns[0];
     else
@@ -171,22 +171,23 @@ javadoc.loaded = function (fqn) {
         if (fqn == 'index') {
             javadoc.current = null;
             HTML.update($('javadocPackageName'), javadoc.title);
-            HTML.update($('javadocIndex'), javadoc.indexHTML([]).join(''));
+            HTML.update($('javadocType'), javadoc.indexHTML([]).join(''));
+            // HTML.update($('javadocType'), '');
         } else {
-            var h2 = $$('h2')[0];
+            var h2 = CSS.select('h2')[0];
             var packageName = javadoc.packageName(fqn);
-            var typeName = packageName + '.' + HTML.text(h2);
+            var typeName = packageName + '.' + HTML.text(h2).replace('.', '$');
             HTML.update($('javadocPackageName'), packageName);
             javadoc.historyUpdate(fqn);
             var properties = javadoc.classes[typeName];
             if (properties) {
-                HTML.update($('javadocIndex'), javadoc.classHTML(
+                HTML.update($('javadocType'), javadoc.classHTML(
                     typeName, [], properties
                     ).join(''));
             }
             javadoc.objectLink(h2);
         }
-        map(javadoc.objectLink, $$('code', javadocObject));
+        map(javadoc.objectLink, CSS.select('code', $('javadocObject')))
     };
 };
 javadoc.historyIndex = function (fqn) {

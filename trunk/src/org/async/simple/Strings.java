@@ -45,7 +45,7 @@ public class Strings {
      * character as fast an lean as possible in Java (without a PCRE and
      * for a maybe too simple use case).
      * 
-     * @pre Iterator strings = Simple.split("one two three", ' ');
+     * @pre Iterator strings = Strings.split("one two three", ' ');
      * 
      * @test strings = Simple.split("one two three", ' ');
      *return (
@@ -105,12 +105,12 @@ public class Strings {
      * expression but - unlike the standard Java API and like Python's re - 
      * does the right thing and also iterates through the expression groups.
      * 
-     * @pre Iterator strings = Simple.split(
+     * @pre Iterator strings = Strings.split(
      *    "one\t  and  \r\n three", Pattern.compile("\\s+(and|or)\\s+")
      *    );
      * 
      * @test importClass(Packages.java.util.regex.Pattern)
-     *strings = Simple.split(
+     *strings = Strings.split(
      *    "one\t  and  \r\n three", Pattern.compile("\\s+(and|or)\\s+")
      *    );
      *return (
@@ -133,8 +133,8 @@ public class Strings {
      * <code>Object</code> as separator between items.
      * 
      * @pre StringBuffer buffer = new StringBuffer(); 
-     *Iterator objects = Simple.iter(new Object[]{"A", "B", "C"});
-     *Simple.join(", ", objects, buffer);
+     *Iterator objects = Strings.iter(new Object[]{"A", "B", "C"});
+     *Strings.join(", ", objects, buffer);
      * 
      * @param separator between joined strings
      * @param objects to join as strings
@@ -158,7 +158,7 @@ public class Strings {
      * Join object's strings with any other type joinable in a 
      * <code>StringBuffer</code>. 
      * 
-     * @test return Simple.join(
+     * @test return Strings.join(
      *    ", ", Simple.iter(["A", "B", "C"])
      *    ).equals("A, B, C");
      * 

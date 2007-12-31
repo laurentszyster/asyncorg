@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project name="asyncorg" default="jar">
+  <property file="host.properties"/>
   <property file="packages.properties"/>
   <target name="jar">
     <jar 
@@ -12,13 +13,27 @@
   <target name="doc">
     <delete dir="doc/fragments"/>
     <delete dir="doc/tests"/>
+  	<unzip src="lib/doctestj-browser.zip" dest="doc"/>
     <javadoc 
-      docletpath="lib/asyncorg.jar;lib/less4j-protocols.jar;lib/smalljs.jar;lib/xp.jar"
-      doclet="org.less4j.protocols.Doctest"
-      packagenames="org.async.simple, org.async.core, org.async.chat, org.async.net" 
+      docletpath=
+        "lib/doctestj.jar;
+         lib/less4j-protocols.jar;
+         lib/smalljs.jar;
+         lib/xp.jar;
+         lib/servlet-api.jar;
+         ${host-jdk-path}lib/tools.jar"
+      doclet="org.doctestj.Doclet"
+      packagenames=
+        "org.async.simple, org.async.core, org.async.chat, org.async.net" 
       source="1.4" 
       sourcepath="src" 
-      classpath="lib/less4j-protocols.jar;lib/smalljs.jar;lib/xp.jar;lib/servlet-api.jar;/jdk1.5.0_11/lib/tools.jar" 
+      classpath=
+        "lib/doctestj.jar;
+         lib/less4j-protocols.jar;
+         lib/smalljs.jar;
+         lib/xp.jar;
+         lib/servlet-api.jar;
+         ${host-jdk-path}lib/tools.jar"
       access="public" 
       >
     </javadoc>

@@ -72,6 +72,8 @@ button.disabled:active { background-color: #ddd; color: #fff; }
 
 h2 input { width: 100%; }
 
+h1 a:hover, h2 a:hover { cursor: pointer; text-decoration: none; }
+
 div.actions span.action { color: #99f; }
 div.actions span.action:hover { color: #66f; }
 

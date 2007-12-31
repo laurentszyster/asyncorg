@@ -11,20 +11,20 @@ javadoc.index = {
   "Call": [
     "org.async.core.Call"
     ], 
-  "Call.Closure": [
-    "org.async.core.Call.Closure"
+  "Call$Closure": [
+    "org.async.core.Call$Closure"
     ], 
-  "Call.Fork": [
-    "org.async.core.Call.Fork"
+  "Call$Fork": [
+    "org.async.core.Call$Fork"
     ], 
-  "Call.Join": [
-    "org.async.core.Call.Join"
+  "Call$Join": [
+    "org.async.core.Call$Join"
     ], 
-  "Call.Sleep": [
-    "org.async.core.Call.Sleep"
+  "Call$Sleep": [
+    "org.async.core.Call$Sleep"
     ], 
-  "Call.Step": [
-    "org.async.core.Call.Step"
+  "Call$Step": [
+    "org.async.core.Call$Step"
     ], 
   "Collector": [
     "org.async.chat.Collector", 
@@ -84,16 +84,16 @@ javadoc.index = {
     "org.async.core.Listen.accept"
     ], 
   "add": [
-    "org.async.core.Call.Fork.add"
+    "org.async.core.Call$Fork.add"
     ], 
   "apply": [
     "org.async.core.Scheduled.apply", 
     "org.async.core.Function.apply", 
-    "org.async.core.Call.Closure.apply", 
-    "org.async.core.Call.Fork.apply", 
-    "org.async.core.Call.Step.apply", 
-    "org.async.core.Call.Join.apply", 
-    "org.async.core.Call.Sleep.apply"
+    "org.async.core.Call$Closure.apply", 
+    "org.async.core.Call$Fork.apply", 
+    "org.async.core.Call$Step.apply", 
+    "org.async.core.Call$Join.apply", 
+    "org.async.core.Call$Sleep.apply"
     ], 
   "bind": [
     "org.async.core.Dispatcher.bind"
@@ -362,11 +362,11 @@ javadoc.packages = {
     "Function", 
     "Dispatcher", 
     "Call", 
-    "Call.Closure", 
-    "Call.Fork", 
-    "Call.Step", 
-    "Call.Join", 
-    "Call.Sleep"
+    "Call$Closure", 
+    "Call$Fork", 
+    "Call$Step", 
+    "Call$Join", 
+    "Call$Sleep"
     ], 
   "org.async.net": [
     "Dispatcher", 
@@ -475,11 +475,11 @@ javadoc.classes = {
   "org.async.core.Call": {
     "constants": [], 
     "contains": [
-      "org.async.core.Call.Closure", 
-      "org.async.core.Call.Fork", 
-      "org.async.core.Call.Step", 
-      "org.async.core.Call.Join", 
-      "org.async.core.Call.Sleep"
+      "org.async.core.Call$Closure", 
+      "org.async.core.Call$Fork", 
+      "org.async.core.Call$Step", 
+      "org.async.core.Call$Join", 
+      "org.async.core.Call$Sleep"
       ], 
     "extends": "java.lang.Object", 
     "functions": [
@@ -498,7 +498,7 @@ javadoc.classes = {
       "finalize"
       ]
     }, 
-  "org.async.core.Call.Closure": {
+  "org.async.core.Call$Closure": {
     "constants": [], 
     "extends": "org.async.core.Call", 
     "functions": [], 
@@ -508,7 +508,7 @@ javadoc.classes = {
       "apply"
       ]
     }, 
-  "org.async.core.Call.Fork": {
+  "org.async.core.Call$Fork": {
     "constants": [], 
     "extends": "org.async.core.Call", 
     "functions": [], 
@@ -519,7 +519,7 @@ javadoc.classes = {
       "apply"
       ]
     }, 
-  "org.async.core.Call.Join": {
+  "org.async.core.Call$Join": {
     "constants": [], 
     "extends": "org.async.core.Call", 
     "functions": [], 
@@ -529,7 +529,7 @@ javadoc.classes = {
       "apply"
       ]
     }, 
-  "org.async.core.Call.Sleep": {
+  "org.async.core.Call$Sleep": {
     "constants": [], 
     "extends": "org.async.core.Call", 
     "functions": [], 
@@ -539,7 +539,7 @@ javadoc.classes = {
       "apply"
       ]
     }, 
-  "org.async.core.Call.Step": {
+  "org.async.core.Call$Step": {
     "constants": [], 
     "extends": "org.async.core.Call", 
     "functions": [], 
