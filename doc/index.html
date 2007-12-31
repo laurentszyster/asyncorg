@@ -2,7 +2,7 @@
    "http://www.w3.org/TR/html4/strict.dtd">
 <html>
   <head>
-    <title>asyncorg/doc</title>
+    <title>doctestj</title>
     <link href="css/blueprint/screen.css" type="text/css" rel="stylesheet" 
       media="screen, projection"></link>
     <link href="css/blueprint/print.css" type="text/css" rel="stylesheet" 
@@ -19,8 +19,10 @@
   <body>
     <div class="container">
       <div class="column span-23 first">
-        <h1 id="javadocPackageName" class="package"
-          >asyncorg</h1>
+          <h1><a 
+            id="javadocPackageName" 
+            onclick="javadoc.goHome()"
+            >doctestj</a></h1>
       </div>
       <div id="javadocSidebar" class="column span-7 colborder quiet">
         <div class="clear" style="margin-bottom: 1.5em;">
@@ -31,6 +33,7 @@
             onchange="javadoc.search(this.value);"
             value="search the documentation by name"
             /></div>
+          <!--
           <div class="actions column span-4 last push-0">
             <div class="column span-2">
               <button 
@@ -45,12 +48,11 @@
                 >home</button>
             </div>
           </div>
+          -->
         </div>
-        <div id="javadocFound">
-        </div>
-        <div id="javadocIndex">
-        </div>
-        <div id="javadocHistory"></div>
+        <div id="javadocFound"></div>
+        <div id="javadocIndex"></div>
+        <div id="javadocType"></div>
       </div>
       <div id="javadocObject" class="column span-15 last">
       </div>
