@@ -17,21 +17,29 @@
  *  
  */
 
-package org.async.chat;
+package org.async.core;
 
-public interface Collector {
-    /**
-     * Handle incoming data.
-     * 
-     * @param data
-     * @throws Throwable
-     */
-    public void handleData (byte[] data) throws Throwable;
-    /**
-     * Found terminator.
-     * 
-     * @return
-     * @throws Throwable
-     */
-    public boolean handleTerminator () throws Throwable;
+public abstract class Server extends Dispatcher {
+    protected boolean _accepting = true;
+    public Server () {
+        super();
+    }
+    public Server (Loop loop) {
+        super(loop);
+    }
+    public boolean writable () {
+        return false;
+    } 
+    public boolean readable () {
+        return _accepting;
+    }
+    public void handleConnect() throws Throwable {
+        throw new Error("Unexpected connect event");
+    }
+    public void handleRead() throws Throwable {
+        throw new Error("Unexpected read event");
+    }
+    public void handleWrite() throws Throwable {
+        throw new Error("Unexpected write event");
+    }
 }

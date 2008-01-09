@@ -20,44 +20,41 @@
 package org.async.tests;
 
 import org.async.core.Call;
-import org.async.core.Function;
 import org.async.core.Static;
+import org.async.simple.Objects;
 
-public class ContinuationTest {
+class ContinuationTest {
     
-    private static final class Log implements Function {
-        public Object apply (Object value) {
-            Static.loop.log("Log ( " + value.toString() + " )");
-            return null;
-        }
-    }
-
-    private static final Log log = new Log();
-    
-    public static final class Continued extends Call {
+    static class Continued extends Call {
         private String _name;
         public Continued (String name) {
             _name = name;
-            continuation = log;
-        }
-        public String toString () {
-            return _name;
         }
         public Object apply (Object value) {
-            Static.loop.log(
-                this.toString() + " ( " + value.toString() + " )"
-                );
-            return null;
+            Static.loop.log(_name + " ( " + value + " )");
+            return value;
         }
     }
+
+    static void test() {
+        Call A = new Continued("A");
+        Call B = new Continued("B");
+        Call C = new Continued("C");
+        Static.loop.timeout(1000, A);
+        Static.loop.timeout(2000, C);
+        Static.loop.timeout(3000, B);
+        Call.join(Objects.list(new Call[]{
+            A, B, C
+            }), new Continued("join")).finalization = 
+            Call.list(Objects.list(new Call[]{
+                new Continued("X"), new Continued("Y"), new Continued("Z")
+                }));
+    }
     
-    public static final void main (String[] args) {
+    public static void main (String[] args) {
         try {
-            (new Continued("A")).continuation = new Continued("B"); 
-            Call.step (new Call[]{
-                new Continued("A"),
-                new Continued("B")
-            }).continuation = log;
+            test();
+            System.err.println("dispatch");
             Static.loop.dispatch();
         } catch (Throwable e) {
             Static.loop.log(e);

@@ -87,7 +87,7 @@ public abstract class Scheduled implements Comparable {
                 throw new Error(
                     function.toString() 
                     + " must return a number, not: "
-                    + result.toString()
+                    + result
                     );
             }
         };

@@ -37,9 +37,6 @@ import org.async.core.Stream;
 public abstract class Dispatcher extends Stream {
     
     private static final String 
-    ERROR_UNEXPECTED_END = "unexpected netstring end";
-    
-    private static final String 
     ERROR_INVALID_PROLOGUE = "invalid netstring prologue"; 
     
     private static final String 
@@ -178,7 +175,7 @@ public abstract class Dispatcher extends Stream {
                     _fifoOut.addFirst(null); // we'll be done soon ...
                     break;
                 }
-            } else if (_fillOut((ByteBuffer) first)) {
+            } else if (_fillOut(((ByteBuffer) first).array())) {
                 break; 
             }
         }

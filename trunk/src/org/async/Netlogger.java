@@ -20,7 +20,8 @@
 package org.async;
 
 import org.async.core.Static;
-import org.async.core.Listen;
+import org.async.core.Loop;
+import org.async.core.Server;
 
 import org.async.net.Collector;
 import org.async.net.Dispatcher;
@@ -76,7 +77,15 @@ import java.net.InetSocketAddress;
  * an extensible range of network application peers.
  * 
 */
-public final class Netlogger {
+public final class Netlogger extends Server {
+    
+    public Netlogger () {
+        super();
+    }
+
+    public Netlogger (Loop loop) {
+        super(loop);
+    }
 
     protected static final class Channel extends Dispatcher {
         
@@ -121,27 +130,23 @@ public final class Netlogger {
 
     }
     
-    protected static final class Server extends Listen {
-        
-        public Object apply (Object value) throws Throwable {
-            log("Shutdown");
-            close();
-            return Boolean.FALSE;
-        }
-        
-        public void handleAccept() throws Throwable {
-            accept(new Channel());
-        }
-        
-        public void handleClose() throws Throwable {
-            log("Unexpected close event");
-        }
-        
+    public Object apply (Object value) throws Throwable {
+        log("Shutdown");
+        close();
+        return Boolean.FALSE;
+    }
+    
+    public void handleAccept() throws Throwable {
+        accept(new Channel());
+    }
+    
+    public void handleClose() throws Throwable {
+        log("Unexpected close event");
     }
         
     public static final void main (String args[]) throws Throwable {
         Static.loop.hookShutdown();
-        Server server = new Server();
+        Netlogger server = new Netlogger();
         server.listen(new InetSocketAddress(
             (args.length > 0) ? args[0]: "127.0.0.2", 
             (args.length > 1) ? Integer.parseInt(args[1]): 12345

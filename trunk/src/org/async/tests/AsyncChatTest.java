@@ -27,6 +27,9 @@ import org.async.core.Static;
 import java.net.InetSocketAddress;
 
 public class AsyncChatTest extends Dispatcher {
+    public AsyncChatTest() {
+        super(16384, 4096); // buffer 16KB in, 4KB out  
+    }
     public Object apply (Object value) throws Throwable {
         return null;
     }
@@ -52,7 +55,7 @@ public class AsyncChatTest extends Dispatcher {
                 new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
                 ));
             chat.setTerminator("\r\n\r\n".getBytes());
-            chat.continuation = new Function () {
+            chat.finalization = new Function () {
                 public final Object apply (Object input) throws Throwable {
                     Static.loop.log("finalized", (input==null) ? 
                         "null": input.toString()
