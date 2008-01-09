@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 
@@ -47,40 +48,47 @@ public abstract class Dispatcher extends Call {
     // protected interfaces between AsyncLoop._io and AsynCore, may
     // vary to support something else than <code>java.nio.channels</code>
     //
-    protected SocketAddress _addr; 
     protected AbstractSelectableChannel _channel = null;
     protected SelectionKey _key = null;
-    protected String _name;
     protected int _writable = SelectionKey.OP_WRITE;
     protected int _readable = SelectionKey.OP_READ;
     protected boolean _connected = false;
+    protected SocketAddress _addr; 
+    protected String _name;
     protected final void _add () {
         _loop._dispatched.put(this._name, this);
     }
     protected final void _remove () {
         _loop._dispatched.remove(_name);
         _channel = null;
-        _key.cancel();
-        _key.attach(null);
-        _key = null;
+        if (_key != null) {
+            _key.cancel();
+            _key.attach(null);
+            _key = null;
+        }
     }
     protected final void _handle () throws Loop.Exit {
+        int ops = _key.readyOps(); 
+        if ((ops & _key.interestOps()) == 0) {
+            return;
+        }
         try {
-            if (_key.isConnectable() && !_connected) {
+            if ((ops & SelectionKey.OP_CONNECT) != 0) {
                 ((SocketChannel) _channel).finishConnect();
                 _connected = true;
                 _writable = SelectionKey.OP_WRITE;
                 handleConnect();
-            } else if (_key.isWritable()) {
+            } else if ((ops & SelectionKey.OP_WRITE) != 0) {
                 handleWrite();
             }
             if (_key == null) {
                 return;
-            } else if (_key.isAcceptable()) {
+            } else if ((ops & SelectionKey.OP_ACCEPT) != 0) {
                 handleAccept();
-            } else if (_key.isReadable()) {
+            } else if ((ops & SelectionKey.OP_READ) != 0) {
                 if (!_connected) {
                     _connected = true;
+                    _writable = SelectionKey.OP_WRITE;
                     handleConnect();
                 }
                 handleRead();
@@ -137,6 +145,9 @@ public abstract class Dispatcher extends Call {
         this._loop = loop;
         when = loop._now;
     }
+    public String toString () {
+        return _name;
+    }
     /**
      * Log a message to this dispatcher's loop logging interface, categorized
      * by this dispatcher's name.
@@ -155,6 +166,57 @@ public abstract class Dispatcher extends Call {
     public final void log (Throwable error) {
         _loop.log(_name, error.getMessage());
         _loop.log(error);
+    }
+    /**
+     * ...
+     * 
+     * @param addr
+     * @throws Throwable
+     */
+    public final void listen (SocketAddress addr) throws Throwable {
+        _name = (getClass().getName() + "@" + addr.toString());
+        _addr = addr;
+        listen();
+    }
+    /**
+     * ...
+     * 
+     * @throws Throwable
+     */
+    public final void listen () throws Throwable {
+        ServerSocketChannel channel = ServerSocketChannel.open();
+        channel.configureBlocking(false);
+        channel.socket().bind(_addr);
+        channel.socket().setReuseAddress(true);
+        _channel = channel;
+        _add();
+        _readable = SelectionKey.OP_ACCEPT;
+    }
+    /**
+     * ...
+     * 
+     * @param dispatcher
+     * @throws Throwable
+     * @return true if a new connection was accepted, false otherwise
+     */
+    public final boolean accept (Dispatcher dispatcher) throws Throwable {
+        ServerSocketChannel channel = (ServerSocketChannel) _channel;
+        SocketChannel accepted = channel.accept();
+        if (accepted == null) {
+            return false;
+        } else {
+            accepted.configureBlocking(false);
+            dispatcher._writable = 0;
+            dispatcher._channel = accepted;
+            dispatcher._addr = accepted.socket().getRemoteSocketAddress();;
+            dispatcher._name = (
+                dispatcher.getClass().getName() + 
+                "@" + dispatcher._addr.toString()
+                );
+            dispatcher._add();
+            dispatcher.apply(this);
+            return true;
+        }
     }
     /**
      * Find out wether this dispatcher is connected or not.
@@ -182,7 +244,7 @@ public abstract class Dispatcher extends Call {
      * 
      * @throws Throwable
      */
-    public final void connect () throws Throwable {
+    public void connect () throws Throwable {
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
         _channel = channel;
@@ -208,7 +270,7 @@ public abstract class Dispatcher extends Call {
      * occurs or a close event was signaled by the socket.
      * 
      */
-    public final int recv (ByteBuffer buffer) throws Throwable {
+    public int recv (ByteBuffer buffer) throws Throwable {
         int received = -1;
         try {
             received = ((ByteChannel) _channel).read(buffer);
@@ -232,7 +294,7 @@ public abstract class Dispatcher extends Call {
      * @return the number of bytes sent
      * @throws Throwable
      */
-    public final int send (ByteBuffer buffer) throws Throwable {
+    public int send (ByteBuffer buffer) throws Throwable {
         int sent = ((ByteChannel) _channel).write(buffer);
         if (sent > 0) {
             bytesOut = bytesOut + sent;
@@ -259,7 +321,7 @@ public abstract class Dispatcher extends Call {
      * @param address to bind to
      * @throws Throwable
      */
-    public final void bind () throws Throwable {
+    public void bind () throws Throwable {
         DatagramChannel channel = DatagramChannel.open();
         channel.configureBlocking(false);
         channel.socket().bind(_addr);
@@ -280,7 +342,7 @@ public abstract class Dispatcher extends Call {
      * occurs.
      * 
      */
-    public final SocketAddress recvfrom (ByteBuffer buffer) 
+    public SocketAddress recvfrom (ByteBuffer buffer) 
     throws Throwable {
         SocketAddress from = null;
         int start = buffer.position();
@@ -307,7 +369,7 @@ public abstract class Dispatcher extends Call {
      * @return the number of bytes sent
      * @throws Throwable
      */
-    public final int sendto (ByteBuffer buffer, SocketAddress addr) 
+    public int sendto (ByteBuffer buffer, SocketAddress addr) 
     throws Throwable {
         int sent = ((DatagramChannel) _channel).send(buffer, addr);
         if (sent > 0) {
@@ -319,7 +381,7 @@ public abstract class Dispatcher extends Call {
     /**
      * Try to close this dispatcher's socket or log an error traceback.
      */
-    public final void close () {
+    public void close () {
         try {
             _channel.close();
         } catch (IOException e) {

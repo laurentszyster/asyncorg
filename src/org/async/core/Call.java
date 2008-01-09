@@ -19,185 +19,70 @@
 
 package org.async.core;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
-
-/**
- * Practical asynchronous continuations, kinda coroutine meets closures
- * in a Java loop. Slowly, unobviously and yet damn practical in I/O bound
- * stateful network applications experiencing high levels of concurrency and 
- * latency between processes. 
- * 
- * @h3 Synopsis
- * 
- * @p The purpose of <code>Call</code> is to program workflows of 
- * concurrent I/O-bound processes, passing a current state to each
- * continuations.
- * 
- * @pre ...
- * 
- * @h3 Practical coroutines for I/O bound processes 
- * 
- * @p Network workflow are statefull processes which depend on I/O. They 
- * spend most of their time waiting for some input to complete or some 
- * output to start. The combination of fast non-blocking I/O and slow 
- * continuations interleaved in one asynchronous loop is simple enough to run 
- * as fast and reliably as statefull entreprise workflow applications demand. 
- * 
- * @p By name and purpose <code>Call</code> looks like an ugly implementation 
- * of LISP's <a 
- * href="http://community.schemewiki.org/?call-with-current-continuation"
- * >call/cc</a>. Here it is piggy-backed on the simplest behaviour of the  
- * expected from a JVM's garbage collector, but it does nevertheless provides 
- * practical coroutines to <code>org.async</code> applications (and for 
- * nothing else, I'm afraid).
- * 
- */
 public abstract class Call implements Function {
-    protected Object _closure = null; // state shared between calls.
     protected Loop _loop = Static.loop;
-    public Function continuation = null;
+    public Function finalization = null;
     /**
-     * Defer an asynchronous call to this continuation's function if there 
-     * is one.
+     * Defer an asynchronous call to this finalization if there is one.
      */
     public final void finalize () {
-        if (continuation != null) {
-            _loop._continued.add(this);
-        }
-    }
-    protected final void cc () throws Throwable {
-        if (continuation instanceof Call) {
-            ((Call) continuation)._closure = continuation.apply(_closure);
-        } else {
-            continuation.apply(_closure);
-        }
-    }
-    public static final Call tail (Call call) {
-        while (call.continuation instanceof Call) {
-            call = (Call) call.continuation;
-        }
-        return call;
-    }
-    public static final class Closure extends Call {
-        public Closure (Loop loop) {
-            _loop = loop;
-        }
-        public final Object apply (Object current) {
-            _closure = current;
-            return null;
-        }
-    }
-    public static final class Fork extends Call {
-        protected ArrayList _branches;  
-        public Fork () {
-            _branches = new ArrayList();
-        }
-        public final Fork add (Function function) {
-            _branches.add(function);
-            return this;
-        }
-        public final Object apply (Object current) throws Throwable {
-            Iterator continued = _branches.iterator();
-            while (continued.hasNext()) {
-                Object fun = continued.next();
-                if (fun instanceof Call) {
-                    ((Call) fun).cc();
-                } else {
-                    ((Function) fun).apply(current);
-                }
+        if (finalization != null) {
+            synchronized (_loop) {
+                _loop._finalized.add(finalization);
             }
-            _branches = null;
-            return null;
+            finalization = null;
         }
     }
-    public static final Fork fork (Function[] functions) {
-        Fork branched = new Fork();
-        for (int i=0; i<functions.length; i++) {
-            branched.add(functions[i]);
+    public static final Call join (Iterable<Call> finalized, Call joining) {
+        Iterator<Call> calls = finalized.iterator();
+        while (calls.hasNext()) {
+            calls.next().finalization = joining;
         }
-        return branched;
+        return joining;
     }
-    public static final void fork (
-        Call branched, Function function
-        ) {
-        if (branched.continuation instanceof Fork) {
-            ((Fork) branched.continuation)._branches.add(function); 
-        } else {
-            Fork branches = new Fork();
-            branches._branches.add(branched.continuation);
-            branches._branches.add(function);
-            branched.continuation = branches;
+    protected static class List implements Function {
+        private Iterable<Function> _calls;
+        protected List(Iterable<Function> calls) {
+            _calls = calls;
         }
-    }
-    public static final class Step extends Call {
-        protected Call _head, _tail;
-        public Step (Call[] continuations) {
-            _head = continuations[0];
-            Call next = _head;
-            for (int i=1; i<continuations.length; i++) {
-                tail(next).continuation = continuations[i];
-                next = continuations[i];
+        public final Object apply (Object input) throws Throwable {
+            Iterator<Function> calls = _calls.iterator();
+            while (calls.hasNext()) {
+                input = calls.next().apply(input);
             }
-            _tail = tail(next);
-        }
-        public final Object apply (Object current) {
-            if (_head == null) {
-                _tail.continuation = this;
-                _tail = null;
-            } else {
-                ; // TODO: ???
-            }
-            return null;
+            return input;
         }
     }
-    public static final Step step (Call[] continuations) {
-        return new Step(continuations);
-    }
-    public static final class Join extends Call {
-        protected Call[] _continuations;
-        protected Function _join = null;
-        public Join (Call[] continuations, Function join) {
-            _continuations = continuations;
-            _join = join;
-        }
-        public final Object apply (Object current) throws Throwable {
-            if (_continuations != null) {
-                for (int i=0; i < _continuations.length; i++) {
-                    _continuations[i].continuation = this;
-                }
-                _continuations = null;
-            } else if (_join != null){
-                _join.apply(current);
-            }
-            return null;
-        }
-    }
-    public static final Join join (
-        Call[] continuations, Function function 
-        ) {
-        return new Join(continuations, function);
-    }
-    public static final class Sleep extends Call {
-        protected static final class _Scheduled extends Scheduled {
-            Function _call;
-            public _Scheduled(int milliseconds, Function call) {
-                when = milliseconds;
-                _call = call;
-            }
-            public long apply (Loop loop) {
-                _call = null;
-                return -1;
-            }
-        }
-        protected int _milliseconds;
-        public Sleep(int milliseconds) {
-            _milliseconds = milliseconds;
-        }
-        public final Object apply (Object current) {
-            _loop._scheduled.add(new _Scheduled(_milliseconds, continuation));
-            return null;
-        }
+    /**
+     * 
+     * @param calls
+     * @return
+     */
+    public static final Function list(Iterable<Function> calls) {
+        return new List(calls);
     }
 }
+
+/* Note About Java's Garbage Collection Specifications.
+ * 
+ * Although it is possible to force finalizations to execute
+ * in the same loop as I/O and time events triggered methods, they
+ * be appended into the loop by order of the collected objects' 
+ * instanciations. Even the default non-concurrent implementation 
+ * provided by HotSpot's JVM will consider as garbage an instance
+ * of which finalized method has not yet been called, so there's
+ * no practical way to iterate through garbage collection incrementaly.
+ * 
+ * This makes sense in a single-process set-top-box OS supporting a
+ * non-critical user interface which can be rebooted at will to reclaim
+ * resources and is expected to leak without harm.
+ * 
+ * But it creates a serious risk in a network of multiple-process OS 
+ * holding critical applications state and controlling entreprise 
+ * resources.
+ *  
+ * Not beeing able to deterministicly reclaim the only limited resource
+ * in time is the achille heels of "Java-The-VM-Specifications".
+ */

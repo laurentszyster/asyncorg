@@ -73,9 +73,8 @@ public abstract class Stream extends Dispatcher {
     public final void handleWrite () throws Throwable {
         if (produce()) {
             _bufferOut.flip();
-            if (send(_bufferOut) > 0) {
-                _bufferOut.compact();
-            }
+            send(_bufferOut);
+            _bufferOut.compact();
         } else {
             close ();
         }
@@ -87,14 +86,13 @@ public abstract class Stream extends Dispatcher {
             _bufferIn.compact();
         }
     }
-    protected final boolean _fillOut (ByteBuffer data) {
+    protected final boolean _fillOut (byte[] data) {
         try {
-            _bufferOut.put(data.array()); // .put(data) fails on position() :-(
+            _bufferOut.put(data); // .put(data) fails on position() :-(
         } catch (BufferOverflowException e) {
             int left = _bufferOut.remaining(); 
-            _bufferOut.put(data.array(), 0, left);
-            data.position(left);
-            _fifoOut.addFirst(data.slice());
+            _bufferOut.put(data, 0, left);
+            _fifoOut.addFirst(ByteBuffer.wrap(data, left, data.length-left));
             return true;
         }
         return false;

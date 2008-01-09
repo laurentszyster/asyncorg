@@ -25,7 +25,14 @@ import java.io.UnsupportedEncodingException;
  * Functional conveniences to support 8-bit bytes protocols.
  */
 public final class Bytes {
-
+    /**
+     * A convenient constant: "\r\n".
+     */
+    public static final byte[] CRLF = "\r\n".getBytes();
+    /**
+     * A convenient constant: "\r\n\r\n".
+     */
+    public static final byte[] CRLFCRLF = "\r\n\r\n".getBytes();
     /**
      * Find the starting position of a bytes string in another one.
      * 
@@ -75,9 +82,16 @@ public final class Bytes {
         }
         return -1;
     }
-
+    /**
+     * 
+     */
     public static final String UTF8 = "UTF-8";
-
+    /**
+     * 
+     * @param unicode
+     * @param encoding
+     * @return
+     */
     public static final byte[] encode(String unicode, String encoding) {
         try {
             return unicode.getBytes(encoding);
@@ -85,7 +99,12 @@ public final class Bytes {
             return unicode.getBytes();
         }
     }
-
+    /**
+     * 
+     * @param bytes
+     * @param encoding
+     * @return
+     */
     public static final String decode(byte[] bytes, String encoding) {
         try {
             return new String (bytes, encoding);

@@ -5,8 +5,15 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Conveniences to split, join and generate strings.
+ */
 public class Strings {
-    protected static class CharSplitIterator implements Iterator {
+    /**
+     * A convenient constant: "\r\n".
+     */
+    public static final String CRLF = "\r\n";
+    protected static class CharSplitIterator implements Iterator<String> {
         private String _splitted;
         private char _splitter;
         private int _current = 0;
@@ -19,7 +26,7 @@ public class Strings {
         public boolean hasNext () {
             return !(_next == -1 && _current == -1);
         }
-        public Object next () {
+        public String next () {
             String token;
             if (_current == -1)
                 return null;
@@ -39,15 +46,15 @@ public class Strings {
         }
         public void remove () {/* optional interface? what else now ...*/}
     }
-
     /**
      * Returns an <code>Iterator</code> that splits a string with a single
      * character as fast an lean as possible in Java (without a PCRE and
      * for a maybe too simple use case).
      * 
-     * @pre Iterator strings = Strings.split("one two three", ' ');
+     * @pre Iterator<String> strings = Strings.split("one two three", ' ');
      * 
-     * @test strings = Simple.split("one two three", ' ');
+     * @test importPackage(Packages.org.async.simple);
+     *strings = Strings.split("one two three", ' ');
      *return (
      *    strings.next() == "one" &&
      *    strings.next() == "two" &&
@@ -58,11 +65,10 @@ public class Strings {
      * @param pattern used to split input
      * @return an <code>Iterator</code> of <code>String</code>
      */
-    public static final Iterator split (String text, char splitter) {
+    public static final Iterator<String> split (String text, char splitter) {
         return new CharSplitIterator (text, splitter);
     }
-    
-    protected static class ReSplitIterator implements Iterator {
+    protected static class ReSplitIterator implements Iterator<String> {
         private String _splitted;
         private Matcher _matcher;
         private int _current = 0;
@@ -75,7 +81,7 @@ public class Strings {
         public boolean hasNext () {
             return _matcher != null;
         }
-        public Object next () {
+        public String next () {
             String token;
             if (_matcher == null) {
                 return null;
@@ -99,17 +105,17 @@ public class Strings {
         }
         public void remove () {/* optional interface? what else now ...*/}
     }
-
     /**
      * Returns an <code>Iterator</code> that splits a string with a regular
      * expression but - unlike the standard Java API and like Python's re - 
      * does the right thing and also iterates through the expression groups.
      * 
-     * @pre Iterator strings = Strings.split(
+     * @pre Iterator<String> strings = Strings.split(
      *    "one\t  and  \r\n three", Pattern.compile("\\s+(and|or)\\s+")
      *    );
      * 
-     * @test importClass(Packages.java.util.regex.Pattern)
+     * @test importPackage(Packages.org.async.simple);
+     *importClass(Packages.java.util.regex.Pattern)
      *strings = Strings.split(
      *    "one\t  and  \r\n three", Pattern.compile("\\s+(and|or)\\s+")
      *    );
@@ -123,16 +129,15 @@ public class Strings {
      * @param pattern used to split input
      * @return an <code>Iterator</code> of <code>String</code>
      */
-    public static final Iterator split (String text, Pattern pattern) {
+    public static final Iterator<String> split (String text, Pattern pattern) {
         return new ReSplitIterator (text, pattern);
     }
-    
     /**
      * Join the serialized objects produced by an <code>Iterator</code> in a 
-     * <code>StringBuffer</code>, using another serializable 
+     * <code>StringBuilder</code>, using another serializable 
      * <code>Object</code> as separator between items.
      * 
-     * @pre StringBuffer buffer = new StringBuffer(); 
+     * @pre StringBuilder buffer = new StringBuilder(); 
      *Iterator objects = Strings.iter(new Object[]{"A", "B", "C"});
      *Strings.join(", ", objects, buffer);
      * 
@@ -141,8 +146,8 @@ public class Strings {
      * @param buffer to append strings and separators to
      * @return the appended buffer
      */
-    public static final StringBuffer join (
-        Object separator, Iterator objects, StringBuffer buffer
+    public static final StringBuilder join (
+        Object separator, Iterator objects, StringBuilder buffer
         ) {
         if (objects.hasNext()) {
             buffer.append(objects.next());
@@ -153,13 +158,13 @@ public class Strings {
         }
         return buffer;
     }
-    
     /**
      * Join object's strings with any other type joinable in a 
      * <code>StringBuffer</code>. 
      * 
-     * @test return Strings.join(
-     *    ", ", Simple.iter(["A", "B", "C"])
+     * @test importPackage(Packages.org.async.simple);
+     *return Strings.join(
+     *    ", ", Objects.iter(["A", "B", "C"])
      *    ).equals("A, B, C");
      * 
      * @param separator between joined objects
@@ -167,9 +172,8 @@ public class Strings {
      * @return the joined string
      */
     public static final String join (Object separator, Iterator objects) {
-        return join(separator, objects, new StringBuffer()).toString();
+        return join(separator, objects, new StringBuilder()).toString();
     }
-    
     /**
      * The strictly alphanumeric set of ASCII characters, usefull for
      * ubiquitous identifiers on any devices and in any languages, including
@@ -182,7 +186,6 @@ public class Strings {
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
         'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'        
     };
-    
     /**
      * @p Generate a random string of a given <code>length</code> composed
      * from the given character set.

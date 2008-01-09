@@ -115,9 +115,9 @@ public final class Loop {
    
     protected long _now;
     protected Selector _selector;
-    protected HashMap _dispatched = new HashMap();
-    protected TreeSet _scheduled = new TreeSet();
-    protected LinkedList _continued =  new LinkedList();
+    protected HashMap<String,Dispatcher> _dispatched = new HashMap();
+    protected TreeSet<Scheduled> _scheduled = new TreeSet();
+    protected LinkedList<Function> _finalized =  new LinkedList();
     
     protected Loginfo _log = _stdoe;
     protected int _precision = 100;
@@ -173,11 +173,11 @@ public final class Loop {
      * 
      * @param milliseconds of precision
      * @return the previous precision
-     * @throws Error if the precision set is lower than 10ms
+     * @throws Error if the precision set is lower than 1ms
      */
     public final int setPrecision (int milliseconds) throws Error {
-        if (milliseconds < 10) {
-            throw new Error("Precision lower than 10 milliseconds");
+        if (milliseconds < 1) {
+            throw new Error("Precision lower than 1 milliseconds");
         }
         int previous = _precision;
         _precision = milliseconds;
@@ -282,24 +282,31 @@ public final class Loop {
         _concurrent = 0;
         int ops;
         Dispatcher dispatcher;
-        Iterator dispatchers = _dispatched.values().iterator();
+        Iterator<Dispatcher> dispatchers = _dispatched.values().iterator();
         while (dispatchers.hasNext() && _concurrent < _concurrency) {
-            dispatcher = (Dispatcher) dispatchers.next();
+            dispatcher = dispatchers.next();
             ops = (
                 (dispatcher.writable() ? dispatcher._writable : 0) + 
                 (dispatcher.readable() ? dispatcher._readable : 0)
                 );
-            if (dispatcher._key == null) try {
-                dispatcher._key = dispatcher._channel.register(
-                    _selector, ops, dispatcher
-                    );
-            } catch (ClosedChannelException e) {
-                dispatcher.handleError(e);
-            } else {
-                dispatcher._key.interestOps(ops);
-            }
             if (ops > 0) {
                 _concurrent++;
+            }
+            try {
+                if (dispatcher._key == null) {
+                    dispatcher._key = dispatcher._channel.register(
+                        _selector, ops, dispatcher
+                        );
+                } else if (ops != dispatcher._key.interestOps()) {
+                    if (ops > 0) {
+                        dispatcher._key.interestOps(ops);
+                    } else {
+                        dispatcher._key.cancel();
+                        dispatcher._key = null;
+                    }
+                }
+            } catch (ClosedChannelException e) {
+                dispatcher.handleError(e);
             }
         }
         if (_concurrent == 0) {
@@ -308,9 +315,7 @@ public final class Loop {
             return;
         } else {
             try {
-                if (_selector.selectNow() == 0) {
-                    _sleep(_precision);
-                } 
+                _selector.select(_precision);
             } catch (IOException e) {
                 _log.traceback(e);
             }
@@ -325,25 +330,24 @@ public final class Loop {
     }
     private final void _dispatch_scheduled() throws Exit {
         long recurr;
-        Scheduled event;
-        Iterator events = _scheduled.iterator();
-        while (events.hasNext()) {
-            event = (Scheduled) events.next();
-            if (event.when > _now) {
-                break;
-            }
-            events.remove();
+        Scheduled event = _scheduled.first();
+        while (event.when <= _now) {
+            _scheduled.remove(event);
             try {
                 recurr = event.apply(this);
-                if (recurr > -1) {
+                if (recurr > _now) { // recurr in the future!
                     event.when = recurr;
                     _scheduled.add(event);
-                }
+                } 
             } catch (Exit e) {
                 throw e;
             } catch (Throwable e) {
                 _log.traceback(e);
             }
+            if (_scheduled.isEmpty()) {
+                break;
+            }
+            event = _scheduled.first();
         }
     }
     /**
@@ -354,34 +358,35 @@ public final class Loop {
      */
     public final boolean collect () {
         System.gc();
-        return !(_continued.isEmpty());
+        return !(_finalized.isEmpty());
     }
-    private final void _dispatch_continuations () throws Exit {
-        Call finalized;
-        while (!_continued.isEmpty()) {
-            finalized = ((Call) _continued.removeFirst());
-            try {
-                finalized.cc();
-            } catch (Exit e) {
-                throw e;
-            } catch (Throwable e) {
-                _log.traceback(e);
-            } finally {
-                finalized.continuation = null;
+    private final void _dispatch_finalizations () throws Exit {
+        synchronized(_finalized) {
+            while (!_finalized.isEmpty()) {
+                try {
+                    _finalized.removeFirst().apply(_finalized);
+                } catch (Exit e) {
+                    throw e;
+                } catch (Throwable e) {
+                    _log.traceback(e);
+                }
             }
         }
-        finalized = null; // just to be on the safe side of finalization ;-)
     }
     private final boolean _notEmpty () {
         if (!_dispatched.isEmpty()) {
             return true;
-        } else if (!_scheduled.isEmpty()) {
-            return true;
-        } else if (_continued.isEmpty()) {
-            return collect();
-        } else {
-            return true;
+        } else if (_scheduled.isEmpty()) {
+            if (_finalized.isEmpty()) {
+                return collect();
+            } else {
+                return true;
+            }
+        } 
+        if (_scheduled.first().when > _now) {
+            System.gc();
         }
+        return true;
     }
     
     /**
@@ -399,15 +404,21 @@ public final class Loop {
                 if (_hook != null && _hook.get()) {
                     throw new Loop.Exit("SIGINT");
                 }
-                _dispatch_scheduled ();
-                _dispatch_continuations ();
+                if (!_scheduled.isEmpty()) {
+                    _dispatch_scheduled ();
+                }
+                _dispatch_finalizations ();
             } catch (Exit e) {
                 Function fun; 
                 Iterator exit = exits.iterator();
                 exits = new ArrayList();
                 while (exit.hasNext()) {
                     fun = ((Function) exit.next());
-                    if (((Boolean) fun.apply(e)).booleanValue()) {
+                    Object result = fun.apply(e);
+                    if (
+                        result instanceof Boolean && 
+                        ((Boolean) result).booleanValue()
+                        ) {
                         exits.add(fun);
                     };
                 }
@@ -445,5 +456,10 @@ public final class Loop {
  * @p This implementation relies on <code>java.nio</code> and should instead
  * use C bindings to the native OS socket calls. Until then it will carry
  * the weight of those old locks (although without contention).
+ * 
+ * @p The path of least resistance toward native sockets is probably to
+ * reuse the Apache Portable Runtime (APR) as provided by Tomcat 6.0:
+ * 
+ * http://tomcat.apache.org/tomcat-6.0-doc/api/org/apache/tomcat/jni/package-summary.html
  * 
  */
