@@ -98,11 +98,7 @@ public abstract class Stream extends Dispatcher {
         return false;
     }
     public final void closeWhenDone () {
-        if (writable()) {
-            _fifoOut.add(null);
-        } else {
-            close();
-        }
+        _fifoOut.add(null);
     }
     public abstract void collect () throws Throwable;
     public abstract boolean produce () throws Throwable;

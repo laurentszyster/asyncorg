@@ -19,31 +19,22 @@
 
 package org.async.tests;
 
-import org.async.net.Collector;
 import org.async.net.Dispatcher;
 
 public final class AsyncNetCollectTest extends Dispatcher {
-    public static final class AsyncNetCollectorTest implements Collector {
-        private StringBuffer _sb = new StringBuffer();
-        public final boolean collect (byte[] data) {
-            _sb.append(new String(data));
-            return false;
-        }
-        public final boolean terminate (byte[] data) {
-            _sb.append(new String(data));
-            return false;
-        }
-        public final String toString() {
-            return _sb.toString();
-        }
-    } 
+    private StringBuilder _sb;
     public final void handleConnect() {
     }
-    public final Collector handleCollect(int length) throws Throwable {
-        return new AsyncNetCollectorTest();
+    public final boolean handleLength(int length) throws Throwable {
+        _sb = new StringBuilder();
+        return true;
     }
-    public final void handleCollected() throws Throwable {
-        log(_collector.toString());
+    public final void handleData (byte[] data) {
+        _sb.append(new String(data));
+    }
+    public final boolean handleTerminator() throws Throwable {
+        _loop.log(_sb.toString());
+        return false;
     }
     public final void handleClose() throws Throwable {
     }

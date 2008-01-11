@@ -1,6 +1,6 @@
 package org.async.chat;
 
-public interface Channel extends Collector {
+public interface Channel {
     /**
      * Get the current terminator.
      * 

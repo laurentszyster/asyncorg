@@ -3,9 +3,8 @@ package org.async.tests;
 import java.net.InetSocketAddress;
 
 import org.async.core.Static;
-import org.async.simple.Bytes;
-import org.async.chat.ByteProducer;
 import org.async.protocols.HttpServer;
+import org.async.simple.Bytes;
 
 import java.util.Iterator;
 
@@ -13,10 +12,17 @@ public class HttpServerTest extends HttpServer {
     public HttpServerTest () {
         super(16384, 16384);
     }
+    private void _repr(HttpServer.Channel conn, StringBuilder sb) {
+        sb.append(conn.toString());
+        sb.append("<br />Bytes received: ");
+        sb.append(conn.bytesIn);
+        sb.append(", bytes sent: ");
+        sb.append(conn.bytesOut);
+    } 
     public boolean httpContinue(HttpServer.Actor http) {
         HttpServer.Channel channel = http.channel();
         if (channel.connected()) {
-            StringBuffer body = new StringBuffer();
+            StringBuilder body = new StringBuilder();
             body.append("<html><head><title>");
             body.append(http.method());
             body.append(' ');
@@ -30,20 +36,17 @@ public class HttpServerTest extends HttpServer {
             body.append("</strong></p>");
             Iterator channels = _dispatchers.iterator();
             if (channels.hasNext()) {
-                body.append("<p>Connections</p><ol><li>");
-                body.append(((Channel) channels.next()).toString());
+                body.append("<p>Concurrent connections</p><ol><li>");
+                _repr((HttpServer.Channel) channels.next(), body);
                 while (channels.hasNext()) {
                     body.append("</li><li>");
-                    body.append(((Channel) channels.next()).toString());
+                    _repr((HttpServer.Channel) channels.next(), body);
                 }
                 body.append("</li></ol>");
             }
             body.append("</body></html>");
-            byte[] bytes = Bytes.encode(body.toString(), Bytes.UTF8);
-            http.responseHeader("Connection", "close");
-            http.responseHeader("Content-Length", Integer.toString(bytes.length));
-            http.response(200, new ByteProducer(bytes));
-            channel.closeWhenDone();
+            http.responseHeader("Content-Type", "text/html; charset=UTF-8");
+            http.response(200, Bytes.encode(body.toString(), Bytes.UTF8));
         }
         return false;
     }

@@ -96,7 +96,7 @@ public class DNSClient extends Dispatcher {
         public abstract String[] template();
         public final byte[] datagram () {
             String[] t = template();
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             sb.append((char)(uid>>8)&0xff);
             sb.append((char)uid&0xff);
             sb.append(t[0]);

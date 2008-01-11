@@ -23,7 +23,6 @@ import org.async.core.Loop;
 import org.async.core.Static;
 import org.async.core.Loginfo;
 import org.async.core.Function;
-import org.async.net.Collector;
 import org.async.net.Dispatcher;
 import org.async.simple.Bytes;
 
@@ -47,11 +46,14 @@ public class Netlog implements Function, Loginfo {
         public final void handleConnect() throws Throwable {
             log("connected");
         }
-        public final Collector handleCollect(int length) throws Throwable {
-            throw new Error("Unexpected collect event");
+        public final boolean handleLength(int length) throws Throwable {
+            throw new Error("unexpected input data");
         }
-        public final void handleCollected() throws Throwable {
-            throw new Error("Unexpected collected event");
+        public final void handleData (byte[] data) {
+            throw new Error("unexpectedly reachable code");
+        }
+        public final boolean handleTerminator() throws Throwable {
+            throw new Error("unexpectedly reachable code");
         }
         public final void handleClose() throws Throwable {
             if (!_fifoOut.isEmpty()) {

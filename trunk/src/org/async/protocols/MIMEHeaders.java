@@ -34,9 +34,9 @@ public class MIMEHeaders {
         while (pos < bytes.length) {
             spaceAt = Bytes.find(_SPACE, bytes, pos);
             colonAt = Bytes.find(_COLON, bytes, pos);
-            if (0 < colonAt && colonAt < spaceAt) {
-                if (name == null) {
-                    put(headers, name, value);
+            if (0 < colonAt && (spaceAt == -1 || colonAt < spaceAt)) {
+                if (name != null) {
+                    put(headers, name, value.trim());
                 }
                 name = (new String(bytes, pos, colonAt-pos)).toLowerCase();
                 value = "";
@@ -51,8 +51,8 @@ public class MIMEHeaders {
                 pos = crlfAt + 2;
             }
         }
-        if (name == null) {
-            put(headers, name, value);
+        if (name != null) {
+            put(headers, name, value.trim());
         }
     }
     public static final void update(HashMap headers, String string, int pos) {
@@ -61,9 +61,9 @@ public class MIMEHeaders {
         while (pos < string.length()) {
             spaceAt = string.indexOf(" ", pos);
             colonAt = string.indexOf(":", pos);
-            if (0 < colonAt && colonAt < spaceAt) {
-                if (name == null) {
-                    put(headers, name, value);
+            if (0 < colonAt && (spaceAt == -1 || colonAt < spaceAt)) {
+                if (name != null) {
+                    put(headers, name, value.trim());
                 }
                 name = string.substring(pos, colonAt).toLowerCase();
                 value = "";
@@ -78,8 +78,8 @@ public class MIMEHeaders {
                 pos = crlfAt + 2;
             }
         }
-        if (name == null) {
-            put(headers, name, value);
+        if (name != null) {
+            put(headers, name, value.trim());
         }
     }
     public static final Iterator<String> options (

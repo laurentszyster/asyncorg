@@ -21,83 +21,11 @@ package org.async.chat;
 
 import org.async.core.Loop;
 import org.async.core.Stream;
-import org.async.simple.Bytes;
 
 import java.nio.ByteBuffer;
 
-public abstract class Dispatcher extends Stream implements Channel  {
-    protected static final boolean _notEndsWith (
-            ByteBuffer haystack, int end, byte[] needle, int length
-            ) {
-            for (int i=0; i < length; i++) {
-                if (haystack.get(end+i) != needle[i]) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        protected static final int _findPrefixAtEnd (
-            ByteBuffer haystack, byte[] needle
-            ) {
-            int end = haystack.limit();
-            int l = needle.length - 1;
-            while (l > 0 && _notEndsWith(haystack, end-l, needle, l)) {
-                l--;
-            }
-            return l;
-        }
-    protected static final byte[] _collectIn (int length, ByteBuffer buffer) {
-        byte[] data = new byte[length];
-        buffer.get(data);
-        return data;
-    }
-    public static final boolean collect (Channel channel, ByteBuffer buffer) 
-    throws Throwable {
-        Object terminator;
-        int pos;
-        int lb = buffer.remaining();
-        while (lb > 0) {
-            terminator = channel.getTerminator();
-            if (terminator == null) { // collect all
-                channel.handleData(_collectIn(lb, buffer));
-            } else if (terminator instanceof Integer) {
-                int t = ((Integer)terminator).intValue();
-                if (lb < t) { // collect part of chunk
-                    channel.setTerminator(t - lb);
-                    channel.handleData(_collectIn(lb, buffer));
-                } else { // collect end of a chunk and terminate 
-                    channel.setTerminator(0);
-                    channel.handleData(_collectIn(t, buffer));
-                    if (channel.handleTerminator()) {
-                        return true;
-                    }
-                }
-            } else { // look for a terminator
-                pos = buffer.position();
-                byte[] needle = (byte[]) terminator;
-                int found = Bytes.find(needle, buffer.array(), pos);
-                if (found < 0) { // not found, look for a prefix at the end.
-                    found = _findPrefixAtEnd(buffer, needle);
-                    if (found == 0) {
-                        channel.handleData(_collectIn(lb, buffer));
-                    } else if (found != lb) {
-                        channel.handleData(_collectIn(lb-found, buffer));
-                    }
-                    break;
-                } else { // found, maybe collect and terminate.
-                    if (found > pos) {
-                        channel.handleData(_collectIn(found-pos, buffer));
-                    }
-                    buffer.position(buffer.position()+needle.length);
-                    if (channel.handleTerminator()) {
-                        return true;
-                    }
-                }
-            }
-            lb = buffer.remaining();
-        }
-        return false;
-    }
+public abstract class Dispatcher extends Stream 
+implements Channel, Collector  {
     protected Object _terminator;
     public Dispatcher () {
         super();
@@ -144,7 +72,7 @@ public abstract class Dispatcher extends Stream implements Channel  {
         }
     }
     public final void collect () throws Throwable {
-        _stalledIn = collect(this, _bufferIn);
+        _stalledIn = Collect.collect(this, this, _bufferIn);
     }
     public boolean writable () {
         if (_bufferOut.position() > 0) {

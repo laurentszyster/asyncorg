@@ -1,10 +1,10 @@
 package org.async.protocols;
 
 import org.async.core.Server;
+import org.async.chat.ByteProducer;
 import org.async.chat.Dispatcher;
 import org.async.chat.Producer;
 import org.async.chat.Collector;
-import org.async.chat.StringProducer;
 import org.async.simple.Bytes;
 import org.async.simple.Objects;
 import org.async.simple.Strings;
@@ -13,9 +13,10 @@ import java.util.Iterator;
 import java.util.HashMap;
 import java.util.HashSet;
 
+import java.nio.channels.SocketChannel;
+
 public abstract class HttpServer extends Server {
-    public static final String HTTP10 = "HTTP/1.0";
-    public static final String HTTP11 = "HTTP/1.1";
+    public static final String HTTP11 = "HTTP//1.1";
     protected static HashMap _RESPONSES = Objects.dict(new String[]{
         "100", "Continue",
         "101", "Switching Protocols",
@@ -61,19 +62,18 @@ public abstract class HttpServer extends Server {
         protected String _method = "GET";
         protected String _uri = "/";
         protected String _protocol = "HTTP/0.9";
-        protected HashMap _requestHeaders = new HashMap();
+        protected HashMap<String,String> _requestHeaders = new HashMap();
         protected Collector _requestBody = null;
-        protected HashMap _responseHeaders = new HashMap();
+        protected HashMap<String,String> _responseHeaders = new HashMap();
         protected Producer _responseBody = null;
         private Producer _producer = null;
-        protected Actor(HttpServer.Channel channel, Iterator request) {
-            _channel = channel;
-            if (request.hasNext()) {
-                _method = ((String) request.next()).toUpperCase();
-                if (request.hasNext()) {
-                    _uri = ((String) request.next());
-                    if (request.hasNext()) {
-                        _protocol = ((String) request.next()).toUpperCase();
+        protected final void request (Iterator parts) {
+            if (parts.hasNext()) {
+                _method = ((String) parts.next()).toUpperCase();
+                if (parts.hasNext()) {
+                    _uri = ((String) parts.next());
+                    if (parts.hasNext()) {
+                        _protocol = ((String) parts.next()).toUpperCase();
                     }
                 }
             }
@@ -97,10 +97,23 @@ public abstract class HttpServer extends Server {
             return _requestHeaders;
         };
         public final String requestHeader(String name) {
-            return (String) _requestHeaders.get(name);
+            String value = _requestHeaders.get(name);
+            if (value == null) {
+                return "";
+            } else {
+                return value;
+            }
         };
         public final HashMap responseHeaders() {
             return _responseHeaders;
+        };
+        public final String responseHeader(String name) {
+            String value = _responseHeaders.get(name);
+            if (value == null) {
+                return "";
+            } else {
+                return value;
+            }
         };
         public final void responseHeader(String name, String value) {
             _responseHeaders.put(name, value);
@@ -114,6 +127,15 @@ public abstract class HttpServer extends Server {
         public final void response (int status, Producer body) {
             _status = Integer.toString(status);
             _responseBody = body;
+        }
+        public final void response (int status, byte[] body) {
+            _status = Integer.toString(status);
+            if (_protocol != "HTTP/1.1") {
+                _responseHeaders.put(
+                    "Content-Length", Integer.toString(body.length)
+                    );
+            }
+            _responseBody = new ByteProducer(body);
         }
         private boolean _produced = false; 
         public final boolean produced () {
@@ -131,16 +153,26 @@ public abstract class HttpServer extends Server {
                 } else {
                     _produced = true;
                     if (_responseBody == null) {
-                        _responseBody = new StringProducer("", Bytes.UTF8);
+                        _responseBody = new ByteProducer(new byte[]{});
                     }
-                    String te = (String) _responseHeaders.get("Transfer-Encoding"); 
-                    if (te != null && te.equals("chunked")) {
+                    if (_protocol.equals(HTTP11)) {
+                        _responseHeaders.put("Transfer-Encoding", "chunked");
                         _producer = new ChunkProducer(_responseBody);
                     } else {
+                        if (
+                            _responseHeaders.containsKey("Content-Length") &&
+                            requestHeader("connection")
+                                .toLowerCase().equals("keep-alive")
+                            ) {
+                            _responseHeaders.put("Connection", "keep-alive");
+                        } else {
+                            _responseHeaders.put("Connection", "close");
+                            _channel.closeWhenDone();
+                        }
                         _producer = _responseBody;
                     }
                     String name;
-                    StringBuffer sb = new StringBuffer();
+                    StringBuilder sb = new StringBuilder();
                     sb.append(_protocol);
                     sb.append(' ');
                     sb.append(_status);
@@ -166,7 +198,7 @@ public abstract class HttpServer extends Server {
     public static class Channel extends Dispatcher {
         protected HttpServer _server;
         protected Collector _body = null;
-        protected StringBuffer _buffer = new StringBuffer();
+        protected StringBuilder _buffer = new StringBuilder();
         public Channel (HttpServer server, int in, int out) {
             super(server._loop, in, out);
             _server = server;
@@ -190,11 +222,12 @@ public abstract class HttpServer extends Server {
         public final boolean handleTerminator() throws Throwable {
             if (_body == null) {
                 String buffer = _buffer.toString();
+                _buffer = new StringBuilder();
                 int lb = buffer.length();
                 int pos = 0;
                 int crlfAt = buffer.indexOf(Strings.CRLF);
                 while (crlfAt == pos) {
-                    pos += 4;
+                    pos += 2;
                     if (pos < lb) {
                         crlfAt = buffer.indexOf(Strings.CRLF, pos);
                     } else {
@@ -209,10 +242,12 @@ public abstract class HttpServer extends Server {
                 } else {
                     return false;
                 }
-                Actor http = new Actor(this, Strings.split(request, ' '));
+                Actor http = new Actor();
+                http._channel = this;
+                http.request(Strings.split(request, ' '));
                 push(http);
                 MIMEHeaders.update(
-                    http.requestHeaders(), buffer, crlfAt + 4
+                    http.requestHeaders(), buffer, crlfAt + 2
                     );
                 if (_server.httpContinue(http)) {
                     return true;
@@ -228,7 +263,6 @@ public abstract class HttpServer extends Server {
             return false;
         }
         public boolean httpContinue(Actor http) {
-            // log(http.toString());
             if (http._requestBody == null) {
                 String method = http._method;
                 if (!(
@@ -280,21 +314,21 @@ public abstract class HttpServer extends Server {
         return _dispatchers.iterator();
     } 
     public Object apply(Object input) throws Throwable {
-        log("shutdown");
         close();
         return null;
     }
     public void handleAccept() throws Throwable {
-        Channel channel = new Channel(
-            this, _channelBufferIn, _channelBufferOut
-            );
-        if (accept(channel)) {
+        SocketChannel socket = accept();
+        if (socket != null) {
+            Channel channel = new Channel(
+                this, _channelBufferIn, _channelBufferOut
+                );
+            channel.accepted(socket);
             _dispatchers.add(channel);
             _accepted++;
         }
     }
     public void handleClose() throws Throwable {
-        log("closed");
         Iterator channels = _dispatchers.iterator();
         while (channels.hasNext()) {
             ((Channel) channels.next()).closeWhenDone();
