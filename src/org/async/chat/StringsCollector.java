@@ -22,9 +22,9 @@ package org.async.chat;
 
 public class StringsCollector implements Collector {
     // TODO: replace by a less naive decoder ...
-    protected StringBuffer _buffer;
+    protected StringBuilder _buffer;
     protected String _encoding;
-    public StringsCollector (StringBuffer buffer, String encoding) {
+    public StringsCollector (StringBuilder buffer, String encoding) {
         _buffer = buffer;
         _encoding = encoding;
     }

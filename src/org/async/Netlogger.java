@@ -20,14 +20,12 @@
 package org.async;
 
 import org.async.core.Static;
-import org.async.core.Loop;
 import org.async.core.Server;
 
-import org.async.net.Collector;
 import org.async.net.Dispatcher;
-import org.async.protocols.Netstring;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.SocketChannel;
 
 /**
  * Simple concurrent network logs, although not obvious at first: 
@@ -46,26 +44,12 @@ import java.net.InetSocketAddress;
  *    &1> ./netlogs/tmp/category \ 
  *    &2> ./127.0.0.2/1234/netlogger.tmp
  *    
- * @h3 Protocol
- *    
- * @p Integrity is guaranteed for any netlog entry fitting its netlogger 
- * input buffers (ie: between 8192 and 65356 8-bit bytes). By integrity
- * I understand that from a log consumer point of view either an entry 
- * was completely written to the log file or not, there can be no doubt
- * about it: the byte length precedes the payload. 
- * 
- * @p Note also that any entry with an abusive length for a log entry is 
- * trunked to its tail, preserving disk resources for compliant peers with 
- * minimal disruption over an established connection.
- * 
- * @p A Riddle of Asynchrony
- * 
  * @p Logging netstrings to disk through the network removes a busy point
  * of contention from its applications by moving it to the network.
  * 
  * @p This peer may block writing output to the disk and therefore block 
- * reading from its buffers. But the OS will continue to fill those buffers. 
- * And when they are full peers will start queuing log entries. 
+ * reading from its buffers, then peers will start queuing log entries in
+ * their buffers. 
  * 
  * @p Practically, the a lot of contention weighting on logging peers 
  * CPU and RAM is shared by the clients queing log entries, the IP routers 
@@ -73,38 +57,18 @@ import java.net.InetSocketAddress;
  * it never contends by itself because it is fully asynchronous.
  * 
  * @p Of course the JVM may not be the ideal plateform to host a network
- * logger, but on the other hand Java is the language of choice to develop
+ * logger, but on the other hand Java is a good language to develop
  * an extensible range of network application peers.
  * 
+ * @p This 
 */
 public final class Netlogger extends Server {
     
-    public Netlogger () {
-        super();
-    }
-
-    public Netlogger (Loop loop) {
-        super(loop);
-    }
-
     protected static final class Channel extends Dispatcher {
         
         public Channel () {
-            super(16384, 0, 5); // limit to 99999 bytes lines
+            super(16384, 0); 
         }
-        
-        public static final class Trunk implements Collector {
-            public byte[] tail = null;
-            public final boolean collect (byte[] data) throws Throwable {
-                return false;
-            }
-            public final boolean terminate (byte[] data) throws Throwable {
-                tail = data;
-                return false;
-            }
-        }
-        
-        public Trunk collector = new Trunk();
         
         public final Object apply (Object value) throws Throwable {
             return null;
@@ -114,18 +78,23 @@ public final class Netlogger extends Server {
             log("connected");
         }
         
-        public final Collector handleCollect(int length) throws Throwable {
-            return collector;
+        public final boolean handleLength(int length) throws Throwable {
+            System.out.write(Integer.toString(length).getBytes());
+            System.out.write(':');
+            return true;
         }
-        
-        public final void handleCollected() throws Throwable {
-            Netstring.write(System.out, collector.tail);
-            System.out.flush();
+
+        public final void handleData (byte[] data) throws Throwable {
+            System.out.write(data);
+        }
+
+        public final boolean handleTerminator() throws Throwable {
+            System.out.write(',');
+            return true;
         }
         
         public final void handleClose() {
             log("closed");
-            collector = null; 
         }
 
     }
@@ -137,7 +106,10 @@ public final class Netlogger extends Server {
     }
     
     public void handleAccept() throws Throwable {
-        accept(new Channel());
+        SocketChannel socket = accept();
+        if (socket != null) {
+            (new Channel()).accepted(socket);
+        }
     }
     
     public void handleClose() throws Throwable {

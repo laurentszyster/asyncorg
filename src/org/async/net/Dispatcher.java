@@ -46,21 +46,18 @@ public abstract class Dispatcher extends Stream {
     ERROR_TOO_LONG = "too long netstring";
     
     protected int _terminator = 0;
-    protected int _limit = 10;
-    protected Collector _collector;
+    protected int _limit = 10; // 9.999.999.999 10GB
     public Dispatcher () {
         super();
     }
-    public Dispatcher (int in, int out, int limit) {
+    public Dispatcher (int in, int out) {
         super(in, out);
-        _limit = limit;
     }
     public Dispatcher (Loop loop) {
         super(loop);
     }
-    public Dispatcher (Loop loop, int in, int out, int limit) {
+    public Dispatcher (Loop loop, int in, int out) {
         super(loop, in, out);
-        _limit = limit;
     }
     public final void push (byte[] data) {
         byte[] length = Integer.toString(data.length).getBytes();
@@ -73,19 +70,15 @@ public abstract class Dispatcher extends Stream {
         buffer.put((byte)44);
         _fifoOut.add(buffer);
     }
-    public abstract Collector handleCollect (int length) throws Throwable;
-    
-    public abstract void handleCollected () throws Throwable;
-    
     public final void collect () throws Throwable {
         byte[] data;
-        int prev, next, pos;
+        int prev, next, pos, length;
         int lb = _bufferIn.limit();
         if (_terminator > 0) {
             if (_terminator > lb) {
                 data = new byte[lb];
                 _bufferIn.get(data);
-                _stalledIn = _collector.collect(data);
+                handleData(data);
                 _terminator = _terminator - lb;
                 return;
             } else if (_bufferIn.get(_terminator) == 44) {
@@ -93,8 +86,8 @@ public abstract class Dispatcher extends Stream {
                 _bufferIn.get(data);
                 _bufferIn.position(_terminator);
                 _terminator = lb;
-                _stalledIn = _collector.terminate(data);
-                handleCollected();
+                handleData(data);
+                _stalledIn = handleTerminator();
                 if (_stalledIn) {
                     return;
                 }
@@ -126,15 +119,17 @@ public abstract class Dispatcher extends Stream {
                 break;
             } else { // Found!
                 _bufferIn.position(pos+1);
-                next = pos + Integer.parseInt(new String(
-                    digits, 0, i
-                    )) + 2;
-                _collector = handleCollect(next);
+                length = Integer.parseInt(new String(digits, 0, i));
+                if (!handleLength(length)) {
+                    _stalledIn = true;
+                    return;
+                };
+                next = pos + length + 2;
                 if (next > lb) {
                     if (pos < lb) {
                         data = new byte[lb - pos - 2];
                         _bufferIn.get(data);
-                        _stalledIn = _collector.collect(data);
+                        handleData(data);
                     }
                     _terminator = next - lb;
                     return;
@@ -143,8 +138,8 @@ public abstract class Dispatcher extends Stream {
                     _bufferIn.get(data);
                     _bufferIn.position(next);
                     _terminator = 0;
-                    _stalledIn = _collector.terminate(data);
-                    handleCollected();
+                    handleData(data);
+                    _stalledIn = handleTerminator();
                     if (_stalledIn) {
                         return;
                     }
@@ -181,4 +176,7 @@ public abstract class Dispatcher extends Stream {
         }
         return true;
     }
+    public abstract boolean handleLength (int length) throws Throwable;
+    public abstract void handleData (byte[] data) throws Throwable;
+    public abstract boolean handleTerminator () throws Throwable;
 }

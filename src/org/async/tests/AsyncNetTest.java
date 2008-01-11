@@ -20,7 +20,6 @@
 package org.async.tests;
 
 import org.async.core.Static;
-import org.async.net.Collector;
 import org.async.net.Dispatcher;
 
 import java.net.InetSocketAddress;
@@ -34,11 +33,15 @@ public final class AsyncNetTest extends Dispatcher {
         push("three".getBytes());
     }
     
-    public final Collector handleCollect(int length) throws Throwable {
+    public final boolean handleLength(int length) throws Throwable {
         throw new Error("unexpected input data");
     }
 
-    public final void handleCollected() throws Throwable {
+    public final void handleData (byte[] data) {
+        throw new Error("unexpectedly reachable code");
+    }
+
+    public final boolean handleTerminator() throws Throwable {
         throw new Error("unexpectedly reachable code");
     }
     

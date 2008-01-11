@@ -167,56 +167,63 @@ public abstract class Dispatcher extends Call {
         _loop.log(_name, error.getMessage());
         _loop.log(error);
     }
+    public final void listen (SocketAddress address) throws Throwable {
+        if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
+            listen(address, 5);
+        } else {
+            listen(address, 1000);
+        }
+    }
     /**
      * ...
      * 
      * @param addr
      * @throws Throwable
      */
-    public final void listen (SocketAddress addr) throws Throwable {
-        _name = (getClass().getName() + "@" + addr.toString());
-        _addr = addr;
-        listen();
+    public final void listen (SocketAddress address, int backlog) 
+    throws Throwable {
+        _name = (getClass().getName() + "@" + address.toString());
+        _addr = address;
+        listen(backlog);
     }
     /**
      * ...
      * 
      * @throws Throwable
      */
-    public final void listen () throws Throwable {
+    public final void listen (int backlog) throws Throwable {
         ServerSocketChannel channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
-        channel.socket().bind(_addr);
+        channel.socket().bind(_addr, backlog);
         channel.socket().setReuseAddress(true);
         _channel = channel;
         _add();
         _readable = SelectionKey.OP_ACCEPT;
     }
     /**
+     * 
+     * @return a new <code>SocketChannel</code> or <code>null</code>
+     */
+    public final SocketChannel accept () {
+        try {
+            return ((ServerSocketChannel) _channel).accept();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    /**
      * ...
      * 
      * @param dispatcher
      * @throws Throwable
-     * @return true if a new connection was accepted, false otherwise
      */
-    public final boolean accept (Dispatcher dispatcher) throws Throwable {
-        ServerSocketChannel channel = (ServerSocketChannel) _channel;
-        SocketChannel accepted = channel.accept();
-        if (accepted == null) {
-            return false;
-        } else {
-            accepted.configureBlocking(false);
-            dispatcher._writable = 0;
-            dispatcher._channel = accepted;
-            dispatcher._addr = accepted.socket().getRemoteSocketAddress();;
-            dispatcher._name = (
-                dispatcher.getClass().getName() + 
-                "@" + dispatcher._addr.toString()
-                );
-            dispatcher._add();
-            dispatcher.apply(this);
-            return true;
-        }
+    public final void accepted (SocketChannel channel) throws Throwable {
+        _channel = channel;
+        _channel.configureBlocking(false);
+        _addr = channel.socket().getRemoteSocketAddress();;
+        _name = (getClass().getName() + "@" + _addr.toString());
+        _writable = 0;
+        _add();
     }
     /**
      * Find out wether this dispatcher is connected or not.

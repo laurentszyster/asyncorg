@@ -17,7 +17,7 @@ public class ChunkCollector implements Collector {
     protected Dispatcher _channel;
     protected HashMap _headers = null;
     protected int _state = 0;
-    protected StringBuffer _buffer = new StringBuffer();
+    protected StringBuilder _buffer = new StringBuilder();
     
     public ChunkCollector(Dispatcher channel, Collector collector) {
         _collector = collector;
@@ -66,7 +66,7 @@ public class ChunkCollector implements Collector {
             return false;
         case _COLLECT_CHUNK:
             _state = _COLLECT_SIZE;
-            _buffer = new StringBuffer();
+            _buffer = new StringBuilder();
             _channel.setTerminator(Bytes.CRLF);
             return false;
         case _COLLECT_FOOTERS:
