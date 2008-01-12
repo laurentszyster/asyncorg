@@ -20,11 +20,11 @@
 package org.async.tests;
 
 import org.async.core.Static;
-import org.async.net.Dispatcher;
+import org.async.net.NetDispatcher;
 
 import java.net.InetSocketAddress;
 
-public final class AsyncNetTest extends Dispatcher {
+public final class AsyncNetTest extends NetDispatcher {
 
     public final void handleConnect() {
         log("connected");

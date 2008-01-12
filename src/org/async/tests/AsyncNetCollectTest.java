@@ -19,9 +19,9 @@
 
 package org.async.tests;
 
-import org.async.net.Dispatcher;
+import org.async.net.NetDispatcher;
 
-public final class AsyncNetCollectTest extends Dispatcher {
+public final class AsyncNetCollectTest extends NetDispatcher {
     private StringBuilder _sb;
     public final void handleConnect() {
     }

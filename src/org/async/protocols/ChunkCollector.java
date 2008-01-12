@@ -1,6 +1,25 @@
+/*  Copyright (C) 2007 Laurent A.V. Szyster
+ *
+ *  This library is free software; you can redistribute it and/or modify
+ *  it under the terms of version 2 of the GNU General Public License as
+ *  published by the Free Software Foundation.
+ *  
+ *   http://www.gnu.org/copyleft/gpl.html
+ *  
+ *  This library is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ *  USA
+ *  
+ */
+
 package org.async.protocols;
 
-import org.async.chat.Dispatcher;
+import org.async.chat.ChatDispatcher;
 import org.async.chat.Collector;
 import org.async.simple.Bytes;
 import org.async.simple.Strings;
@@ -14,12 +33,12 @@ public class ChunkCollector implements Collector {
     private static final int _COLLECT_FOOTERS = 2;
     
     protected Collector _collector;
-    protected Dispatcher _channel;
+    protected ChatDispatcher _channel;
     protected HashMap _headers = null;
     protected int _state = 0;
     protected StringBuilder _buffer = new StringBuilder();
     
-    public ChunkCollector(Dispatcher channel, Collector collector) {
+    public ChunkCollector(ChatDispatcher channel, Collector collector) {
         _collector = collector;
         _channel = channel;
         _state = _COLLECT_SIZE;
@@ -27,7 +46,7 @@ public class ChunkCollector implements Collector {
     }
     
     public ChunkCollector(
-        Dispatcher channel, Collector collector, HashMap headers
+        ChatDispatcher channel, Collector collector, HashMap headers
         ) {
         _collector = collector;
         _channel = channel;

@@ -19,15 +19,15 @@
 
 package org.async.tests;
 
-import org.async.Netlog;
 import org.async.core.Function;
 import org.async.core.Static;
+import org.async.net.Log;
 
 import java.net.InetSocketAddress;
 
 public class NetlogTest {
     public static final void main (String[] args) throws Throwable {
-        Netlog netlog = new Netlog();
+        Log netlog = new Log();
         netlog.connect(new InetSocketAddress("127.0.0.2", 12345));
         netlog.connect(new InetSocketAddress("127.0.0.2", 12345), "TRACEBACK");
         Static.loop.log("one");
