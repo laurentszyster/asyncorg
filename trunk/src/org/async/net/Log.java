@@ -17,13 +17,12 @@
  *  
  */
 
-package org.async;
+package org.async.net;
 
 import org.async.core.Loop;
 import org.async.core.Static;
 import org.async.core.Loginfo;
 import org.async.core.Function;
-import org.async.net.Dispatcher;
 import org.async.simple.Bytes;
 
 import java.util.HashMap;
@@ -38,8 +37,8 @@ import java.net.InetSocketAddress;
  *netlog.connect("127.0.0.2", 12345, "DEBUG");
  *
  */
-public class Netlog implements Function, Loginfo {
-    protected class Channel extends Dispatcher {
+public class Log implements Function, Loginfo {
+    protected class Channel extends NetDispatcher {
         public final Object apply(Object value) throws Throwable {
             return null;
         }
@@ -73,10 +72,10 @@ public class Netlog implements Function, Loginfo {
     protected Channel _out = new Channel(); 
     protected Channel _traceback = new Channel(); 
     protected HashMap _categories = new HashMap();
-    public Netlog () {
+    public Log () {
         _attach(Static.loop);
     }
-    public Netlog (Loop loop) {
+    public Log (Loop loop) {
         _attach(loop);
     }
     protected final void _attach(Loop loop) {

@@ -24,19 +24,19 @@ import org.async.core.Stream;
 
 import java.nio.ByteBuffer;
 
-public abstract class Dispatcher extends Stream 
+public abstract class ChatDispatcher extends Stream 
 implements Channel, Collector  {
     protected Object _terminator;
-    public Dispatcher () {
+    public ChatDispatcher () {
         super();
     }
-    public Dispatcher (Loop loop) {
+    public ChatDispatcher (Loop loop) {
         super(loop);
     }
-    public Dispatcher (int in, int out) {
+    public ChatDispatcher (int in, int out) {
         super(in, out);
     }
-    public Dispatcher (Loop loop, int in, int out) {
+    public ChatDispatcher (Loop loop, int in, int out) {
         super(loop, in, out);
     }
     public final Object getTerminator () {

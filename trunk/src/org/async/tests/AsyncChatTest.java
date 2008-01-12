@@ -19,14 +19,14 @@
 
 package org.async.tests;
 
-import org.async.chat.Dispatcher;
+import org.async.chat.ChatDispatcher;
 import org.async.chat.StringsProducer;
 import org.async.core.Function;
 import org.async.core.Static;
 
 import java.net.InetSocketAddress;
 
-public class AsyncChatTest extends Dispatcher {
+public class AsyncChatTest extends ChatDispatcher {
     public AsyncChatTest() {
         super(16384, 4096); // buffer 16KB in, 4KB out  
     }
@@ -36,23 +36,32 @@ public class AsyncChatTest extends Dispatcher {
     public void handleConnect() throws Throwable {
         log("connected");
     }
+    int _dataIn = 0;
     public void handleData (byte[] data) throws Throwable {
+        _dataIn += data.length;
         _loop.log(new String(data, "UTF-8"));
     }
     public boolean handleTerminator () throws Throwable {
-        log("terminator");
-        setTerminator();
+        if (getTerminator() != null) {
+            log("headers, length: " + _dataIn);
+            setTerminator();
+            _dataIn = 0;
+        }
         return false;
     }
     public void handleClose() throws Throwable {
-        log("closed");
+        log("closed, length: " + _dataIn);
     }
     public static final void main (String[] args) throws Throwable {
         try {
             AsyncChatTest chat = new AsyncChatTest();
-            chat.connect(new InetSocketAddress("127.0.0.1", 8080));
+            chat.connect(new InetSocketAddress("127.0.0.2", 80));
             chat.push(StringsProducer.wrap(
-                new String[]{"GET / HTTP/1.0\r\n\r\n"}, "UTF-8"
+                new String[]{
+                    "GET /one HTTP/1.1\r\n\r\n",
+                    "GET /two HTTP/1.1\r\n\r\n",
+                    "GET /three HTTP/1.1\r\n\r\n",
+                    }, "UTF-8"
                 ));
             chat.setTerminator("\r\n\r\n".getBytes());
             chat.finalization = new Function () {

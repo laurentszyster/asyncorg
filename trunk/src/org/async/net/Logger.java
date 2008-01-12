@@ -17,15 +17,13 @@
  *  
  */
 
-package org.async;
+package org.async.net;
 
 import org.async.core.Static;
 import org.async.core.Server;
-
-import org.async.net.Dispatcher;
+import org.async.core.Dispatcher;
 
 import java.net.InetSocketAddress;
-import java.nio.channels.SocketChannel;
 
 /**
  * Simple concurrent network logs, although not obvious at first: 
@@ -40,7 +38,7 @@ import java.nio.channels.SocketChannel;
  * @p For instance, using filesystem categories and a separate tree for
  * netlogger's own error logs:
  * 
- * @pre java -cp org.async.jar Netlogger 127.0.0.2 1234 \
+ * @pre java -cp asyncorg.jar org.async.net.Logger 127.0.0.2 1234 \
  *    &1> ./netlogs/tmp/category \ 
  *    &2> ./127.0.0.2/1234/netlogger.tmp
  *    
@@ -59,12 +57,10 @@ import java.nio.channels.SocketChannel;
  * @p Of course the JVM may not be the ideal plateform to host a network
  * logger, but on the other hand Java is a good language to develop
  * an extensible range of network application peers.
- * 
- * @p This 
-*/
-public final class Netlogger extends Server {
+ */
+public final class Logger extends Server {
     
-    protected static final class Channel extends Dispatcher {
+    protected static final class Channel extends NetDispatcher {
         
         public Channel () {
             super(16384, 0); 
@@ -99,26 +95,18 @@ public final class Netlogger extends Server {
 
     }
     
-    public Object apply (Object value) throws Throwable {
-        log("Shutdown");
-        close();
-        return Boolean.FALSE;
+    public final Dispatcher serverAccept() throws Throwable {
+        return new Channel();
     }
-    
-    public void handleAccept() throws Throwable {
-        SocketChannel socket = accept();
-        if (socket != null) {
-            (new Channel()).accepted(socket);
-        }
+    public final void serverWakeUp () {
+        log("wake up");
     }
-    
-    public void handleClose() throws Throwable {
-        log("Unexpected close event");
+    public final void serverSleep () {
+        log("sleep");
     }
-        
     public static final void main (String args[]) throws Throwable {
         Static.loop.hookShutdown();
-        Netlogger server = new Netlogger();
+        Logger server = new Logger();
         server.listen(new InetSocketAddress(
             (args.length > 0) ? args[0]: "127.0.0.2", 
             (args.length > 1) ? Integer.parseInt(args[1]): 12345

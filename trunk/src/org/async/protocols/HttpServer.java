@@ -1,22 +1,42 @@
+/*  Copyright (C) 2007 Laurent A.V. Szyster
+ *
+ *  This library is free software; you can redistribute it and/or modify
+ *  it under the terms of version 2 of the GNU General Public License as
+ *  published by the Free Software Foundation.
+ *  
+ *   http://www.gnu.org/copyleft/gpl.html
+ *  
+ *  This library is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ *  USA
+ *  
+ */
+
 package org.async.protocols;
 
 import org.async.core.Server;
+import org.async.core.Dispatcher;
+
 import org.async.chat.ByteProducer;
-import org.async.chat.Dispatcher;
+import org.async.chat.ChatDispatcher;
 import org.async.chat.Producer;
 import org.async.chat.Collector;
+
 import org.async.simple.Bytes;
 import org.async.simple.Objects;
 import org.async.simple.Strings;
 
 import java.util.Iterator;
 import java.util.HashMap;
-import java.util.HashSet;
 
-import java.nio.channels.SocketChannel;
 
 public abstract class HttpServer extends Server {
-    public static final String HTTP11 = "HTTP//1.1";
+    public static final String HTTP11 = "HTTP/1.1";
     protected static HashMap _RESPONSES = Objects.dict(new String[]{
         "100", "Continue",
         "101", "Switching Protocols",
@@ -158,6 +178,13 @@ public abstract class HttpServer extends Server {
                     if (_protocol.equals(HTTP11)) {
                         _responseHeaders.put("Transfer-Encoding", "chunked");
                         _producer = new ChunkProducer(_responseBody);
+                        if (requestHeader("connection")
+                                .toLowerCase().equals("keep-alive")) {
+                            _responseHeaders.put("Connection", "keep-alive");
+                        } else {
+                            _responseHeaders.put("Connection", "close");
+                            _channel.closeWhenDone();
+                        }
                     } else {
                         if (
                             _responseHeaders.containsKey("Content-Length") &&
@@ -195,7 +222,7 @@ public abstract class HttpServer extends Server {
             }
         }
     }
-    public static class Channel extends Dispatcher {
+    public static class Channel extends ChatDispatcher {
         protected HttpServer _server;
         protected Collector _body = null;
         protected StringBuilder _buffer = new StringBuilder();
@@ -295,11 +322,9 @@ public abstract class HttpServer extends Server {
         }
         public final void close () {
             super.close();
-            _server._dispatchers.remove(this);
+            _server.serverClose(this);
         }
     }
-    protected long _accepted = 0; 
-    protected HashSet _dispatchers = new HashSet();
     protected int _channelBufferIn = 16384;
     protected int _channelBufferOut = 16384;
     public HttpServer () {
@@ -310,29 +335,19 @@ public abstract class HttpServer extends Server {
         _channelBufferIn = in;
         _channelBufferOut = out;
     }
-    public Iterator connections() {
-        return _dispatchers.iterator();
-    } 
-    public Object apply(Object input) throws Throwable {
-        close();
-        return null;
-    }
-    public void handleAccept() throws Throwable {
-        SocketChannel socket = accept();
-        if (socket != null) {
-            Channel channel = new Channel(
-                this, _channelBufferIn, _channelBufferOut
-                );
-            channel.accepted(socket);
-            _dispatchers.add(channel);
-            _accepted++;
-        }
-    }
-    public void handleClose() throws Throwable {
+    public void close() {
+        super.close();
         Iterator channels = _dispatchers.iterator();
         while (channels.hasNext()) {
             ((Channel) channels.next()).closeWhenDone();
         }
     }
+    public Dispatcher serverAccept() throws Throwable {
+        return new Channel(this, _channelBufferIn, _channelBufferOut);
+    }
     public abstract boolean httpContinue(Actor http);
+    public static interface Handler {
+        public void configure(String context);
+        public boolean httpContinue(Actor http);
+    }
 }

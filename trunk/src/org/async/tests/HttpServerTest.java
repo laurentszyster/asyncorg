@@ -12,6 +12,20 @@ public class HttpServerTest extends HttpServer {
     public HttpServerTest () {
         super(16384, 16384);
     }
+    public Object apply (Object arg) throws Throwable {
+        log("shutdown");
+        return super.apply(arg);
+    }
+    public void serverWakeUp () {
+        log("wake up");
+    }
+    public void serverSleep () {
+        if (connected()) {
+            log("sleep");
+        } else {
+            log("stop, bytes in: " + bytesIn + ", out: " + bytesOut);
+        }
+    }
     private void _repr(HttpServer.Channel conn, StringBuilder sb) {
         sb.append(conn.toString());
         sb.append("<br />Bytes received: ");
@@ -34,7 +48,7 @@ public class HttpServerTest extends HttpServer {
             body.append("</h1><p>Accepted until now: <strong>");
             body.append(_accepted);
             body.append("</strong></p>");
-            Iterator channels = _dispatchers.iterator();
+            Iterator channels = serverDispatchers();
             if (channels.hasNext()) {
                 body.append("<p>Concurrent connections</p><ol><li>");
                 _repr((HttpServer.Channel) channels.next(), body);
@@ -47,6 +61,7 @@ public class HttpServerTest extends HttpServer {
             body.append("</body></html>");
             http.responseHeader("Content-Type", "text/html; charset=UTF-8");
             http.response(200, Bytes.encode(body.toString(), Bytes.UTF8));
+            Static.loop.log(channel.toString() + " " + http.toString());
         }
         return false;
     }

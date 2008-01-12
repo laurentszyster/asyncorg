@@ -199,6 +199,7 @@ public abstract class Dispatcher extends Call {
         _channel = channel;
         _add();
         _readable = SelectionKey.OP_ACCEPT;
+        _connected = true;
     }
     /**
      * 

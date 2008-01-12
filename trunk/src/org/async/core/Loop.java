@@ -350,16 +350,6 @@ public final class Loop {
             event = _scheduled.first();
         }
     }
-    /**
-     * Collect the VM's garbage and returns wether <code>Call</code>s
-     * were collected or not.
-     * 
-     * @return <code>true</code> if <code>Call</code>s were collected
-     */
-    public final boolean collect () {
-        System.gc();
-        return !(_finalized.isEmpty());
-    }
     private final void _dispatch_finalizations () throws Exit {
         synchronized(_finalized) {
             while (!_finalized.isEmpty()) {
@@ -377,14 +367,12 @@ public final class Loop {
         if (!_dispatched.isEmpty()) {
             return true;
         } else if (_scheduled.isEmpty()) {
-            if (_finalized.isEmpty()) {
-                return collect();
-            } else {
-                return true;
-            }
-        } 
-        if (_scheduled.first().when > _now) {
             System.gc();
+            System.runFinalization();
+            return !(_finalized.isEmpty());
+        } else if (_scheduled.first().when > _now) {
+            System.gc();
+            System.runFinalization();
         }
         return true;
     }

@@ -34,7 +34,7 @@ import org.async.core.Stream;
  * @p See <code>Netlog</code> and <code>Netlogger</code> for implementations 
  * of netstring client and server channels. 
  */
-public abstract class Dispatcher extends Stream {
+public abstract class NetDispatcher extends Stream {
     
     private static final String 
     ERROR_INVALID_PROLOGUE = "invalid netstring prologue"; 
@@ -47,16 +47,16 @@ public abstract class Dispatcher extends Stream {
     
     protected int _terminator = 0;
     protected int _limit = 10; // 9.999.999.999 10GB
-    public Dispatcher () {
+    public NetDispatcher () {
         super();
     }
-    public Dispatcher (int in, int out) {
+    public NetDispatcher (int in, int out) {
         super(in, out);
     }
-    public Dispatcher (Loop loop) {
+    public NetDispatcher (Loop loop) {
         super(loop);
     }
-    public Dispatcher (Loop loop, int in, int out) {
+    public NetDispatcher (Loop loop, int in, int out) {
         super(loop, in, out);
     }
     public final void push (byte[] data) {
