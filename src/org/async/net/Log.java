@@ -20,7 +20,6 @@
 package org.async.net;
 
 import org.async.core.Loop;
-import org.async.core.Static;
 import org.async.core.Loginfo;
 import org.async.core.Function;
 import org.async.simple.Bytes;
@@ -55,10 +54,10 @@ public class Log implements Function, Loginfo {
             throw new Error("unexpectedly reachable code");
         }
         public final void handleClose() throws Throwable {
-            if (!_fifoOut.isEmpty()) {
-                _bufferOut.clear();
-                connect(); // reconnect on failure ...
-            }
+            log("handle closed");
+            //if (!_fifoOut.isEmpty()) {
+            //    _bufferOut.clear();
+            //}
         }
         public final void push (String data) throws Throwable {
             if (_channel == null) {
@@ -70,13 +69,12 @@ public class Log implements Function, Loginfo {
     protected Loop _loop;
     protected Loginfo _wrapped = null;
     protected Channel _out = new Channel(); 
-    protected Channel _traceback = new Channel(); 
+    protected Channel _traceback = null; 
     protected HashMap _categories = new HashMap();
-    public Log () {
-        _attach(Static.loop);
-    }
-    public Log (Loop loop) {
-        _attach(loop);
+    public static final Log attach (Loop loop) {
+        Log log = (new Log());
+        log._attach(loop);
+        return log;
     }
     protected final void _attach(Loop loop) {
         _loop = loop;
@@ -99,6 +97,7 @@ public class Log implements Function, Loginfo {
     public final void connect(InetSocketAddress addr, String category) 
     throws Throwable {
         if (category.equals("TRACEBACK")) {
+            _traceback = new Channel();
             _traceback.connect(addr);
         } else {
             Channel channel = new Channel();
@@ -125,7 +124,7 @@ public class Log implements Function, Loginfo {
         try {
             _out.push(message);
         } catch (Throwable e) {
-            _detach();
+            _wrapped.traceback(e);
         }
     }
     public final void err (String category, String message) {
@@ -135,14 +134,32 @@ public class Log implements Function, Loginfo {
         } else try {
             _err.push(message);
         } catch (Throwable e) {
-            _detach();
+            _wrapped.traceback(e);
         }
     }
     public final void traceback (Throwable error) {
-        try {
-            _traceback.push(error.getMessage());
+        if (_traceback == null) {
+            _wrapped.traceback(error);
+        } else try {
+            StringBuilder sb = new StringBuilder();
+            sb.append(error.getClass().getName());
+            sb.append(": ");
+            sb.append(error.getMessage());
+            StackTraceElement[] st = error.getStackTrace();
+            for (int i=0; i<st.length; i++) {
+                sb.append("\r\n\tat ");
+                sb.append(st[i].getClassName());
+                sb.append('.');
+                sb.append(st[i].getMethodName());
+                sb.append('(');
+                sb.append(st[i].getFileName());
+                sb.append(':');
+                sb.append(st[i].getLineNumber());
+                sb.append(')');
+            }
+            _traceback.push(sb.toString());
         } catch (Throwable e) {
-            _detach();
+            _wrapped.traceback(e);
         }
     }
 }

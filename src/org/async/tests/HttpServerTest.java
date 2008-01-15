@@ -4,65 +4,32 @@ import java.net.InetSocketAddress;
 
 import org.async.core.Static;
 import org.async.protocols.HttpServer;
+import org.async.protocols.JSON;
 import org.async.simple.Bytes;
 
 import java.util.Iterator;
 
 public class HttpServerTest extends HttpServer {
-    public HttpServerTest () {
-        super(16384, 16384);
-    }
-    public Object apply (Object arg) throws Throwable {
-        log("shutdown");
-        return super.apply(arg);
-    }
-    public void serverWakeUp () {
-        log("wake up");
-    }
-    public void serverSleep () {
-        if (connected()) {
-            log("sleep");
-        } else {
-            log("stop, bytes in: " + bytesIn + ", out: " + bytesOut);
-        }
-    }
-    private void _repr(HttpServer.Channel conn, StringBuilder sb) {
-        sb.append(conn.toString());
-        sb.append("<br />Bytes received: ");
-        sb.append(conn.bytesIn);
-        sb.append(", bytes sent: ");
-        sb.append(conn.bytesOut);
-    } 
     public boolean httpContinue(HttpServer.Actor http) {
-        HttpServer.Channel channel = http.channel();
-        if (channel.connected()) {
-            StringBuilder body = new StringBuilder();
-            body.append("<html><head><title>");
-            body.append(http.method());
-            body.append(' ');
-            body.append(http.uri());
-            body.append("</title></head><body><h1>");
-            body.append(http.protocol());
-            body.append(' ');
-            body.append("200");
-            body.append("</h1><p>Accepted until now: <strong>");
-            body.append(_accepted);
-            body.append("</strong></p>");
-            Iterator channels = serverDispatchers();
-            if (channels.hasNext()) {
-                body.append("<p>Concurrent connections</p><ol><li>");
-                _repr((HttpServer.Channel) channels.next(), body);
-                while (channels.hasNext()) {
-                    body.append("</li><li>");
-                    _repr((HttpServer.Channel) channels.next(), body);
-                }
-                body.append("</li></ol>");
-            }
-            body.append("</body></html>");
-            http.responseHeader("Content-Type", "text/html; charset=UTF-8");
-            http.response(200, Bytes.encode(body.toString(), Bytes.UTF8));
-            Static.loop.log(channel.toString() + " " + http.toString());
+        JSON.Array concurrent = new JSON.Array();
+        JSON.Object json = JSON.dict(new Object[]{
+            "accepted", new Long(_accepted),
+            "concurrent", concurrent
+        });
+        HttpServer.Channel channel;
+        Iterator channels = _dispatchers.iterator();
+        while (channels.hasNext()) {
+            channel = (HttpServer.Channel) channels.next();
+            concurrent.add(JSON.dict(new Object[]{
+                "name", channel.toString(),
+                "bytesIn", channel.bytesIn,
+                "bytesOut", channel.bytesOut
+            }));
         }
+        http.responseHeader(
+            "Content-Type", "text/javascript; charset=UTF-8"
+            );
+        http.response(200, Bytes.encode(JSON.pprint(json), Bytes.UTF8));
         return false;
     }
     public static void main (String[] args) throws Throwable {
@@ -73,6 +40,7 @@ public class HttpServerTest extends HttpServer {
             (args.length > 1) ? Integer.parseInt(args[1]): 80
             ));
         Static.loop.exits.add(server);
+        server.log("listen { \"when\": " + System.currentTimeMillis() + " }");
         Static.loop.dispatch();
     }
 }

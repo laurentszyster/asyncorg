@@ -27,13 +27,28 @@ import java.net.InetSocketAddress;
 
 public class NetlogTest {
     public static final void main (String[] args) throws Throwable {
-        Log netlog = new Log();
-        netlog.connect(new InetSocketAddress("127.0.0.2", 12345));
-        netlog.connect(new InetSocketAddress("127.0.0.2", 12345), "TRACEBACK");
+        Log netlog = Log.attach(Static.loop);
+        netlog.connect(
+            new InetSocketAddress("127.0.0.2", 12345)
+            );
+        netlog.connect(
+            new InetSocketAddress("127.0.0.2", 12345), "TRACEBACK"
+            );
         Static.loop.log("one");
-        Static.loop.timeout(3000, new Function() {
-            public final Object apply (Object current) {
+        Static.loop.timeout(2000, new Function() {
+            public final Object apply (Object current) throws Throwable {
                 Static.loop.log("two");
+                return new Long(-1);
+            }
+        });
+        Static.loop.timeout(4000, new Function() {
+            public final Object apply (Object current) throws Throwable {
+                throw new Error("three");
+            }
+        });
+        Static.loop.timeout(6000, new Function() {
+            public final Object apply (Object current) throws Throwable {
+                Static.loop.log("four");
                 return new Long(-1);
             }
         });

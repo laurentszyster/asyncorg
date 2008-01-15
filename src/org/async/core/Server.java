@@ -26,19 +26,46 @@ import java.util.HashSet;
 
 
 public abstract class Server extends Dispatcher {
+    protected static class Maintenance extends Scheduled {
+        Server _server;
+        public Maintenance (Server server) {
+            _server = server;
+        }
+        public final long apply(Loop loop) {
+            if (_server._dispatchers.isEmpty()) {
+                _server._active = null;
+                _server.serverSleep();
+                return -1;
+            } else {
+                _server.serverMaintain();
+                return when + _server.precision;
+            }
+        }
+    }
+    private Maintenance _active = null;
     protected boolean _accepting = true;
     protected long _accepted = 0; 
     protected long _dispatched = 0; 
-    protected HashSet<Dispatcher> _dispatchers = new HashSet(); 
+    protected HashSet<Stream> _dispatchers = new HashSet(); 
+    public int precision = 1000;
+    public int timeout = 3000;
     public Server () {
         super();
     }
     public Server (Loop loop) {
         super(loop);
     }
-    public Object apply (Object value) throws Throwable {
+    public Object apply (Object arg) throws Throwable {
+        log("shutdown { \"when\": " + _loop.now() + " }");
         close();
         return Boolean.TRUE;
+    }
+    public void close() {
+        super.close();
+        Iterator<Stream> streams = _dispatchers.iterator();
+        while (streams.hasNext()) {
+            streams.next().closeWhenDone();
+        }
     }
     public final boolean writable () {
         return false;
@@ -46,14 +73,16 @@ public abstract class Server extends Dispatcher {
     public boolean readable () {
         return _accepting;
     }
-    public void handleAccept() throws Throwable {
+    public final void handleAccept() throws Throwable {
         SocketChannel socket = accept();
         if (socket != null) {
-            Dispatcher channel = serverAccept();
+            Stream channel = serverAccept();
             channel.accepted(socket);
             _dispatchers.add(channel);
             _accepted++;
-            if (_dispatchers.size() == 1) {
+            if (_active == null) {
+                _active = new Maintenance(this);
+                _loop.timeout(_active, 3000);
                 serverWakeUp();
             }
         }
@@ -70,20 +99,43 @@ public abstract class Server extends Dispatcher {
     public void handleClose() throws Throwable {
         log("unexpected close event");
     }
-    public abstract Dispatcher serverAccept() throws Throwable;
-    public final Iterator<Dispatcher> serverDispatchers() {
-        return _dispatchers.iterator();
-    }
-    public void serverClose(Dispatcher channel) {
+    //public final Iterator<Stream> serverDispatchers() {
+    //    return _dispatchers.iterator();
+    //}
+    public final void serverClose(Dispatcher channel) {
         bytesIn += channel.bytesIn;
         bytesOut += channel.bytesOut;
         _dispatched++;
         _dispatchers.remove(channel);
-        if (_dispatchers.isEmpty()) {
-            serverSleep();
+    }
+    public final void serverCloseInactivesWhenDone (int in, int out) {
+        Stream stream;
+        Iterator<Stream> streams = _dispatchers.iterator();
+        while (streams.hasNext()) {
+            stream = streams.next();
+            if (stream._fifoOut.isEmpty() && stream.inactive(in, out)) {
+                stream.closeWhenDone();
+            }
         }
     }
-    public abstract void serverWakeUp();
-    public abstract void serverSleep();
+    public abstract Stream serverAccept();
+    public void serverWakeUp () {
+        log("wake_up " +
+            "{ \"when\": " + _loop.now() + 
+            ", \"precision\": " + precision + 
+            ", \"timeout\": " + timeout + " }");
+    }
+    public void serverMaintain() {
+        serverCloseInactivesWhenDone(timeout, 0);
+    };
+    public void serverSleep () {
+        log("sleep " +
+            "{ \"when\": " + _loop.now() +
+            ", \"accepted\": " + _accepted + 
+            ", \"dispatched\": " + _dispatched + 
+            ", \"bytesIn\": " + bytesIn + 
+            ", \"bytesOut\": " + bytesOut + " }");
+        _dispatched = _accepted = bytesIn = bytesOut = 0;
+    }
 }
 

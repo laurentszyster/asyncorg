@@ -153,7 +153,7 @@ public abstract class NetDispatcher extends Stream {
     }
     public boolean writable () {
         return !(
-            _bufferOut.remaining() == 0 && 
+            _bufferOut.position() == 0 && 
             _fifoOut.isEmpty() && 
             _connected
             );

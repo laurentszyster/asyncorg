@@ -35,6 +35,6 @@ public class GuardCollector implements Collector {
         _guarded.handleData(data);
     }
     public boolean handleTerminator() throws Throwable {
-        return (_limit < 0);
+        return _guarded.handleTerminator();
     }
 }
