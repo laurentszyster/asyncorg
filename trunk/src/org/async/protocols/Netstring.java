@@ -72,6 +72,8 @@ import org.async.simple.Bytes;
  */
 public final class Netstring {
     
+    public static final byte[] ZERO = new byte[]{'0', ':', ','};
+    
     public static final String 
     ERROR_UNEXPECTED_END = "unexpected netstring end";
     

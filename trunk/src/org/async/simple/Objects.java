@@ -158,7 +158,7 @@ public final class Objects {
      * @pre HashMap map = Objects.dict(new Object[]{
      *     "A", "test", 
      *     "B", true, 
-     *     "C": new Integer(1), 
+     *     "C", new Integer(1), 
      *     "D", false
      *     });
      * 

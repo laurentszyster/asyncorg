@@ -21,26 +21,23 @@ package org.async.net;
 
 import org.async.core.Static;
 import org.async.core.Server;
-import org.async.core.Dispatcher;
-
+import org.async.core.Stream;
+import org.async.protocols.Netstring;
+import org.async.simple.SIO;
 import java.net.InetSocketAddress;
+import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.BufferedOutputStream;
 
 /**
  * Simple concurrent network logs, although not obvious at first: 
- * one asynchronous loop, one log <code>OutputStream</code> and up to 
+ * one asynchronous loop, one log file by connection and up to 
  * 512 peers (this one included). 
  * 
  * @h3 Synopsis
  * 
- * @p Start a <code>Netlogger</code> for each distinct categories of logs
- * required by your applications.
- * 
- * @p For instance, using filesystem categories and a separate tree for
- * netlogger's own error logs:
- * 
- * @pre java -cp asyncorg.jar org.async.net.Logger 127.0.0.2 1234 \
- *    &1> ./netlogs/tmp/category \ 
- *    &2> ./127.0.0.2/1234/netlogger.tmp
+ * @pre java -cp asyncorg.jar org.async.net.Logger \
+ *    ./log 127.0.0.2 1234 3 1
  *    
  * @p Logging netstrings to disk through the network removes a busy point
  * of contention from its applications by moving it to the network.
@@ -59,61 +56,72 @@ import java.net.InetSocketAddress;
  * an extensible range of network application peers.
  */
 public final class Logger extends Server {
-    
     protected static final class Channel extends NetDispatcher {
-        
-        public Channel () {
-            super(16384, 0); 
+        protected Logger _server;
+        protected BufferedOutputStream _output;
+        public Channel (Logger server) {
+            super(server._loop, 16384, 0);
+            _server = server;
         }
-        
         public final Object apply (Object value) throws Throwable {
             return null;
         }
-        
-        public final void handleConnect() {
+        public final void handleConnect() throws Throwable {
             log("connected");
+            _output = new BufferedOutputStream((new FileOutputStream(
+                _server.path 
+                + toString().replace(':', '_') 
+                + "_" + _loop.now() + ".net"
+                )), SIO.fioBufferSize);
         }
-        
         public final boolean handleLength(int length) throws Throwable {
-            System.out.write(Integer.toString(length).getBytes());
-            System.out.write(':');
+            _output.write(Integer.toString(length).getBytes());
+            _output.write(':');
             return true;
         }
-
         public final void handleData (byte[] data) throws Throwable {
-            System.out.write(data);
+            _output.write(data);
         }
-
         public final boolean handleTerminator() throws Throwable {
-            System.out.write(',');
-            return true;
+            _output.write(',');
+            return false;
         }
-        
-        public final void handleClose() {
+        public final void handleClose() throws Throwable {
+            _output.write(Netstring.ZERO);
+        }
+        public final void close () {
             log("closed");
+            super.close();
+            _server.serverClose(this);
+            if (_output != null) try {
+                _output.close();
+            } catch (IOException e) {
+                log(e);
+            }
         }
-
     }
-    
-    public final Dispatcher serverAccept() throws Throwable {
-        return new Channel();
-    }
-    public final void serverWakeUp () {
-        log("wake up");
-    }
-    public final void serverSleep () {
-        log("sleep");
+    String path = ".";
+    public final Stream serverAccept() {
+        return new Channel(this);
     }
     public static final void main (String args[]) throws Throwable {
         Static.loop.hookShutdown();
         Logger server = new Logger();
+        if (args.length > 0) {
+            server.path = args[0];
+        }
         server.listen(new InetSocketAddress(
-            (args.length > 0) ? args[0]: "127.0.0.2", 
-            (args.length > 1) ? Integer.parseInt(args[1]): 12345
+            (args.length > 1) ? args[1]: "127.0.0.2", 
+            (args.length > 2) ? Integer.parseInt(args[2]): 12345
             ));
+        if (args.length > 3) {
+            server.timeout = Integer.parseInt(args[4])*1000; 
+        }
+        if (args.length > 4) {
+            server.precision = Integer.parseInt(args[4])*1000; 
+        }
         Static.loop.exits.add(server);
         Static.loop.dispatch();
         System.exit(0);
     }
-    
 }

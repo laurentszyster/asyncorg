@@ -54,7 +54,7 @@ public abstract class Dispatcher extends Call {
     protected int _readable = SelectionKey.OP_READ;
     protected boolean _connected = false;
     protected SocketAddress _addr; 
-    protected String _name;
+    protected String _name = "";
     protected final void _add () {
         _loop._dispatched.put(this._name, this);
     }
@@ -132,7 +132,6 @@ public abstract class Dispatcher extends Call {
      *
      */
     public Dispatcher () {
-        _name = this.toString();
         when = Static.loop._now;
     }
     /**
@@ -143,7 +142,7 @@ public abstract class Dispatcher extends Call {
     public Dispatcher(Loop loop) {
         _name = this.toString();
         this._loop = loop;
-        when = loop._now;
+        when = whenIn = whenOut = loop._now;
     }
     public String toString () {
         return _name;
@@ -182,7 +181,7 @@ public abstract class Dispatcher extends Call {
      */
     public final void listen (SocketAddress address, int backlog) 
     throws Throwable {
-        _name = (getClass().getName() + "@" + address.toString());
+        _name = address.toString();
         _addr = address;
         listen(backlog);
     }
@@ -222,7 +221,7 @@ public abstract class Dispatcher extends Call {
         _channel = channel;
         _channel.configureBlocking(false);
         _addr = channel.socket().getRemoteSocketAddress();;
-        _name = (getClass().getName() + "@" + _addr.toString());
+        _name = _addr.toString();
         _writable = 0;
         _add();
     }
@@ -243,7 +242,7 @@ public abstract class Dispatcher extends Call {
      * @throws Throwable
      */
     public final void connect (SocketAddress address) throws Throwable {
-        _name = getClass().getName() + "@" + address.toString();
+        _name = address.toString();
         _addr = address;
         connect();
     }
@@ -319,8 +318,8 @@ public abstract class Dispatcher extends Call {
      * @throws Throwable
      */
     public final void bind (SocketAddress address) throws Throwable {
+        _name = address.toString();
         _addr = address;
-        _name = getClass().getName() + "@" + address.toString();
         bind();
     }
     /**
@@ -385,6 +384,9 @@ public abstract class Dispatcher extends Call {
             whenOut = _loop._now;
         }
         return sent;
+    }
+    public final boolean inactive(int in, int out) {
+        return (whenIn < _loop._now - in || whenOut < _loop._now - out);
     }
     /**
      * Try to close this dispatcher's socket or log an error traceback.

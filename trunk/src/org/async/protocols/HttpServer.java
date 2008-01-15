@@ -20,24 +20,19 @@
 package org.async.protocols;
 
 import org.async.core.Server;
-import org.async.core.Dispatcher;
-
+import org.async.core.Stream;
 import org.async.chat.ByteProducer;
 import org.async.chat.ChatDispatcher;
 import org.async.chat.Producer;
 import org.async.chat.Collector;
-
 import org.async.simple.Bytes;
 import org.async.simple.Objects;
 import org.async.simple.Strings;
-
 import java.util.Iterator;
 import java.util.HashMap;
 
-
 public abstract class HttpServer extends Server {
-    public static final String HTTP11 = "HTTP/1.1";
-    protected static HashMap _RESPONSES = Objects.dict(new String[]{
+    public static final HashMap RESPONSES = Objects.dict(new String[]{
         "100", "Continue",
         "101", "Switching Protocols",
         "200", "OK", 
@@ -99,7 +94,13 @@ public abstract class HttpServer extends Server {
             }
         }
         public String toString() {
-            return _method + " " + _uri + " " + _protocol + " " + _status;
+            return (
+                _channel.toString()  
+                + " " + _method 
+                + " " + _uri 
+                + " " + _protocol 
+                + " " + _status
+                );
         }
         public final Channel channel () {
             return _channel;
@@ -113,9 +114,6 @@ public abstract class HttpServer extends Server {
         public final String protocol() {
             return _protocol;
         }
-        public final HashMap requestHeaders() {
-            return _requestHeaders;
-        };
         public final String requestHeader(String name) {
             String value = _requestHeaders.get(name);
             if (value == null) {
@@ -169,13 +167,14 @@ public abstract class HttpServer extends Server {
         public final byte[] more() throws Throwable {
             if (_producer == null) {
                 if (_produced) {
+                    _channel._server.httpLog(this);
                     return null;
                 } else {
                     _produced = true;
                     if (_responseBody == null) {
                         _responseBody = new ByteProducer(new byte[]{});
                     }
-                    if (_protocol.equals(HTTP11)) {
+                    if (_protocol.equals("HTTP/1.1")) {
                         _responseHeaders.put("Transfer-Encoding", "chunked");
                         _producer = new ChunkProducer(_responseBody);
                         if (requestHeader("connection")
@@ -204,7 +203,7 @@ public abstract class HttpServer extends Server {
                     sb.append(' ');
                     sb.append(_status);
                     sb.append(' ');
-                    sb.append(_RESPONSES.get(_status));
+                    sb.append(RESPONSES.get(_status));
                     sb.append(Strings.CRLF);
                     Iterator names = _responseHeaders.keySet().iterator();
                     while (names.hasNext()) {
@@ -218,7 +217,11 @@ public abstract class HttpServer extends Server {
                     return Bytes.encode(sb.toString(), "UTF-8");
                 }
             } else {
-                return _producer.more();
+                byte[] data = _producer.more();
+                if (data == null) {
+                    _channel._server.httpLog(this);
+                }
+                return data;
             }
         }
     }
@@ -226,8 +229,8 @@ public abstract class HttpServer extends Server {
         protected HttpServer _server;
         protected Collector _body = null;
         protected StringBuilder _buffer = new StringBuilder();
-        public Channel (HttpServer server, int in, int out) {
-            super(server._loop, in, out);
+        public Channel (HttpServer server) {
+            super(server._loop, server._bufferSizeIn, server._bufferSizeOut);
             _server = server;
         }
         public final HttpServer server() {
@@ -269,13 +272,11 @@ public abstract class HttpServer extends Server {
                 } else {
                     return false;
                 }
-                Actor http = new Actor();
+                Actor http = _server.httpActor();
                 http._channel = this;
                 http.request(Strings.split(request, ' '));
                 push(http);
-                MIMEHeaders.update(
-                    http.requestHeaders(), buffer, crlfAt + 2
-                    );
+                MIMEHeaders.update(http._requestHeaders, buffer, crlfAt + 2);
                 if (_server.httpContinue(http)) {
                     return true;
                 }
@@ -301,7 +302,7 @@ public abstract class HttpServer extends Server {
                     return true;
                 }
             } else {
-                String te = (String) http._requestHeaders.get("transfer-encoding");
+                String te = http._requestHeaders.get("transfer-encoding");
                 if (te != null && te.toLowerCase().startsWith("chunked")) {
                     _body = new ChunkCollector(
                         this, http._requestBody, http._requestHeaders
@@ -313,6 +314,13 @@ public abstract class HttpServer extends Server {
             return false;
         }
         public final void handleClose() throws Throwable {
+            // TODO: find out what to do when an HTTP server channel
+            //       is closed by the peer (and that should not be done
+            //       if it is closed by the server itself ...)
+        }
+        public final void close () {
+            super.close();
+            _server.serverClose(this);
             while (!_fifoOut.isEmpty()) {
                 Object head = _fifoOut.removeFirst();
                 if (head instanceof Actor) {
@@ -320,34 +328,55 @@ public abstract class HttpServer extends Server {
                 }
             }
         }
-        public final void close () {
-            super.close();
-            _server.serverClose(this);
-        }
     }
-    protected int _channelBufferIn = 16384;
-    protected int _channelBufferOut = 16384;
-    public HttpServer () {
-        super();
+    public static interface Handler {
+        public String httpAbout() throws Throwable;
+        public boolean httpContinue(Actor http) throws Throwable;
     }
-    public HttpServer (int in, int out) {
-        super();
-        _channelBufferIn = in;
-        _channelBufferOut = out;
+    protected int _bufferSizeIn = 16384; 
+    protected int _bufferSizeOut = 16384;
+    protected String _path = "./web";
+    protected HashMap<String,Handler> _handlers = new HashMap();
+    public Stream serverAccept() {
+        return new Channel(this);
     }
-    public void close() {
-        super.close();
-        Iterator channels = _dispatchers.iterator();
-        while (channels.hasNext()) {
-            ((Channel) channels.next()).closeWhenDone();
-        }
-    }
-    public Dispatcher serverAccept() throws Throwable {
-        return new Channel(this, _channelBufferIn, _channelBufferOut);
+    public Actor httpActor() {
+        return new Actor();
     }
     public abstract boolean httpContinue(Actor http);
-    public static interface Handler {
-        public void configure(String context);
-        public boolean httpContinue(Actor http);
-    }
+    public void httpLog(Actor http) {
+        _loop.log(http.toString());
+    };
 }
+
+/*
+
+Synopsis:
+
+    java -cp asyncorg.jar org.async.More4
+    
+Application skeleton:
+
+    http/
+        hostname:80/
+            handlers/
+                *.class
+            resources/
+                *.html
+                *.css
+                *.js
+        127.0.0.2:8080/
+            handlers/
+                *.class
+            prototypes/
+                *.js
+            resources/
+                *.html
+                *.css
+                *.js
+
+Development of JavaScript prototypes sources happens in 127.0.0.2:8080, 
+staging and deployement of production Java binaries take place usually
+on a server bound to a named address and the default HTTP port number.
+
+*/

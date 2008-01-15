@@ -260,6 +260,16 @@ public final class Loop {
         _scheduled.add(new Scheduled._Function(when, function));
     }
     /**
+     * Schedule a function's application at an approximate time.
+     * 
+     * @param when in milliseconds
+     * @param function to apply
+     */
+    public final void timeout (Scheduled event, long milliseconds) {
+        event.when = _now + milliseconds;
+        _scheduled.add(event);
+    }
+    /**
      * Schedule a function's application in an approximate timeout interval.
      * 
      * @param milliseconds to wait
