@@ -70,7 +70,7 @@ public abstract class Server extends Dispatcher {
     public final boolean writable () {
         return false;
     } 
-    public boolean readable () {
+    public final boolean readable () {
         return _accepting;
     }
     public final void handleAccept() throws Throwable {
@@ -99,9 +99,18 @@ public abstract class Server extends Dispatcher {
     public void handleClose() throws Throwable {
         log("unexpected close event");
     }
-    //public final Iterator<Stream> serverDispatchers() {
-    //    return _dispatchers.iterator();
-    //}
+    public final boolean isActive() {
+        return _active != null;
+    }
+    public final long channelsAccepted () {
+        return _accepted;
+    }
+    public final long channelsDispatched () {
+        return _dispatched;
+    }
+    public final Iterator<Stream> channels() {
+        return _dispatchers.iterator();
+    }
     public final void serverClose(Dispatcher channel) {
         bytesIn += channel.bytesIn;
         bytesOut += channel.bytesOut;

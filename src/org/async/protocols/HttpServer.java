@@ -19,6 +19,7 @@
 
 package org.async.protocols;
 
+import org.async.core.Loop;
 import org.async.core.Server;
 import org.async.core.Stream;
 import org.async.chat.ByteProducer;
@@ -28,11 +29,46 @@ import org.async.chat.Collector;
 import org.async.simple.Bytes;
 import org.async.simple.Objects;
 import org.async.simple.Strings;
+
 import java.util.Iterator;
 import java.util.HashMap;
+import java.util.Calendar;
+import java.io.File;
+import java.net.InetSocketAddress;
+import java.net.URI;
 
-public abstract class HttpServer extends Server {
-    public static final HashMap RESPONSES = Objects.dict(new String[]{
+/**
+ * An extensible HTTP/1.1 server for high-performance stateful applications.
+ * 
+ * @h3 Synopsis
+ * 
+ * @pre import org.async.core.Static;
+ *import org.async.protocols.HttpServer;
+ * 
+ *public class HttpServerTest {
+ *    public static void main (String[] args) throws Throwable {
+ *        Static.loop.hookShutdown();
+ *        try {
+ *            HttpServer server = new HttpServer(".");
+ *            server.httpListen("127.0.0.1:8765");
+ *            server.httpRoute(
+ *                "GET localhost:8765/status", "org.async.web.HttpServerStatus"
+ *                );
+ *            Static.loop.exits.add(server);
+ *            server = null;
+ *        } catch (Throwable e) {
+ *            Static.loop.log(e);
+ *        }
+ *        Static.loop.dispatch();
+ *    }
+ *}
+ * 
+ * Running
+ * 
+ */
+public class HttpServer extends Server {
+    public static final HashMap<String, String> 
+    RESPONSES = Objects.dict(new String[]{
         "100", "Continue",
         "101", "Switching Protocols",
         "200", "OK", 
@@ -71,26 +107,56 @@ public abstract class HttpServer extends Server {
         "504", "Gateway Time-out",
         "505", "HTTP Version not supported"
         });
+    private static final String[] _dow = new String[]{
+        null, "Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"
+    };
+    private static final String[] _moy = new String[]{
+        null, "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    };
+    public static final String httpDate(Calendar calendar) {
+        return String.format(
+            "%s, %d %s %d %d:%d:%d GMT",
+            _dow[calendar.get(Calendar.DAY_OF_WEEK)],
+            calendar.get(Calendar.DAY_OF_MONTH),
+            _moy[calendar.get(Calendar.MONTH)],
+            calendar.get(Calendar.YEAR),
+            calendar.get(Calendar.HOUR),
+            calendar.get(Calendar.MINUTE),
+            calendar.get(Calendar.SECOND)
+            );
+    }
     public static class Actor implements Producer {
         protected Channel _channel;
         protected String _status = null;
         protected String _method = "GET";
-        protected String _uri = "/";
+        protected URI _uri = null;
         protected String _protocol = "HTTP/0.9";
+        protected String _host;
         protected HashMap<String,String> _requestHeaders = new HashMap();
         protected Collector _requestBody = null;
         protected HashMap<String,String> _responseHeaders = new HashMap();
         protected Producer _responseBody = null;
         private Producer _producer = null;
-        protected final void request (Iterator parts) {
+        public Actor (Channel channel, String request, String buffer, int pos) 
+        throws Throwable {
+            _channel = channel;
+            Iterator parts = Strings.split(request, ' ');
             if (parts.hasNext()) {
                 _method = ((String) parts.next()).toUpperCase();
                 if (parts.hasNext()) {
-                    _uri = ((String) parts.next());
+                    _uri = new URI((String) parts.next());
                     if (parts.hasNext()) {
                         _protocol = ((String) parts.next()).toUpperCase();
                     }
+                } else {
+                    _uri = new URI("/");
                 }
+            }
+            MIMEHeaders.update(_requestHeaders, buffer, pos);
+            _host = _requestHeaders.get("host");
+            if (_host == null) {
+                _host = _channel._server._host;
             }
         }
         public String toString() {
@@ -102,13 +168,29 @@ public abstract class HttpServer extends Server {
                 + " " + _status
                 );
         }
+        /**
+         * Dispatch the actor to
+         * 
+         * @param route
+         * @return
+         * @throws Throwable
+         */
+        public final boolean action (String route) throws Throwable {
+            return _channel._server._handlers.get(route).httpContinue(this);
+        }
+        public final Calendar calendar () {
+            return _channel._server._calendar;
+        }
+        public final String date () {
+            return _channel._server._date;
+        }
         public final Channel channel () {
             return _channel;
         }
         public final String method() {
             return _method;
         }
-        public final String uri() {
+        public final URI uri() {
             return _uri;
         }
         public final String protocol() {
@@ -122,6 +204,11 @@ public abstract class HttpServer extends Server {
                 return value;
             }
         };
+        public final String cookie(String name) {
+            return null;
+        }
+        public final void cookie(String name, String value) {
+        }
         public final HashMap responseHeaders() {
             return _responseHeaders;
         };
@@ -141,6 +228,11 @@ public abstract class HttpServer extends Server {
         }
         public final void response (int status) {
             _status = Integer.toString(status);
+            byte[] body = RESPONSES.get(_status).getBytes();
+            _responseHeaders.put(
+                "Content-Length", Integer.toString(body.length)
+                );
+            _responseBody = new ByteProducer(body);
         }
         public final void response (int status, Producer body) {
             _status = Integer.toString(status);
@@ -171,31 +263,30 @@ public abstract class HttpServer extends Server {
                     return null;
                 } else {
                     _produced = true;
-                    if (_responseBody == null) {
-                        _responseBody = new ByteProducer(new byte[]{});
-                    }
-                    if (_protocol.equals("HTTP/1.1")) {
-                        _responseHeaders.put("Transfer-Encoding", "chunked");
-                        _producer = new ChunkProducer(_responseBody);
-                        if (requestHeader("connection")
-                                .toLowerCase().equals("keep-alive")) {
-                            _responseHeaders.put("Connection", "keep-alive");
+                    if (_responseBody != null) {
+                        if (_protocol.equals("HTTP/1.1")) {
+                            _responseHeaders.put("Transfer-Encoding", "chunked");
+                            _producer = new ChunkProducer(_responseBody);
+                            if (requestHeader("connection")
+                                    .toLowerCase().equals("keep-alive")) {
+                                _responseHeaders.put("Connection", "keep-alive");
+                            } else {
+                                _responseHeaders.put("Connection", "close");
+                                _channel.closeWhenDone();
+                            }
                         } else {
-                            _responseHeaders.put("Connection", "close");
-                            _channel.closeWhenDone();
+                            if (
+                                _responseHeaders.containsKey("Content-Length") &&
+                                requestHeader("connection")
+                                    .toLowerCase().equals("keep-alive")
+                                ) {
+                                _responseHeaders.put("Connection", "keep-alive");
+                            } else {
+                                _responseHeaders.put("Connection", "close");
+                                _channel.closeWhenDone();
+                            }
+                            _producer = _responseBody;
                         }
-                    } else {
-                        if (
-                            _responseHeaders.containsKey("Content-Length") &&
-                            requestHeader("connection")
-                                .toLowerCase().equals("keep-alive")
-                            ) {
-                            _responseHeaders.put("Connection", "keep-alive");
-                        } else {
-                            _responseHeaders.put("Connection", "close");
-                            _channel.closeWhenDone();
-                        }
-                        _producer = _responseBody;
                     }
                     String name;
                     StringBuilder sb = new StringBuilder();
@@ -204,6 +295,9 @@ public abstract class HttpServer extends Server {
                     sb.append(_status);
                     sb.append(' ');
                     sb.append(RESPONSES.get(_status));
+                    sb.append(Strings.CRLF);
+                    sb.append("Server: asyncorg\r\nDate: ");
+                    sb.append(_channel._server._date);
                     sb.append(Strings.CRLF);
                     Iterator names = _responseHeaders.keySet().iterator();
                     while (names.hasNext()) {
@@ -272,15 +366,12 @@ public abstract class HttpServer extends Server {
                 } else {
                     return false;
                 }
-                Actor http = _server.httpActor();
-                http._channel = this;
-                http.request(Strings.split(request, ' '));
+                Actor http = new Actor(this, request, buffer, crlfAt + 2);
                 push(http);
-                MIMEHeaders.update(http._requestHeaders, buffer, crlfAt + 2);
                 if (_server.httpContinue(http)) {
                     return true;
                 }
-                return httpContinue (http);
+                return httpCollect (http);
             } else if (_body.handleTerminator()) {
                 _body = null;
                 setTerminator(Bytes.CRLFCRLF);
@@ -290,7 +381,7 @@ public abstract class HttpServer extends Server {
             }
             return false;
         }
-        public boolean httpContinue(Actor http) {
+        public boolean httpCollect(Actor http) {
             if (http._requestBody == null) {
                 String method = http._method;
                 if (!(
@@ -330,20 +421,93 @@ public abstract class HttpServer extends Server {
         }
     }
     public static interface Handler {
-        public String httpAbout() throws Throwable;
         public boolean httpContinue(Actor http) throws Throwable;
     }
-    protected int _bufferSizeIn = 16384; 
+    protected int _bufferSizeIn = 16384;
     protected int _bufferSizeOut = 16384;
-    protected String _path = "./web";
+    protected String _host;
+    protected Calendar _calendar = Calendar.getInstance();
+    protected String _date;
+    protected File _root;
     protected HashMap<String,Handler> _handlers = new HashMap();
+    public HttpServer (String root) {
+        super();
+        _root = new File(root);
+    }
+    public HttpServer (Loop loop, String root) {
+        super(loop);
+        _root = new File(root);
+    }
     public Stream serverAccept() {
         return new Channel(this);
     }
-    public Actor httpActor() {
-        return new Actor();
+    public void serverWakeUp() {
+        super.serverWakeUp();
+        _calendar.setTimeInMillis(_loop.now());
+        _date = httpDate(_calendar);
     }
-    public abstract boolean httpContinue(Actor http);
+    public void serverMaintain() {
+        super.serverMaintain();
+        _calendar.add(Calendar.MILLISECOND, precision);
+        _date = httpDate(_calendar);
+    };
+    public final void httpRoute (String route, String className) {
+        try {
+            _handlers.put(
+                route, (Handler) Class.forName(className).newInstance()
+                );
+        } catch (Throwable e) {
+            log(e);
+        }
+    }
+    public final void httpRoute (String route, Handler handler) {
+        _handlers.put(route, handler);
+    }
+    public final Handler httpHandler (String route) {
+        return _handlers.get(route);
+    }
+    public final Iterator<String> httpRoutes () {
+        return _handlers.keySet().iterator();
+    }
+    public final void httpListen(String address) throws Throwable {
+        _host = address;
+        int colonAt = address.indexOf(':');
+        if (colonAt < 0) {
+            listen(new InetSocketAddress(address, 80));
+        } else {
+            listen(new InetSocketAddress(
+                address.substring(0, colonAt), 
+                Integer.parseInt(address.substring(colonAt+1))
+                ));
+        }
+        log("listen { \"when\": " + System.currentTimeMillis() + " }");
+    }
+    protected boolean httpContinue(Actor http) {
+        try { // to route to a handler, maybe continue ...
+            String base = http._method + ' ' + http._host;
+            String path = http._uri.getPath();
+            String route = base + path;
+            if (_handlers.containsKey(route)) { // -> context/subject/predicate
+                return _handlers.get(route).httpContinue(http);
+            } 
+            int slashAt = path.indexOf('/', 1);
+            if (slashAt > 0) {
+                route = base + path.substring(0, slashAt + 1);
+                if (_handlers.containsKey(route)) { // -> context/subject/
+                    return _handlers.get(route).httpContinue(http);
+                }
+            }
+            route = base + '/';
+            if (_handlers.containsKey(route)) { // -> context/
+                return _handlers.get(route).httpContinue(http);
+            } 
+            http.response(404); // Not Found
+        } catch (Throwable e) {
+            log(e);
+            http.response(500); // Server Error
+        }
+        return false; // not continued, proceed to collect the next request
+    };
     public void httpLog(Actor http) {
         _loop.log(http.toString());
     };
@@ -351,32 +515,19 @@ public abstract class HttpServer extends Server {
 
 /*
 
-Synopsis:
+This HTTP server routes a request for the URI below:
 
-    java -cp asyncorg.jar org.async.More4
-    
-Application skeleton:
+    "http://context/subject/predicate"
 
-    http/
-        hostname:80/
-            handlers/
-                *.class
-            resources/
-                *.html
-                *.css
-                *.js
-        127.0.0.2:8080/
-            handlers/
-                *.class
-            prototypes/
-                *.js
-            resources/
-                *.html
-                *.css
-                *.js
+to one of the handlers mapped by the following keys:
 
-Development of JavaScript prototypes sources happens in 127.0.0.2:8080, 
-staging and deployement of production Java binaries take place usually
-on a server bound to a named address and the default HTTP port number.
+    "context/subject/predicate"
+    "context/subject/"
+    "context/"
+
+or reply with a "404 Not Found" response.
+
+More elaborate routing may be implemented by handlers, usually using PCRE
+to match URIs and extract their metadata.
 
 */

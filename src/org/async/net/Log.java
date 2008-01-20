@@ -54,10 +54,7 @@ public class Log implements Function, Loginfo {
             throw new Error("unexpectedly reachable code");
         }
         public final void handleClose() throws Throwable {
-            log("handle closed");
-            //if (!_fifoOut.isEmpty()) {
-            //    _bufferOut.clear();
-            //}
+            log("close");
         }
         public final void push (String data) throws Throwable {
             if (_channel == null) {
