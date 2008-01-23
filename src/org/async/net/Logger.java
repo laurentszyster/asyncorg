@@ -21,7 +21,7 @@ package org.async.net;
 
 import org.async.core.Static;
 import org.async.core.Server;
-import org.async.core.Stream;
+import org.async.core.Pipeline;
 import org.async.protocols.Netstring;
 import org.async.simple.SIO;
 import java.net.InetSocketAddress;
@@ -101,7 +101,7 @@ public final class Logger extends Server {
         }
     }
     String path = ".";
-    public final Stream serverAccept() {
+    public final Pipeline serverAccept() {
         return new Channel(this);
     }
     public static final void main (String args[]) throws Throwable {

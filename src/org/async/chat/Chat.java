@@ -24,9 +24,15 @@ import java.nio.ByteBuffer;
 import org.async.simple.Bytes;
 
 /**
- * A convenience to insert a simple collectors
+ * A convenience to encapsulate protocols. Usefull for instance to nest
+ * a MULTIPART collector in a gzip decoder in a Chunk collector.
+ * 
+ * @pre collector = new Chat(protocol);
+ * 
+ * @p ...
+ * 
  */
-public class Collect implements Channel {
+public class Chat implements Channel, Collector {
     protected static final boolean _notEndsWith (
         ByteBuffer haystack, int end, byte[] needle, int length
         ) {
@@ -113,9 +119,10 @@ public class Collect implements Channel {
     private ByteBuffer _buffer;
     private Collector _collector;
     private Object _terminator = null;
-    private boolean _terminated = false;
-    public Collect(Collector collector) {
-        _collector = collector;
+    private boolean _stalled = false;
+    public Chat(Protocol protocol) {
+        _collector = protocol;
+        protocol.channel = this;
     };
     public Object getTerminator() {
         return _terminator;
@@ -130,9 +137,6 @@ public class Collect implements Channel {
         _terminator = terminator;
     }
     public void handleData(byte[] data) throws Throwable {
-        if (_terminated) {
-            return;
-        }
         if (_buffer == null) {
             _buffer = ByteBuffer.wrap(data);
         } else {
@@ -142,7 +146,7 @@ public class Collect implements Channel {
             _buffer.put(data);
             _buffer.flip();
         }
-        _terminated =  collect(this, _collector, _buffer);
+        _stalled = collect(this, _collector, _buffer);
         if (_buffer.remaining() > 0) {
             _buffer.compact();
         } else {
@@ -150,7 +154,11 @@ public class Collect implements Channel {
         }
     }
     public boolean handleTerminator() throws Throwable {
-        return false;
+        if (_buffer != null) {
+            _stalled = collect(this, _collector, _buffer);
+            _buffer = null;
+        }
+        return _stalled;
     }
 
 }

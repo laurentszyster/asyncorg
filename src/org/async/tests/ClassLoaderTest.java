@@ -1,8 +1,8 @@
 package org.async.tests;
 
 import org.async.core.Static;
-import org.async.core.Function;
 import org.async.simple.FileClassLoader;
+import org.async.simple.Function;
 
 public final class ClassLoaderTest {
     public static final void main (String[] args) throws Throwable {

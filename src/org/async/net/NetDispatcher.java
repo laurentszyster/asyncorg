@@ -22,7 +22,7 @@ package org.async.net;
 import java.nio.ByteBuffer;
 
 import org.async.core.Loop;
-import org.async.core.Stream;
+import org.async.core.Pipeline;
 
 /**
  * A <code>Stream</code> dispatcher implementation for <a 
@@ -34,7 +34,7 @@ import org.async.core.Stream;
  * @p See <code>Netlog</code> and <code>Netlogger</code> for implementations 
  * of netstring client and server channels. 
  */
-public abstract class NetDispatcher extends Stream {
+public abstract class NetDispatcher extends Pipeline {
     
     private static final String 
     ERROR_INVALID_PROLOGUE = "invalid netstring prologue"; 

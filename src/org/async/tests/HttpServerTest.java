@@ -1,7 +1,7 @@
 package org.async.tests;
 
 import org.async.core.Static;
-import org.async.protocols.HttpServer;
+import org.async.web.HttpServer;
 
 public class HttpServerTest {
     public static void main (String[] args) throws Throwable {

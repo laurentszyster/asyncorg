@@ -16,32 +16,24 @@
  *  USA
  *  
  */
-package org.async.core;
 
-/**
- * The simplest possible first class function in Java.
- * 
- * @h3 Synopsis
- * 
- * @p ...
- * 
- * @pre Function print = new Function () {
- *    public Object apply (Object input) throws Throwable {
- *        System.out(argument.toString());
- *    }
- *};
- *print.apply("hello functional world!");
- *
- * @p ...
- * 
- */
-public interface Function {
-    /**
-     * Apply the function.
-     * 
-     * @param input of the function
-     * @return an <code>Object</code> or <code>null</code>
-     * @throws Throwable
-     */
-    public Object apply (Object input) throws Throwable;
+package org.async.produce;
+
+import org.async.chat.Producer;
+
+public class ByteProducer implements Producer {
+    private byte[] _bytes;
+    public ByteProducer (byte[] bytes) {
+        _bytes = bytes;
+    }
+    public boolean stalled() {
+        return false;
+    }
+    public byte[] more() throws Throwable {
+        try {
+            return _bytes;
+        } finally {
+            _bytes = null;
+        }
+    }
 }

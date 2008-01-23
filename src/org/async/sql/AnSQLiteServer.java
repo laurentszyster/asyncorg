@@ -1,16 +1,15 @@
 package org.async.sql;
 
-import java.net.InetSocketAddress;
-
 import org.async.core.Server;
 import org.async.core.Static;
-import org.async.core.Stream;
+import org.async.core.Pipeline;
 import org.async.net.NetDispatcher;
 import org.async.simple.Bytes;
 import org.async.protocols.JSON;
 import org.async.sql.AnSQLite;
 
 import java.nio.ByteBuffer;
+import java.net.InetSocketAddress;
 
 /**
  * An SQLite server that consumes and produces UTF-8 encoded JSON strings 
@@ -78,9 +77,9 @@ public class AnSQLiteServer extends Server {
         }
         public final boolean handleTerminator() throws Throwable {
             try {
-                push(Bytes.encode(_server.ansql.request(
-                    _buffer.array(), new StringBuilder()
-                    ).toString(), Bytes.UTF8));
+                StringBuilder response = new StringBuilder();
+                _server.ansql.handle(_buffer.array(), response);
+                push(Bytes.encode(response.toString(), Bytes.UTF8));
             } catch (Throwable e){
                 push(Bytes.encode(e.getMessage(), Bytes.UTF8));
             } finally {
@@ -97,12 +96,10 @@ public class AnSQLiteServer extends Server {
             log("closed");
         }
     }
-    public String path = ":memory:";
-    public int options = 0;
-    public AnSQLite ansql = new AnSQLite();
+    public AnSQLite ansql;
     public final void serverWakeUp() {
         try {
-            ansql.db.open(path, options);
+            ansql.open();
         } catch (Exception e) {
             log(e);
             close();
@@ -110,15 +107,14 @@ public class AnSQLiteServer extends Server {
         }
         super.serverWakeUp();
     }
-    public final Stream serverAccept() {
+    public final Pipeline serverAccept() {
         return new Channel(this);
     }
     public final void serverSleep() {
         try {
-            ansql.db.close();
+            ansql.close();
         } catch (Exception e) {
             log(e);
-            close();
             return;
         }
         super.serverSleep();
@@ -131,8 +127,10 @@ public class AnSQLiteServer extends Server {
                 (args.length > 0) ? args[0]: "127.0.0.2", 
                 (args.length > 1) ? Integer.parseInt(args[1]): 3999
                 ));
-            server.path = (args.length > 2) ? args[2]: ":memory:";
-            server.options = (args.length > 3) ? Integer.parseInt(args[3]): 0;
+            server.ansql = new AnSQLite(
+                (args.length > 2) ? args[2]: ":memory:",
+                (args.length > 3) ? Integer.parseInt(args[3]): 0
+                );
             if (args.length > 4) {
                 server.timeout = Integer.parseInt(args[4])*1000; 
             }
@@ -141,8 +139,8 @@ public class AnSQLiteServer extends Server {
             }
             Static.loop.exits.add(server);
             server.log("listen " + JSON.dict(new Object[]{
-                "database", server.path,
-                "options", server.options
+                "database", server.ansql._path,
+                "options", server.ansql._options
                 }).toString());
         } catch (Throwable e) {
             Static.loop.log(e);

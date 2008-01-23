@@ -19,9 +19,9 @@
 
 package org.async.tests;
 
-import org.async.core.Function;
 import org.async.core.Static;
 import org.async.net.Log;
+import org.async.simple.Function;
 
 import java.net.InetSocketAddress;
 

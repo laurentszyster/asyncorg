@@ -8,13 +8,46 @@ import SQLite.Exception;
 import SQLite.Stmt;
 import java.math.BigDecimal;
 import java.util.Iterator;
+import java.util.HashMap;
 
 public class AnSQLite {
-    //
-    // don't bother with an intermediate ResultSet instance, serialize to
-    // JSON directly instead.
-    //
-    protected static final void prepare (Stmt st, StringBuilder sb) 
+    /**
+     * The <code>SQLite.Database</code> wrapped.
+     */
+    protected Database _db = new Database();
+    protected String _path = ":memory:";
+    protected int _options = 0;
+    protected HashMap<String, Stmt> _statements;
+    public AnSQLite(String path, int options) {
+        _path = path;
+        _options = options;
+    }
+    public void open () throws Exception {
+        _db.open(_path, _options);
+        _statements = new HashMap();
+    }
+    public Stmt prepared (String statement) throws Exception {
+        Stmt st = _statements.get(statement);
+        if (st == null) {
+            return _db.prepare(statement);
+        } else {
+            st.reset();
+            return st;
+        }
+    }
+    public final void close () throws Exception {
+        Iterator<Stmt> statements = _statements.values().iterator();
+        try {
+            while (statements.hasNext()) {
+                statements.next().close();
+            }
+            _db.close();
+        } finally {
+            _statements = null;
+            _db = null;
+        }
+    }
+    protected static final void _prepare (Stmt st, StringBuilder sb) 
     throws Exception {
         int count = st.column_count();
         if (count > 0) {
@@ -30,20 +63,8 @@ public class AnSQLite {
             sb.append("null");
         }
     }
-    protected static final void newrow (Stmt st, StringBuilder sb, int count) 
+    protected static final void _bind (Stmt st, Iterator args) 
     throws Exception {
-        int col = 0;
-        sb.append('[');
-        JSON.strb(sb, st.column(col));
-        for (col=1; col<count; col++) {
-            sb.append(',');
-            JSON.strb(sb, st.column(col));
-        }
-        sb.append(']');
-    } 
-    protected static final void execute (
-        Stmt st, Iterator args, StringBuilder sb
-        ) throws Exception {
         int i = 0;
         Object arg;
         while (args.hasNext()) {
@@ -63,210 +84,322 @@ public class AnSQLite {
             }
             i++;
         }
-        int count = st.column_count();
+    }
+    protected static final void _resultset (Stmt st, StringBuilder sb) 
+    throws Exception {
+        int col, count = st.column_count();
         if (st.step()) {
-            sb.append('[');
-            newrow(st, sb, count);
-            while (st.step()) {
+            sb.append("[[");
+            JSON.strb(sb, st.column(0));
+            for (col=1; col<count; col++) {
                 sb.append(',');
-                newrow(st, sb, count);
+                JSON.strb(sb, st.column(col));
+            }
+            sb.append(']');
+            while (st.step()) {
+                sb.append(",[");
+                JSON.strb(sb, st.column(0));
+                for (col=1; col<count; col++) {
+                    sb.append(',');
+                    JSON.strb(sb, st.column(col));
+                }
+                sb.append(']');
             }
             sb.append(']');
         } else {
             sb.append("null");
         }
     }
-    public Database db = new Database();
-    public final boolean prepare (String statement, StringBuilder sb) {
-        Stmt st = null;
+    /**
+     * Prepare a statement and return success or failure.
+     * 
+     * @param statement to prepare
+     * @param response to comlete
+     * @return <code>true</code> on success, <code>false</code> otherwise
+     */
+    public final boolean prepare (String statement, StringBuilder response) {
         try {
-            st = db.prepare(statement);
-            prepare(st, sb);
+            _prepare(prepared(statement), response);
         } catch (Exception e) {
-            sb.append(e.getMessage());
+            JSON.strb(response, e.getMessage());
             return false;
-        } finally {
-            if (st != null) try {
-                st.close();
-            } catch (Exception e) {
-                ;
-            }
-        }
+        } 
         return true;
     }
-    public final void prepare (Iterator statements, StringBuilder sb) {
-        sb.append('[');
-        if (prepare((String) statements.next(), sb)) {
+    /**
+     * Prepare a batch of statements and complete the response, stops
+     * on the first statement that raises an exception.
+     * 
+     * @param statements to prepare
+     * @param response to complete
+     */
+    public final void prepare (Iterator statements, StringBuilder response) {
+        response.append('[');
+        if (prepare((String) statements.next(), response)) {
             while (statements.hasNext()) {
-                sb.append(',');
-                if (!prepare((String) statements.next(), sb)) {
+                response.append(',');
+                if (!prepare((String) statements.next(), response)) {
                     break;
                 }
             }
         }
-        sb.append(']');
+        response.append(']');
     }
-    public final Exception execute (String statement) {
-        Stmt st = null;
+    /**
+     * Execute a statement and skip any result, catch and return any 
+     * <code>SQLite.Exception</code> throwed or <code>null</code>.
+     * 
+     * @param statement to execute
+     * @return <code>null</code> on success an exception otherwise.
+     */
+    public final Exception command (String statement) {
         try {
-            st = db.prepare(statement);
+            Stmt st = prepared(statement);
             while (st.step());
         } catch (Exception e) {
             return e; 
-        } finally {
-            if (st != null) try {
-                st.close();
-            } catch (Exception e) {
-                ;
-            }
         }
         return null;
     }
-    public final boolean execute (String statement, StringBuilder sb) {
-        Stmt st = null;
+    /**
+     * Execute a statement without parameters, complete the
+     * response <code>StringBuilder</code> and report success or failure.
+     * 
+     * @param statement to execute
+     * @param response to complete
+     * @return <code>true</code> on success, <code>false</code> otherwise
+     */
+    public final boolean execute (String statement, StringBuilder response) {
         try {
-            st = db.prepare(statement);
-            int count = st.column_count();
-            if (st.step()) {
-                sb.append('[');
-                newrow(st, sb, count);
-                while (st.step()) {
-                    sb.append(',');
-                    newrow(st, sb, count);
-                }
-                sb.append(']');
-            } else {
-                sb.append("null");
-            }
+            _resultset(prepared(statement), response);
         } catch (Exception e) {
-            sb.append(e.getMessage());
+            JSON.strb(response, e.getMessage());
             return false;
-        } finally {
-            if (st != null) try {
-                st.close();
-            } catch (Exception e) {
-                ;
-            }
         }
         return true;
     }
     public final boolean execute (
-        String statement, Iterator args, StringBuilder sb
-        ) {
-        Stmt st = null;
+        String statement, Iterator parameters, StringBuilder response) {
         try {
-            st = db.prepare(statement);
-            execute(st, args, sb);
+            Stmt st = prepared(statement);
+            _bind(st, parameters);
+            _resultset(st, response);
         } catch (Exception e) {
-            sb.append(e.getMessage());
+            JSON.strb(response, e.getMessage());
             return false;
-        } finally {
-            if (st != null) try {
-                st.close();
-            } catch (Exception e) {
-                ;
-            }
         }
         return true;
     }
-    public final boolean execute (
-        String statement, JSON.Array parameters, StringBuilder sb
+    public final boolean batch (
+        String statement, 
+        Iterator<Iterable> parameters, 
+        StringBuilder response
         ) {
-        if (parameters.size() == 0) {
-            return execute(statement, sb);
-        }
-        Stmt st = null;
         try {
-            st = db.prepare(statement);
-            Object first = parameters.get(0);
-            if (first instanceof Iterable) {
-                boolean error = false;
-                sb.append('[');
-                Iterator many = parameters.iterator();
+            Stmt st = prepared(statement);
+            response.append('[');
+            try {
+                _bind(st, parameters.next().iterator());
+                _resultset(st, response);
+            } catch (Exception e) {
+                JSON.strb(response, e.getMessage());
+                response.append(']');
+                return false;
+            }
+            while (parameters.hasNext()) {
+                response.append(',');
                 try {
-                    execute(st, ((Iterable) many.next()).iterator(), sb);
+                    st.reset();
+                    _bind(st, parameters.next().iterator());
+                    _resultset(st, response);
                 } catch (Exception e) {
-                    sb.append(e.getMessage());
-                    error = true;
+                    JSON.strb(response, e.getMessage());
+                    response.append(']');
+                    return false;
                 }
-                while (many.hasNext()) {
-                    sb.append(',');
-                    try {
-                        execute(st, ((Iterable) many.next()).iterator(), sb);
-                        st.reset();
-                    } catch (Exception e) {
-                        sb.append(e.getMessage());
-                        error = true;
-                    }
-                }
-                sb.append(']');
-                return error;
-            } else {
-                execute(st, parameters.iterator(), sb);
             }
         } catch (Exception e) {
-            sb.append(e.getMessage());
+            JSON.strb(response, e.getMessage());
             return false;
-        } finally {
-            if (st != null) try {
-                st.close();
-            } catch (Exception e) {
-                ;
-            }
         }
+        response.append(']');
         return true;
     }
-    public final void transaction (
-        Iterator statements, Iterator parameters, StringBuilder sb
+    protected final boolean _execute (
+        String statement, JSON.Array parameters, StringBuilder response
         ) {
-        Exception e = execute("BEGIN");
+        if (parameters == null) {
+            return prepare(statement, response);
+        } else if (parameters.size() == 0) {
+            return execute(statement, response);
+        } else if (parameters.get(0) instanceof Iterable) {
+            return batch(statement, parameters.iterator(), response);
+        } else {
+            return execute(statement, parameters.iterator(), response);
+        }
+    }
+    /**
+     * Begin a new transaction and commit a sequence of statements or 
+     * rollback, filling the <code>StringBuilder</code> with results.
+     * 
+     * @param statements to execute as one transaction
+     * @param parameters of each statement
+     * @param response to complete
+     * @return <code>true</code> on sucess, <code>false</code> otherwise
+     */
+    public final boolean transaction (
+        Iterator<String> statements, 
+        Iterator<JSON.Array> parameters, 
+        StringBuilder response
+        ) {
+        Exception e = command("BEGIN");
         if (e == null) {
             while (statements.hasNext()) {
-                if (!execute(
-                    (String) statements.next(), 
-                    (JSON.Array) parameters.next(), 
-                    sb
+                if (!_execute(
+                    statements.next(), parameters.next(), response
                     )) {
-                    execute("ROLLBACK");
-                    break;
+                    command("ROLLBACK");
+                    return false;
                 };
             }
-            execute("COMMIT");
-        } 
+            command("COMMIT");
+            return true;
+        }
+        return false;
     }
-    public final StringBuilder request (byte[] bytes, StringBuilder response) {
+    /**
+     * Decode and evaluate a JSON byte array and return a response string.
+     * 
+     * @param request byte string to execute
+     * @param response to complete
+     */
+    public final void handle (byte[] request, StringBuilder response) {
         JSON.Array json = new JSON.Array();
         JSON.Error error = (new JSON()).extend(
-            json, Bytes.decode(bytes, Bytes.UTF8)
+            json, Bytes.decode(request, Bytes.UTF8)
             );
         if (error != null) {
             JSON.strb(response, error.getMessage());
-            return response;
-        } 
-        int size = json.size();
-        Object sql = (size > 0) ? json.get(0): null;
-        Object parameters = (size > 1) ? json.get(1): null;
-        if (sql == null){
-            JSON.strb(response, "AnSQL error: missing statement(s)");
-        } else if (sql instanceof String) {
-            if (parameters == null) {
-                prepare((String) sql, response);
-            } else {
-                execute((String) sql, (JSON.Array) parameters, response);
-            }
-        } else if (sql instanceof JSON.Array) {
-            if (parameters == null) {
-                prepare(((JSON.Array) sql).iterator(), response);
-            } else {
-                transaction(
-                    ((JSON.Array) sql).iterator(),
-                    ((JSON.Array) parameters).iterator(),
-                    response
-                    );
-            }
         } else {
-            JSON.strb(response, "AnSQL error: invalid statement(s) type");
+            int size = json.size();
+            Object sql = (size > 0) ? json.get(0): null;
+            Object parameters = (size > 1) ? json.get(1): null;
+            if (sql == null){
+                JSON.strb(response, "AnSQL error: missing statement(s)");
+            } else if (sql instanceof String) {
+                _execute((String) sql, (JSON.Array) parameters, response);
+            } else if (sql instanceof JSON.Array) {
+                if (parameters == null) {
+                    prepare(((JSON.Array) sql).iterator(), response);
+                } else {
+                    transaction(
+                        ((JSON.Array) sql).iterator(),
+                        ((JSON.Array) parameters).iterator(),
+                        response
+                        );
+                }
+            } else {
+                JSON.strb(response, "AnSQL error: invalid statement(s) type");
+            }
         }
-        return response;
+    }
+    protected static final JSON.Array _prepare (Stmt st) 
+    throws Exception {
+        int count = st.column_count();
+        if (count > 0) {
+            JSON.Array result = new JSON.Array();
+            for (int col=0; col<count; col++) {
+                result.add(st.column_database_name(col));
+            }
+            return result;
+        } else {
+            return null;
+        }
+    }
+    protected static final JSON.Array _resultset (Stmt st) 
+    throws Exception {
+        if (st.step()) {
+            JSON.Array rs = new JSON.Array();
+            int col, count = st.column_count();
+            JSON.Array row;
+            while (st.step()) {
+                row = new JSON.Array();
+                for (col=0; col<count; col++) {
+                    row.add(st.column(col));
+                }
+                rs.add(row);
+            }
+            return rs;
+        } else {
+            return null;
+        }
+    }
+    public final JSON.Array prepare (String statement) 
+    throws Exception {
+        return _prepare(prepared(statement));
+    }
+    public final JSON.Array prepare (Iterator<String> statements) 
+    throws Exception {
+        JSON.Array rs = new JSON.Array();
+        while (statements.hasNext()) {
+            rs.add(_prepare(prepared(statements.next())));
+        }
+        return rs;
+    }
+    public final JSON.Array execute (String statement) 
+    throws Exception {
+        return _resultset(prepared(statement));
+    }
+    public final JSON.Array execute (String statement, Iterator parameters) 
+    throws Exception {
+        Stmt st = prepared(statement);
+        _bind(st, parameters);
+        return _resultset(st);
+    }
+    public final JSON.Array batch (
+        String statement, Iterator<Iterable> parameters
+        ) throws Exception {
+        JSON.Array result = new JSON.Array();
+        Stmt st = prepared(statement);
+        _bind(st, ((Iterable) parameters.next()).iterator());
+        result.add(_resultset(st));
+        while (parameters.hasNext()) {
+            st.reset();
+            _bind(st, ((Iterable) parameters.next()).iterator());
+            result.add(_resultset(st));
+        }
+        return result;
+    }
+    protected final JSON.Array _execute (
+        String statement, JSON.Array parameters 
+        ) throws Exception  {
+        if (parameters == null) {
+            return prepare(statement);
+        } else if (parameters.size() == 0) {
+            return execute(statement);
+        } else if (parameters.get(0) instanceof Iterable) {
+            return batch(statement, parameters.iterator());
+        } else {
+            return execute(statement, parameters.iterator());
+        }
+    }
+    public final JSON.Array transaction (
+        Iterator<String> statements, 
+        Iterator<JSON.Array> parameters
+        ) throws Exception {
+        Exception e = command("BEGIN");
+        if (e == null) try {
+            JSON.Array result = new JSON.Array();
+            while (statements.hasNext()) {
+                result.add(_execute(statements.next(), parameters.next()));
+            }
+            command("COMMIT");
+            return result;
+        } catch (Exception ee) {
+            command("ROLLBACK");
+            throw ee;
+        } else {
+            throw e;
+        }
     }
 }

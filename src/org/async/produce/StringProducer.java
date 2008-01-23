@@ -17,8 +17,9 @@
  *  
  */
 
-package org.async.chat;
+package org.async.produce;
 
+import org.async.chat.Producer;
 import org.async.simple.Bytes;
 
 public class StringProducer implements Producer {

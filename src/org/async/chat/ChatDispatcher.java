@@ -20,11 +20,11 @@
 package org.async.chat;
 
 import org.async.core.Loop;
-import org.async.core.Stream;
+import org.async.core.Pipeline;
 
 import java.nio.ByteBuffer;
 
-public abstract class ChatDispatcher extends Stream 
+public abstract class ChatDispatcher extends Pipeline 
 implements Channel, Collector  {
     protected Object _terminator;
     public ChatDispatcher () {
@@ -72,7 +72,7 @@ implements Channel, Collector  {
         }
     }
     public final void collect () throws Throwable {
-        _stalledIn = Collect.collect(this, this, _bufferIn);
+        _stalledIn = Chat.collect(this, this, _bufferIn);
     }
     public boolean writable () {
         if (_bufferOut.position() > 0) {

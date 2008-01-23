@@ -43,12 +43,10 @@ class ContinuationTest {
         Static.loop.timeout(1000, A);
         Static.loop.timeout(2000, C);
         Static.loop.timeout(3000, B);
-        Call.join(Objects.list(new Call[]{
-            A, B, C
-            }), new Continued("join")).finalization = 
-            Call.list(Objects.list(new Call[]{
+        Call.join(Objects.list(A, B, C), new Continued("join"))
+            .finalization = Call.list(Objects.list(
                 new Continued("X"), new Continued("Y"), new Continued("Z")
-                }));
+                ));
     }
     
     public static void main (String[] args) {
