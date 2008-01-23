@@ -1155,16 +1155,16 @@ public class JSON {
      * of name and value pairs, a convenient way to express JSON literals
      * in java.
      * 
-     * @pre JSON.dict(new Object[]{
+     * @pre JSON.dict(
      *     "hello", "world",
      *     "one", new Integer(1),
      *     "test", Boolean.TRUE 
-     *     });
+     *     );
      * 
      * @param pairs of key and values
      * @return a new <code>JSON.Object</code>
      */
-    public static final JSON.Object dict (java.lang.Object[] pairs) {
+    public static final JSON.Object dict (java.lang.Object ... pairs) {
         JSON.Object result = new JSON.Object();
         for (int i=0; i< pairs.length; i=i+2)
             if (pairs[i] instanceof String)
@@ -1203,14 +1203,12 @@ public class JSON {
      * Instanciate a new <code>JSON.Array</code> with a sequence of values, 
      * a convenient way to express JSON literals in java.
      * 
-     * @pre JSON.list(new Object[]{
-     *     "world", new Integer(1), Boolean.TRUE, null 
-     *     });
+     * @pre JSON.list("world", new Integer(1), Boolean.TRUE, null);
      * 
      * @param items
      * @result a new <code>JSON.Array</code>
      */
-    public static final JSON.Array list (java.lang.Object[] items) {
+    public static final JSON.Array list (java.lang.Object ... items) {
         return (JSON.Array) Objects.extend(new JSON.Array(), items);
     };
     

@@ -17,7 +17,9 @@
  *  
  */
 
-package org.async.chat;
+package org.async.collect;
+
+import org.async.chat.Collector;
 
 
 public class GuardCollector implements Collector {

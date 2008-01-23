@@ -17,42 +17,50 @@
  *  
  */
 
-package org.async.protocols;
+package org.async.web;
 
-import org.async.chat.ChatDispatcher;
+import org.async.chat.Chat;
+import org.async.chat.Channel;
 import org.async.chat.Collector;
+import org.async.chat.Protocol;
+import org.async.protocols.MIMEHeaders;
 import org.async.simple.Bytes;
 import org.async.simple.Strings;
 
 import java.util.HashMap;
 
-public class ChunkCollector implements Collector {
+public class ChunkCollector extends Protocol {
 
     private static final int _COLLECT_SIZE = 0;
     private static final int _COLLECT_CHUNK = 1;
     private static final int _COLLECT_FOOTERS = 2;
     
     protected Collector _collector;
-    protected ChatDispatcher _channel;
     protected HashMap _headers = null;
     protected int _state = 0;
     protected StringBuilder _buffer = new StringBuilder();
-    
-    public ChunkCollector(ChatDispatcher channel, Collector collector) {
-        _collector = collector;
-        _channel = channel;
+
+    public Channel channel;
+
+    public ChunkCollector(Channel channel, Collector collector) {
+        if (collector instanceof Protocol) {
+            _collector = new Chat((Protocol) collector);
+        } else {
+            _collector = collector;
+        }
+        this.channel = channel;
         _state = _COLLECT_SIZE;
-        _channel.setTerminator(Bytes.CRLF);
+        channel.setTerminator(Bytes.CRLF);
     }
     
     public ChunkCollector(
-        ChatDispatcher channel, Collector collector, HashMap headers
+        Channel channel, Collector collector, HashMap headers
         ) {
         _collector = collector;
-        _channel = channel;
+        this.channel = channel;
         _headers = headers;
         _state = _COLLECT_SIZE;
-        _channel.setTerminator(Bytes.CRLF);
+        channel.setTerminator(Bytes.CRLF);
     }
     
     public void handleData(byte[] data) throws Throwable {
@@ -77,16 +85,16 @@ public class ChunkCollector implements Collector {
             _buffer = null;
             if (size == 0) {
                 _state = _COLLECT_FOOTERS;
-                _channel.setTerminator(Bytes.CRLFCRLF);
+                channel.setTerminator(Bytes.CRLFCRLF);
             } else {
                 _state = _COLLECT_CHUNK;
-                _channel.setTerminator(size + 2);
+                channel.setTerminator(size + 2);
             }
             return false;
         case _COLLECT_CHUNK:
             _state = _COLLECT_SIZE;
             _buffer = new StringBuilder();
-            _channel.setTerminator(Bytes.CRLF);
+            channel.setTerminator(Bytes.CRLF);
             return false;
         case _COLLECT_FOOTERS:
             if (_headers != null) {
@@ -95,7 +103,7 @@ public class ChunkCollector implements Collector {
             _collector = null;
             _buffer = null;
             _state = -1;
-            return true; // end of the collector!
+            return _collector.handleTerminator(); // end of the collector!
         }
         throw new Error("invalid ChunkCollector state");
     }

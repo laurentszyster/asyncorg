@@ -17,10 +17,10 @@
  *  
  */
 
-package org.async.protocols;
+package org.async.dns;
 
 import org.async.core.Dispatcher;
-import org.async.core.Function;
+import org.async.simple.Function;
 import org.async.simple.Strings;
 
 import java.util.Iterator;
@@ -30,56 +30,6 @@ import java.net.SocketAddress;
 
 public class DNSClient extends Dispatcher {
 
-    protected static final int _skipName (byte[] datagram, int pos) {
-        int ll;
-        while (pos < datagram.length) {
-            ll = datagram[pos];
-            if ((ll & 0xc0) != 0) {
-                return pos + 2;
-            } else if (ll == 0) {
-                pos++;
-                break;
-            } else {
-                pos = pos + ll + 1;
-            }
-        }
-        return pos;
-    } 
-    
-    protected static final String _unpackName (byte[] datagram, int pos) {
-        ArrayList n = new ArrayList();
-        int ll;
-        while (pos < datagram.length) {
-            ll = datagram[pos];
-            if ((ll & 0xc0) != 0) {
-                pos = (ll&0x3f << 8) + datagram[pos+1];
-            } else if (ll == 0) {
-                break;
-            } else {
-                pos = pos + 1;
-                n.add(new String(datagram, pos, pos+ll));
-                pos = pos + ll;
-            }
-        }
-        return Strings.join(".", n.iterator());
-    }
-    
-    protected static final int _unpackTTL (byte[] datagram, int pos) {
-        int ttl = 0;
-        for (int i=0; i<4; i++) {
-            ttl = (ttl << 8) | datagram[pos+i];
-        }
-        return ttl;
-    }
-    
-    protected static final int _unpackPreference (byte[] datagram, int pos) {
-        int pref = 0;
-        for (int i=0; i<2; i++) {
-            pref = (pref << 8) | datagram[pos+i];
-        }
-        return pref;
-    }
-    
     public static abstract class Request {
         public int failover = 0;
         public int ttl = 60;
@@ -98,10 +48,10 @@ public class DNSClient extends Dispatcher {
             response = datagram;
             int ancount = (datagram[6]<<8) + datagram[7];
             if (ancount > 0) {
-                int pos = _skipName(datagram, 12);
+                int pos = DNS._skipName(datagram, 12);
                 resources = new ArrayList();
                 for (int an=0; an<ancount; an++) {
-                    pos = _skipName(datagram, pos);
+                    pos = DNS._skipName(datagram, pos);
                     if (collect(datagram, pos)) {
                         break;
                     }
@@ -151,7 +101,7 @@ public class DNSClient extends Dispatcher {
                 datagram[pos+2] == 0 && 
                 datagram[pos+3] == 1 
                 ) {
-                ttl = _unpackTTL(datagram, pos+4);
+                ttl = DNS._unpackTTL(datagram, pos+4);
                 resources.add(
                     Integer.toString(datagram[10]) + "." +
                     Integer.toString(datagram[11]) + "." +

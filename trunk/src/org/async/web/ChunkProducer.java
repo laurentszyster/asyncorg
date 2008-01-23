@@ -17,7 +17,7 @@
  *  
  */
 
-package org.async.protocols;
+package org.async.web;
 
 import org.async.chat.Producer;
 import org.async.simple.Strings;

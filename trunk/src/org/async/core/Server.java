@@ -46,7 +46,7 @@ public abstract class Server extends Dispatcher {
     protected boolean _accepting = true;
     protected long _accepted = 0; 
     protected long _dispatched = 0; 
-    protected HashSet<Stream> _dispatchers = new HashSet(); 
+    protected HashSet<Pipeline> _dispatchers = new HashSet(); 
     public int precision = 1000;
     public int timeout = 3000;
     public Server () {
@@ -62,7 +62,7 @@ public abstract class Server extends Dispatcher {
     }
     public void close() {
         super.close();
-        Iterator<Stream> streams = _dispatchers.iterator();
+        Iterator<Pipeline> streams = _dispatchers.iterator();
         while (streams.hasNext()) {
             streams.next().closeWhenDone();
         }
@@ -76,7 +76,7 @@ public abstract class Server extends Dispatcher {
     public final void handleAccept() throws Throwable {
         SocketChannel socket = accept();
         if (socket != null) {
-            Stream channel = serverAccept();
+            Pipeline channel = serverAccept();
             channel.accepted(socket);
             _dispatchers.add(channel);
             _accepted++;
@@ -108,7 +108,7 @@ public abstract class Server extends Dispatcher {
     public final long channelsDispatched () {
         return _dispatched;
     }
-    public final Iterator<Stream> channels() {
+    public final Iterator<Pipeline> channels() {
         return _dispatchers.iterator();
     }
     public final void serverClose(Dispatcher channel) {
@@ -118,8 +118,8 @@ public abstract class Server extends Dispatcher {
         _dispatchers.remove(channel);
     }
     public final void serverCloseInactivesWhenDone (int in, int out) {
-        Stream stream;
-        Iterator<Stream> streams = _dispatchers.iterator();
+        Pipeline stream;
+        Iterator<Pipeline> streams = _dispatchers.iterator();
         while (streams.hasNext()) {
             stream = streams.next();
             if (stream._fifoOut.isEmpty() && stream.inactive(in, out)) {
@@ -127,7 +127,7 @@ public abstract class Server extends Dispatcher {
             }
         }
     }
-    public abstract Stream serverAccept();
+    public abstract Pipeline serverAccept();
     public void serverWakeUp () {
         log("wake_up " +
             "{ \"when\": " + _loop.now() + 

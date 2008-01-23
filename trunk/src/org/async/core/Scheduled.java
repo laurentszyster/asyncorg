@@ -19,6 +19,8 @@
 
 package org.async.core;
 
+import org.async.simple.Function;
+
 /**
  * ...
  * 

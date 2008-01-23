@@ -17,17 +17,18 @@
  *  
  */
 
-package org.async.protocols;
+package org.async.web;
 
 import org.async.core.Loop;
 import org.async.core.Server;
-import org.async.core.Stream;
-import org.async.chat.ByteProducer;
+import org.async.core.Pipeline;
 import org.async.chat.ChatDispatcher;
 import org.async.chat.Producer;
 import org.async.chat.Collector;
+import org.async.produce.ByteProducer;
+import org.async.protocols.HTTP;
+import org.async.protocols.MIMEHeaders;
 import org.async.simple.Bytes;
-import org.async.simple.Objects;
 import org.async.simple.Strings;
 
 import java.util.Iterator;
@@ -43,7 +44,7 @@ import java.net.URI;
  * @h3 Synopsis
  * 
  * @pre import org.async.core.Static;
- *import org.async.protocols.HttpServer;
+ *import org.async.web.HttpServer;
  * 
  *public class HttpServerTest {
  *    public static void main (String[] args) throws Throwable {
@@ -67,65 +68,6 @@ import java.net.URI;
  * 
  */
 public class HttpServer extends Server {
-    public static final HashMap<String, String> 
-    RESPONSES = Objects.dict(new String[]{
-        "100", "Continue",
-        "101", "Switching Protocols",
-        "200", "OK", 
-        "201", "Created",
-        "202", "Accepted",
-        "203", "Non-Authoritative Information",
-        "204", "No Content",
-        "205", "Reset Content",
-        "206", "Partial Content",
-        "300", "Multiple Choices",
-        "301", "Moved Permanently",
-        "302", "Moved Temporarily",
-        "303", "See Other",
-        "304", "Not Modified",
-        "305", "Use Proxy",
-        "400", "Bad Request",
-        "401", "Unauthorized",
-        "402", "Payment Required",
-        "403", "Forbidden",
-        "404", "Not Found",
-        "405", "Method Not Allowed",
-        "406", "Not Acceptable",
-        "407", "Proxy Authentication Required",
-        "408", "Request Time-out",
-        "409", "Conflict",
-        "410", "Gone",
-        "411", "Length Required",
-        "412", "Precondition Failed",
-        "413", "Request Entity Too Large",
-        "414", "Request-URI Too Large",
-        "415", "Unsupported Media Type",
-        "500", "Internal Server Error", 
-        "501", "Not Implemented",
-        "502", "Bad Gateway",
-        "503", "Service Unavailable",
-        "504", "Gateway Time-out",
-        "505", "HTTP Version not supported"
-        });
-    private static final String[] _dow = new String[]{
-        null, "Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"
-    };
-    private static final String[] _moy = new String[]{
-        null, "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    };
-    public static final String httpDate(Calendar calendar) {
-        return String.format(
-            "%s, %d %s %d %d:%d:%d GMT",
-            _dow[calendar.get(Calendar.DAY_OF_WEEK)],
-            calendar.get(Calendar.DAY_OF_MONTH),
-            _moy[calendar.get(Calendar.MONTH)],
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.HOUR),
-            calendar.get(Calendar.MINUTE),
-            calendar.get(Calendar.SECOND)
-            );
-    }
     public static class Actor implements Producer {
         protected Channel _channel;
         protected String _status = null;
@@ -228,7 +170,7 @@ public class HttpServer extends Server {
         }
         public final void response (int status) {
             _status = Integer.toString(status);
-            byte[] body = RESPONSES.get(_status).getBytes();
+            byte[] body = HTTP.RESPONSES.get(_status).getBytes();
             _responseHeaders.put(
                 "Content-Length", Integer.toString(body.length)
                 );
@@ -294,7 +236,7 @@ public class HttpServer extends Server {
                     sb.append(' ');
                     sb.append(_status);
                     sb.append(' ');
-                    sb.append(RESPONSES.get(_status));
+                    sb.append(HTTP.RESPONSES.get(_status));
                     sb.append(Strings.CRLF);
                     sb.append("Server: asyncorg\r\nDate: ");
                     sb.append(_channel._server._date);
@@ -438,18 +380,18 @@ public class HttpServer extends Server {
         super(loop);
         _root = new File(root);
     }
-    public Stream serverAccept() {
+    public Pipeline serverAccept() {
         return new Channel(this);
     }
     public void serverWakeUp() {
         super.serverWakeUp();
         _calendar.setTimeInMillis(_loop.now());
-        _date = httpDate(_calendar);
+        _date = HTTP.date(_calendar);
     }
     public void serverMaintain() {
         super.serverMaintain();
         _calendar.add(Calendar.MILLISECOND, precision);
-        _date = httpDate(_calendar);
+        _date = HTTP.date(_calendar);
     };
     public final void httpRoute (String route, String className) {
         try {

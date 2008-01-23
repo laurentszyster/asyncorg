@@ -20,9 +20,9 @@
 package org.async.tests;
 
 import org.async.chat.ChatDispatcher;
-import org.async.chat.StringsProducer;
-import org.async.core.Function;
 import org.async.core.Static;
+import org.async.produce.StringsProducer;
+import org.async.simple.Function;
 
 import java.net.InetSocketAddress;
 

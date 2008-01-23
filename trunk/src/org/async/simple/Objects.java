@@ -71,13 +71,13 @@ public final class Objects {
      * <code>Object[]</code>.
      * 
      * @pre ArrayList sequence = Objects.list(
-     *     new Object[]{"a", "b", "c"}
+     *     "a", "b", "c"
      *     );
      * 
      * @param items to add in the sequence
      * @return a new <code>ArrayList</code>
      */
-    public static final ArrayList list (Object[] items) {
+    public static final ArrayList list (Object ... items) {
         ArrayList sequence = new ArrayList();
         for (int i=0; i<items.length; i++)
             sequence.add(items[i]);
@@ -88,12 +88,12 @@ public final class Objects {
      * A convenience to build a <code>HashSet</code> from an array of 
      * <code>Object[]</code>.
      * 
-     * @pre HashSet set = Objects.set(new String[]{"a", "b", "c"});
+     * @pre HashSet set = Objects.set("a", "b", "c");
      * 
      * @param items to add in the set 
      * @return a <code>HashSet</code>
      */
-    public static final HashSet set (Object[] items) {
+    public static final HashSet set (Object ... items) {
         HashSet result = new HashSet();
         for (int i=0; i<items.length; i++)
             result.add(items[i]);
@@ -103,7 +103,7 @@ public final class Objects {
     /**
      * A convenience to iterate around a "primitive" array. 
      * 
-     * @pre Iterator iter = Objects.iter(new Object[]{x, y, z});
+     * @pre Iterator iter = Objects.iter(x, y, z);
      *     
      * @p Usefull to iterate through final arrays, a prime construct in web
      * application controllers where check lists and filter sets made of
@@ -112,7 +112,7 @@ public final class Objects {
      * @param objects the array to iterate through
      * @return iterator yields all objects in the array
      */
-    public static final Iterator iter (Object[] objects) {
+    public static final Iterator iter (Object ... objects) {
         return new ObjectIterator(objects);
         }
     
@@ -131,12 +131,12 @@ public final class Objects {
      * Update a <code>Map</code> with the keys and values sequence found in
      * an even <code>Object</code> array.
      * 
-     * @pre HashMap map = Objects.update(new HashMap(), new Object[]{
+     * @pre HashMap map = Objects.update(new HashMap(), 
      *     "A", "test", 
      *     "B", true, 
      *     "C": new Integer(1), 
      *     "D", false
-     *     });
+     *     );
      * 
      * @p This method is convenient to instanciate or update dictionaries 
      * with a clearer syntax than using a sequence of <code>Map.put</code>.
@@ -145,7 +145,7 @@ public final class Objects {
      * @param pairs of key and value to add
      * @return the updated <code>Map</code>
      */
-    public static final Map update (Map map, Object[] pairs) {
+    public static final Map update (Map map, Object ... pairs) {
         for (int i=0; i<pairs.length; i=i+2)
             map.put(pairs[i], pairs[i+1]);
         return map;
@@ -155,12 +155,12 @@ public final class Objects {
      * Update a new <code>HashMap</code> with the keys and values sequence 
      * found in an even <code>Object</code> array.
      * 
-     * @pre HashMap map = Objects.dict(new Object[]{
+     * @pre HashMap map = Objects.dict(
      *     "A", "test", 
      *     "B", true, 
      *     "C", new Integer(1), 
      *     "D", false
-     *     });
+     *     );
      * 
      * @p This method is convenient to instanciate unsynchronized dictionaries 
      * with a clearer syntax than using a sequence of <code>HashMap.put</code>.
@@ -169,7 +169,7 @@ public final class Objects {
      * @param pairs of key and value to add
      * @return the updated <code>HashMap</code>
      */
-    public static final HashMap dict (Object[] pairs) {
+    public static final HashMap dict (Object ... pairs) {
         HashMap map = new HashMap();
         for (int i=0; i<pairs.length; i=i+2)
             map.put(pairs[i], pairs[i+1]);
@@ -179,26 +179,26 @@ public final class Objects {
     /**
      * Iterate through arbitrary values in a <code>Map</code>.
      * 
-     * @pre HashMap map = Objects.dict(new Object[]{
+     * @pre HashMap map = Objects.dict(
      *    "A", "test", 
      *    "B", true, 
      *    "C": new Integer(1), 
      *    "D", false
-     *    });
-     * Iterator values = Objects.iter(map, new Object[]{
+     *    );
+     * Iterator values = Objects.iter(map, 
      *    "A", "C", "E"
-     *    });
+     *    );
      * 
      * @p This method is convenient to extract an ordered set of named
      * values from a dictionary using a <code>Object</code> array.
      * 
-     * @test var map = Objects.dict([
+     * @test var map = Objects.dict(
      *    "A", "test", 
      *    "B", true, 
      *    "C", 1, 
      *    "D", false
-     *    ]);
-     *var values = Objects.iter(map, ["A", "C", "E"]);
+     *    );
+     *var values = Objects.iter(map, "A", "C", "E");
      *return (
      *    values.next() == "test" &&
      *    values.next() == 1 &&
@@ -210,7 +210,7 @@ public final class Objects {
      * @param keys and array of keys to iterate through 
      * @return an <code>Iterator</code>
      */
-    public static final Iterator iter (Map map, Object[] keys) {
+    public static final Iterator iter (Map map, Object ... keys) {
         return new MapIterator(map, iter(keys));
     }
     

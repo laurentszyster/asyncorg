@@ -33,6 +33,8 @@ import java.util.Iterator;
 
 import java.lang.Runtime;
 
+import org.async.simple.Function;
+
 /**
  * An asynchronous loop around NIO selectable sockets, events scheduled 
  * in time and defered continuations of finalized instances. 

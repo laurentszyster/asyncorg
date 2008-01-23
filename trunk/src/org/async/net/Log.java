@@ -21,8 +21,8 @@ package org.async.net;
 
 import org.async.core.Loop;
 import org.async.core.Loginfo;
-import org.async.core.Function;
 import org.async.simple.Bytes;
+import org.async.simple.Function;
 
 import java.util.HashMap;
 import java.util.Iterator;

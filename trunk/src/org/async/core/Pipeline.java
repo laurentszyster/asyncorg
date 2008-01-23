@@ -24,30 +24,30 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 
-public abstract class Stream extends Dispatcher {
+public abstract class Pipeline extends Dispatcher {
     protected boolean _stalledIn = false;
     protected ByteBuffer _bufferIn;
     protected ByteBuffer _bufferOut;
     protected LinkedList _fifoOut = new LinkedList();
-    public Stream () {
+    public Pipeline () {
         super();
         _bufferIn = ByteBuffer.wrap(new byte[16384]);
         _bufferOut = ByteBuffer.wrap(new byte[16384]);
         return;
     }
-    public Stream(int in, int out) {
+    public Pipeline(int in, int out) {
         super();
         _bufferIn = ByteBuffer.wrap(new byte[in]);
         _bufferOut = ByteBuffer.wrap(new byte[out]);
         return;
     }
-    public Stream (Loop loop) {
+    public Pipeline (Loop loop) {
         super(loop);
         _bufferIn = ByteBuffer.wrap(new byte[16384]);
         _bufferOut = ByteBuffer.wrap(new byte[16384]);
         return;
     }
-    public Stream(Loop loop, int in, int out) {
+    public Pipeline(Loop loop, int in, int out) {
         super(loop);
         _bufferIn = ByteBuffer.wrap(new byte[in]);
         _bufferOut = ByteBuffer.wrap(new byte[out]);

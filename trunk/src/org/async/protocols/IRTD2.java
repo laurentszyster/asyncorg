@@ -156,9 +156,9 @@ public class IRTD2 {
         if (interval > timeout) {
             return 2;
         } 
-        byte[] irtd = Strings.join(" ", Objects.iter(new String[]{
+        byte[] irtd = Strings.join(" ", Objects.iter(
             irtd2[0], irtd2[1], irtd2[2], irtd2[3]
-            })).getBytes();
+            )).getBytes();
         String digest = null;
         for (int i=0; i<salts.length; i++) {
             SHA1 md = new SHA1();

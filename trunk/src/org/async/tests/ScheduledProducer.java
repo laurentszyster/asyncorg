@@ -20,7 +20,7 @@
 package org.async.tests;
 
 import org.async.chat.Producer;
-import org.async.core.Function;
+import org.async.simple.Function;
 
 /**
  * A wrapping <code>Producer</code> that stalls until its 

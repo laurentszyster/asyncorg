@@ -17,28 +17,32 @@
  *  
  */
 
-package org.async.chat;
+package org.async.produce;
 
+import org.async.chat.Producer;
 import org.async.simple.Objects;
 
 import java.util.Iterator;
 
 /**
- * The obvious producer of 8-bit bytes iterator, with a convenience for 
- * wrapping <code>String</code> arrays.
+ * The obvious producer of 8-bit encoded UNICODE strings iterator, with 
+ * a convenience for wrapping <code>String</code> arrays.
  * 
  */
-public class BytesProducer implements Producer {
-    protected Iterator _bytes;
-    public BytesProducer(Iterator bytes) {
-        _bytes = bytes;
+public class StringsProducer implements Producer {
+    // TODO: replace by a less naive encoder ...
+    protected Iterator _strings;
+    protected String _encoding;
+    public StringsProducer(Iterator strings, String encoding) {
+        _strings = strings;
+        _encoding = encoding;
     }
     public boolean stalled() {
         return false;
     }
     public byte[] more() throws Throwable {
-        if (_bytes.hasNext()) {
-            return (byte[]) _bytes.next();
+        if (_strings.hasNext()) {
+            return ((String) _strings.next()).getBytes(_encoding);
         } else {
             return null;
         }
@@ -46,18 +50,21 @@ public class BytesProducer implements Producer {
     /**
      * ...
      * 
-     * @param bytes
+     * @param strings
+     * @param encoding
      * @return
      * 
-     * @pre dispatcher.push (BytesProducer.wrap(new byte[][]{
-     *    "GET / HTTP/1.0\r\n".getBytes(),
-     *    "Host: 127.0.0.1:8080\r\n".getBytes(),
-     *    "\r\n".getBytes()
-     *    }));
-     * 
+     * @pre String[] strings = new String[] {
+     *    "GET / HTTP/1.0\r\n",
+     *    "Host: 127.0.0.1:8080\r\n",
+     *    "\r\n"
+     *    }; 
+     *StringProducer producer = StringProducer.wrap(strings, "UTF-8");
+     *dispatcher.push (producer);
+     *
      */
     public static final 
-    BytesProducer wrap (byte[][] bytes) {
-        return new BytesProducer(Objects.iter(bytes));
+    StringsProducer wrap (String[] strings, String encoding) {
+        return new StringsProducer(Objects.iter((Object[])strings), encoding);
     }
 }

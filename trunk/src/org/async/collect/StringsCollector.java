@@ -17,21 +17,24 @@
  *  
  */
 
-package org.async.chat;
+package org.async.collect;
 
-public class ByteProducer implements Producer {
-    private byte[] _bytes;
-    public ByteProducer (byte[] bytes) {
-        _bytes = bytes;
+import org.async.chat.Collector;
+
+
+public class StringsCollector implements Collector {
+    // TODO: replace by a less naive decoder ...
+    protected StringBuilder _buffer;
+    protected String _encoding;
+    public StringsCollector (StringBuilder buffer, String encoding) {
+        _buffer = buffer;
+        _encoding = encoding;
     }
-    public boolean stalled() {
-        return false;
+    public void handleData(byte[] data) throws Throwable {
+        _buffer.append(new String(data, _encoding)); 
     }
-    public byte[] more() throws Throwable {
-        try {
-            return _bytes;
-        } finally {
-            _bytes = null;
-        }
+    public boolean handleTerminator() throws Throwable {
+        _buffer = null;
+        return true;
     }
 }
