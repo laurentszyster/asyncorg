@@ -21,7 +21,6 @@ package org.async.collect;
 
 import org.async.chat.Collector;
 
-
 public class StringsCollector implements Collector {
     // TODO: replace by a less naive decoder ...
     protected StringBuilder _buffer;

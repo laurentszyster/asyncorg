@@ -42,4 +42,7 @@ public class HttpServerStatus implements HttpServer.Handler {
         http.response(200, Bytes.encode(JSON.pprint(json), Bytes.UTF8));
         return false;
     }
+    public final void httpCollected (HttpServer.Actor http) throws Throwable {
+        http.channel().log("unexpected request body");
+    }
 }

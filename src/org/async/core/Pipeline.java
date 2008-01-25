@@ -56,11 +56,15 @@ public abstract class Pipeline extends Dispatcher {
     public final void push (ByteBuffer data) {
         _fifoOut.add(data);
     }
-    public void pull () throws Throwable {
+    public void pull () {
         _stalledIn = false;
         if (_bufferIn.limit() > 0) {
             _bufferIn.flip();
-            collect();
+            try {
+                collect();
+            } catch (Throwable e) {
+                handleError(e);
+            }
             _bufferIn.compact();
         }
     }

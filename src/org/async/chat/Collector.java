@@ -34,4 +34,5 @@ public interface Collector {
      * @throws Throwable
      */
     public boolean handleTerminator () throws Throwable;
+    public static final Collector DEVNULL = new NullCollector();
 }

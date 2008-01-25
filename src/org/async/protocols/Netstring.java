@@ -1,4 +1,4 @@
-/*  Copyright (C) 2007 Laurent A.V. Szyster
+/*  Copyright (C) 2007-2008 Laurent A.V. Szyster
  *
  *  This library is free software; you can redistribute it and/or modify
  *  it under the terms of version 2 of the GNU General Public License as

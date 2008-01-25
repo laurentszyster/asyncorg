@@ -19,14 +19,17 @@
 
 package org.async.simple;
 
-import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
+import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 /**
  * Functional conveniences to handle simple I/O.
@@ -276,5 +279,39 @@ public class SIO {
         }
         return offset;
     }
-
+    /**
+     * Recursively glob files whose names match a regular expression from a 
+     * directory to extend a <code>List</code> of <code>File</code>.
+     * 
+     * @param directory to glob
+     * @param regular expression to match 
+     * @param files list to extend
+     */
+    public static final void glob (
+        File directory, Pattern regular, ArrayList<File> files
+        ) {
+        File file;
+        String[] paths = directory.list();
+        for (int i=0; i<paths.length; i++) {
+            file = new File(paths[i]);
+            if (file.isDirectory()) {
+                glob(file, regular, files);
+            } else if (regular.matcher(paths[i]).matches()) {
+                files.add(file);
+            }
+        }
+    };
+    /**
+     * Glob from a root path the list of files whose names match a regular 
+     * expression.
+     * 
+     * @param root to glob
+     * @param regular expression to match
+     * @return a list of files
+     */
+    public static final ArrayList<File> glob (String root, String regular) {
+        ArrayList<File> files = new ArrayList();
+        glob(new File(root), Pattern.compile(regular), files);
+        return files;
+    };
 }
