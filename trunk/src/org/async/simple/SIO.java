@@ -28,6 +28,7 @@ import java.io.OutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
 
@@ -177,7 +178,38 @@ public class SIO {
             return null;
         }
     }
-
+    protected static final class StreamIterator implements Iterator<byte[]> {
+        private InputStream _input;
+        private byte[] _next;
+        private int _read;
+        public StreamIterator (InputStream input, int chunk) 
+        throws IOException {
+            _input = input;
+            _next = new byte[chunk];
+            _read = _input.read(_next);
+        }
+        public final boolean hasNext() {
+            return _read > 0;
+        }
+        public final byte[] next () {
+            byte[] data = new byte[_read];
+            ByteBuffer.wrap(data).put(_next, 0, _read);
+            try {
+                _read = _input.read(_next);
+                if (_read == -1) {
+                    _input.close();
+                }
+            } catch (IOException e) {
+                ;
+            }
+            return data;
+        }
+        public final void remove () {}
+    }
+    public static final Iterator<byte[]> read(InputStream input, int chunk) 
+    throws IOException {
+        return new StreamIterator(input, chunk);
+    }
     /**
      * Send to an output stream the content of a byte buffer by chunks of
      * <code>netBufferSize</code>, starting at a given offset and stopping 
