@@ -32,7 +32,7 @@ public class MIME {
      * MIME types copied from Python 2.5 mimetypes module.
      */
     public static final HashMap<String, String> 
-        TYPES = Objects.dict(new HashMap<String, String>(),
+        TYPES = Objects.dict(
         ".a"      , "application/octet-stream",
         ".ai"     , "application/postscript",
         ".aif"    , "audio/x-aiff",

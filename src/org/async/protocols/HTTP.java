@@ -19,11 +19,16 @@
 
 package org.async.protocols;
 
+import org.async.chat.Producer;
+import org.async.produce.BytesProducer;
+import org.async.simple.Objects;
+import org.async.simple.SIO;
+
 import java.util.Calendar;
 import java.util.HashMap;
-
-import org.async.chat.Producer;
-import org.async.simple.Objects;
+import java.io.File;
+import java.io.IOException;
+import java.io.FileInputStream;
 
 public final class HTTP {
 
@@ -67,10 +72,10 @@ public final class HTTP {
         "505", "HTTP Version not supported"
         );
     private static final String[] _dow = new String[]{
-        null, "Mon", "Tue", "Wen", "Thu", "Fri", "Sat", "Sun"
+        null, "Sun", "Mon", "Tue", "Wen", "Thu", "Fri", "Sat"
     };
     private static final String[] _moy = new String[]{
-        null, "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     };
 
@@ -92,8 +97,34 @@ public final class HTTP {
         return date(c);
     }
 
-    public static class Entity {
+    public static abstract class Entity {
         public HashMap<String, String> headers = new HashMap();
-        public Producer body;
+        public abstract Producer body() throws Throwable;
+    }
+    public static final class FileEntity extends Entity {
+        public String absolutePath;
+        public FileEntity(File file) {
+            SHA1 sha1 = new SHA1();
+            StringBuffer sb = new StringBuffer();
+            absolutePath = file.getAbsolutePath();
+            sb.append(absolutePath);
+            String length = Long.toString(file.length());
+            sb.append(length);
+            long lastModified = file.lastModified();
+            sb.append(lastModified);
+            sha1.update(sb.toString().getBytes());
+            String mimeType = MIME.TYPES.get("");
+            if (mimeType != null) {
+                headers.put("Content-type", mimeType);
+            }
+            headers.put("Content-Length", length);
+            headers.put("Last-Modified", HTTP.date(lastModified));
+            headers.put("Etag", sha1.hexdigest());
+        } 
+        public Producer body () throws IOException {
+            return new BytesProducer(SIO.read(
+                new FileInputStream(absolutePath), SIO.fioBufferSize
+                ));
+        }
     }
 }

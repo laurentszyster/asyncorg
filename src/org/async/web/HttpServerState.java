@@ -5,7 +5,7 @@ import java.util.Iterator;
 import org.async.protocols.JSON;
 import org.async.simple.Bytes;
 
-public class HttpServerStatus implements HttpServer.Handler {
+public class HttpServerState implements HttpServer.Handler {
     public final boolean httpContinue(HttpServer.Actor http) {
         Runtime rt = Runtime.getRuntime();
         HttpServer server = http.channel().server();

@@ -95,8 +95,11 @@ public abstract class Pipeline extends Dispatcher {
             _bufferOut.put(data); // .put(data) fails on position() :-(
         } catch (BufferOverflowException e) {
             int left = _bufferOut.remaining(); 
+            int over = data.length-left;
             _bufferOut.put(data, 0, left);
-            _fifoOut.addFirst(ByteBuffer.wrap(data, left, data.length-left));
+            ByteBuffer extra = ByteBuffer.wrap(new byte[over]);
+            extra.put(data, left, over);
+            _fifoOut.addFirst(extra);
             return true;
         }
         return false;

@@ -30,7 +30,7 @@ import java.util.Iterator;
  * 
  */
 public class BytesProducer implements Producer {
-    protected Iterator _bytes;
+    protected Iterator<byte[]> _bytes;
     public BytesProducer(Iterator bytes) {
         _bytes = bytes;
     }
@@ -39,7 +39,7 @@ public class BytesProducer implements Producer {
     }
     public byte[] more() throws Throwable {
         if (_bytes.hasNext()) {
-            return (byte[]) _bytes.next();
+            return _bytes.next();
         } else {
             return null;
         }

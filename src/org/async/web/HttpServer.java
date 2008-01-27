@@ -41,32 +41,6 @@ import java.net.URI;
 
 /**
  * An extensible HTTP/1.1 server for high-performance stateful applications.
- * 
- * @h3 Synopsis
- * 
- * @pre import org.async.core.Static;
- *import org.async.web.HttpServer;
- * 
- *public class HttpServerTest {
- *    public static void main (String[] args) throws Throwable {
- *        Static.loop.hookShutdown();
- *        try {
- *            HttpServer server = new HttpServer(".");
- *            server.httpListen("127.0.0.1:8765");
- *            server.httpRoute(
- *                "GET localhost:8765/status", "org.async.web.HttpServerStatus"
- *                );
- *            Static.loop.exits.add(server);
- *            server = null;
- *        } catch (Throwable e) {
- *            Static.loop.log(e);
- *        }
- *        Static.loop.dispatch();
- *    }
- *}
- * 
- * Running
- * 
  */
 public class HttpServer extends Server {
     public static class Actor implements Producer {
@@ -420,6 +394,9 @@ public class HttpServer extends Server {
         _calendar.add(Calendar.MILLISECOND, precision);
         _date = HTTP.date(_calendar);
     };
+    public final String httpHost () {
+        return _host;
+    }
     public final void httpRoute (String route, String className) {
         try {
             _handlers.put(
