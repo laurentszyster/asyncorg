@@ -21,7 +21,7 @@ package org.async.produce;
 
 import org.async.chat.Producer;
 import org.async.simple.Objects;
-
+import java.util.LinkedList;
 import java.util.Iterator;
 
 /**
@@ -60,5 +60,15 @@ public class BytesProducer implements Producer {
     public static final 
     BytesProducer wrap (byte[][] bytes) {
         return new BytesProducer(Objects.iter((Object[]) bytes));
+    }
+    public static final LinkedList<byte[]> tee (Producer producer) 
+    throws Throwable {
+        LinkedList<byte[]> bytes = new LinkedList<byte[]>();
+        byte[] data = producer.more();
+        while (data != null) {
+            bytes.add(data);
+            data = producer.more();
+        }
+        return bytes;
     }
 }

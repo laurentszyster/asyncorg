@@ -11,27 +11,37 @@ import java.util.HashMap;
  * ...
  */
 public class HttpFileCache implements HttpServer.Handler {
-    protected HashMap<String,HTTP.Entity> _cache = new HashMap();
+    protected String _root;
+    protected HashMap<String,HTTP.Entity> _cache;
     protected String _cacheControl;
-    public HttpFileCache() {
+    public HttpFileCache() 
+    throws Throwable {
         configure(".", "max-age=3600;");
     }
-    public HttpFileCache(String path) {
+    public HttpFileCache(String path) 
+    throws Throwable {
         configure(path, "max-age=3600;");
     }
-    public HttpFileCache(String path, String cacheControl) {
+    public HttpFileCache(String path, String cacheControl) 
+    throws Throwable {
         configure(path, cacheControl);
     }
-    public final void configure (String path, String cacheControl) {
-        String root = (new File(path)).getAbsolutePath();
-        int rootLength = root.length();
-        _cacheControl = cacheControl;
+    public final void configure (String path, String cacheControl) 
+    throws Throwable {
         // load entities in the cache, set content-type, Etag and last-modified
+        _root = (new File(path)).getAbsolutePath();
+        System.out.println(_root);
+        _cacheControl = cacheControl;
+        _cache = new HashMap<String, HTTP.Entity>();
         HTTP.FileEntity entity;
-        Iterator<File> files = SIO.glob(root, "[^.]^.*$").iterator();
+        int rootLength = _root.length();
+        Iterator<File> files = SIO.glob(_root, "^[^.].*$").iterator();
         while (files.hasNext()) {
             entity = new HTTP.FileEntity(files.next());
-            _cache.put(entity.absolutePath.substring(rootLength), entity);
+            _cache.put(
+                entity.absolutePath.substring(rootLength).replace('\\', '/'), 
+                new HTTP.CacheEntity(entity)
+                );
         }
     }
     public final boolean httpContinue(HttpServer.Actor http) 
