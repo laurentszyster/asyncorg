@@ -26,6 +26,7 @@ import org.async.simple.SIO;
 
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.io.File;
 import java.io.IOException;
 import java.io.FileInputStream;
@@ -123,8 +124,18 @@ public final class HTTP {
         } 
         public Producer body () throws IOException {
             return new BytesProducer(SIO.read(
-                new FileInputStream(absolutePath), SIO.fioBufferSize
+                new FileInputStream(absolutePath), SIO.netBufferSize
                 ));
+        }
+    }
+    public static final class CacheEntity extends Entity {
+        private LinkedList<byte[]> _bytes = new LinkedList<byte[]>(); 
+        public CacheEntity (Entity cached) throws Throwable {
+            headers = cached.headers;
+            _bytes = BytesProducer.tee(cached.body());
+        }
+        public Producer body () {
+            return new BytesProducer(_bytes.iterator()); 
         }
     }
 }

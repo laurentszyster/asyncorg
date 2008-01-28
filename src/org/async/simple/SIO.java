@@ -315,21 +315,28 @@ public class SIO {
      * Recursively glob files whose names match a regular expression from a 
      * directory to extend a <code>List</code> of <code>File</code>.
      * 
-     * @param directory to glob
+     * @param paths to glob
      * @param regular expression to match 
      * @param files list to extend
      */
     public static final void glob (
-        File directory, Pattern regular, ArrayList<File> files
+        String path, String[] names, Pattern regular, ArrayList<File> files
         ) {
         File file;
-        String[] paths = directory.list();
-        for (int i=0; i<paths.length; i++) {
-            file = new File(paths[i]);
-            if (file.isDirectory()) {
-                glob(file, regular, files);
-            } else if (regular.matcher(paths[i]).matches()) {
-                files.add(file);
+        String[] content;
+        String filename;
+        for (int i=0; i<names.length; i++) {
+            filename = path + '/' + names[i];
+            file = new File(filename);
+            if (file.isHidden()) {
+                ;
+            } else if (regular.matcher(names[i]).matches()) {
+                content = file.list();
+                if (content == null) {
+                    files.add(file);
+                } else {
+                    glob(filename, content, regular, files);
+                }
             }
         }
     };
@@ -342,8 +349,14 @@ public class SIO {
      * @return a list of files
      */
     public static final ArrayList<File> glob (String root, String regular) {
+        File file = new File(root);
         ArrayList<File> files = new ArrayList();
-        glob(new File(root), Pattern.compile(regular), files);
+        glob(
+            file.getAbsolutePath().replace('\\', '/'), 
+            file.list(), 
+            Pattern.compile(regular), 
+            files
+            );
         return files;
     };
 }
