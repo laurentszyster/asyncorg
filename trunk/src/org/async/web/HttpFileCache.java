@@ -11,27 +11,35 @@ import java.util.HashMap;
  * ...
  */
 public class HttpFileCache implements HttpServer.Handler {
+    protected String _path;
     protected String _root;
     protected HashMap<String,HTTP.Entity> _cache;
     protected String _cacheControl;
     public HttpFileCache() 
     throws Throwable {
-        configure(".", "max-age=3600;");
+        _new(".", "max-age=3600;");
     }
     public HttpFileCache(String path) 
     throws Throwable {
-        configure(path, "max-age=3600;");
+        _new(path, "max-age=3600;");
     }
     public HttpFileCache(String path, String cacheControl) 
     throws Throwable {
-        configure(path, cacheControl);
+        _new(path, cacheControl);
     }
-    public final void configure (String path, String cacheControl) 
+    protected final void _new (String path, String cacheControl) 
     throws Throwable {
         // load entities in the cache, set content-type, Etag and last-modified
         _root = (new File(path)).getAbsolutePath();
-        System.out.println(_root);
         _cacheControl = cacheControl;
+    }
+    public final void handleConfigure(String route) throws Throwable {
+        int slashAt = route.indexOf('/');
+        if (slashAt < 0) {
+            throw new Error("invalid HTTP route identifier");
+        } else {
+            _path = route.substring(slashAt);
+        }
         _cache = new HashMap<String, HTTP.Entity>();
         HTTP.FileEntity entity;
         int rootLength = _root.length();
@@ -39,12 +47,12 @@ public class HttpFileCache implements HttpServer.Handler {
         while (files.hasNext()) {
             entity = new HTTP.FileEntity(files.next());
             _cache.put(
-                entity.absolutePath.substring(rootLength).replace('\\', '/'), 
+                _path + entity.absolutePath.substring(rootLength).replace('\\', '/'), 
                 new HTTP.CacheEntity(entity)
                 );
         }
     }
-    public final boolean httpContinue(HttpServer.Actor http) 
+    public final boolean handleRequest(HttpServer.Actor http) 
     throws Throwable {
         http.responseHeader("Cache-control", _cacheControl);
         HTTP.Entity entity = _cache.get(http.uri().getPath());
@@ -62,7 +70,7 @@ public class HttpFileCache implements HttpServer.Handler {
         }
         return false;
     }
-    public final void httpCollected(HttpServer.Actor http) {
+    public final void handleCollected(HttpServer.Actor http) {
         // pass, there's nothing to do for an unexpected request body.
     }
 }

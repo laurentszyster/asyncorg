@@ -27,7 +27,6 @@ import org.async.chat.Producer;
 import org.async.chat.Collector;
 import org.async.produce.ByteProducer;
 import org.async.protocols.HTTP;
-import org.async.protocols.MIME;
 import org.async.protocols.JSON;
 import org.async.simple.Bytes;
 import org.async.simple.Strings;
@@ -55,13 +54,16 @@ public class HttpServer extends Server {
         protected Collector _requestBody = null;
         protected HashMap<String,String> _responseHeaders = new HashMap();
         protected Producer _responseBody = null;
+        protected HashMap<String,String> _responseCookies = null;
         private Producer _producer = null;
         /**
-         * The actor's transition state, an untyped <code>Object</code>.
+         * The actor's transition state represented as a 
+         * <code>JSON.Object</code>.
          */
         public JSON.Object state = null;
-        public Actor (Channel channel, String request, String buffer, int pos) 
-        throws Throwable {
+        protected Actor (
+            Channel channel, String request, String buffer, int pos
+            ) throws Throwable {
             _channel = channel;
             Iterator parts = Strings.split(request, ' ');
             if (parts.hasNext()) {
@@ -75,7 +77,7 @@ public class HttpServer extends Server {
                     _uri = new URI("/");
                 }
             }
-            MIME.update(_requestHeaders, buffer, pos);
+            HTTP.update(_requestHeaders, buffer, pos);
             _host = _requestHeaders.get("host");
             if (_host == null) {
                 _host = _channel._server._host;
@@ -97,11 +99,11 @@ public class HttpServer extends Server {
          * @return
          * @throws Throwable
          */
-        public final boolean action (String route) throws Throwable {
-            return _channel._server._handlers.get(route).httpContinue(this);
+        public final boolean handleRequest (String route) throws Throwable {
+            return _channel._server._handlers.get(route).handleRequest(this);
         }
-        public final Calendar calendar () {
-            return _channel._server._calendar;
+        public final void handleCollected (String route) throws Throwable {
+            _channel._server._handlers.get(route).handleCollected(this);
         }
         public final String date () {
             return _channel._server._date;
@@ -118,10 +120,10 @@ public class HttpServer extends Server {
         public final String protocol() {
             return _protocol;
         }
-        public final String requestHeader(String name) {
+        public final String requestHeader(String name, String defaultValue) {
             String value = _requestHeaders.get(name);
             if (value == null) {
-                return "";
+                return defaultValue;
             } else {
                 return value;
             }
@@ -135,18 +137,19 @@ public class HttpServer extends Server {
         public final HashMap responseHeaders() {
             return _responseHeaders;
         };
-        public final String responseHeader(String name) {
+        public final String responseHeader(String name, String defaultValue) {
             String value = _responseHeaders.get(name);
             if (value == null) {
-                return "";
+                return defaultValue;
             } else {
                 return value;
             }
         };
-        public final void responseHeader(String name, String value) {
-            _responseHeaders.put(name, value);
-        };
         public final void responseCookie(String name, String value) {
+            if (_responseCookies == null) {
+                _responseCookies = new HashMap<String, String>();
+            }
+            _responseCookies.put(name, value);
         }
         public final String status() {
             return _status;
@@ -201,7 +204,7 @@ public class HttpServer extends Server {
                         if (_protocol.equals("HTTP/1.1")) {
                             _responseHeaders.put("Transfer-Encoding", "chunked");
                             _producer = new ChunkProducer(_responseBody);
-                            if (requestHeader("connection")
+                            if (requestHeader("connection", "")
                                     .toLowerCase().equals("keep-alive")) {
                                 _responseHeaders.put("Connection", "keep-alive");
                             } else {
@@ -211,7 +214,7 @@ public class HttpServer extends Server {
                         } else {
                             if (
                                 _responseHeaders.containsKey("Content-Length") &&
-                                requestHeader("connection")
+                                requestHeader("connection", "")
                                     .toLowerCase().equals("keep-alive")
                                 ) {
                                 _responseHeaders.put("Connection", "keep-alive");
@@ -319,7 +322,7 @@ public class HttpServer extends Server {
                 setTerminator(Bytes.CRLFCRLF);
                 _body = null;
                 if (_http._handler != null && _http._requestBody != null) {
-                    _http._handler.httpCollected(_http);
+                    _http._handler.handleCollected(_http);
                 }
                 _http = null;
             }
@@ -362,9 +365,10 @@ public class HttpServer extends Server {
             }
         }
     }
-    public static interface Handler {
-        public boolean httpContinue(Actor http) throws Throwable;
-        public void httpCollected(Actor http) throws Throwable;
+    public interface Handler {
+        public void handleConfigure(String route) throws Throwable; 
+        public boolean handleRequest(Actor http) throws Throwable;
+        public void handleCollected(Actor http) throws Throwable;
     }
     protected int _bufferSizeIn = 16384;
     protected int _bufferSizeOut = 16384;
@@ -397,17 +401,13 @@ public class HttpServer extends Server {
     public final String httpHost () {
         return _host;
     }
-    public final void httpRoute (String route, String className) {
+    public final void httpRoute (String route, Handler handler) {
         try {
-            _handlers.put(
-                route, (Handler) Class.forName(className).newInstance()
-                );
+            handler.handleConfigure(route);
+            _handlers.put(route, handler);
         } catch (Throwable e) {
             log(e);
         }
-    }
-    public final void httpRoute (String route, Handler handler) {
-        _handlers.put(route, handler);
     }
     public final Handler httpHandler (String route) {
         return _handlers.get(route);
@@ -435,20 +435,20 @@ public class HttpServer extends Server {
             String route = base + path;
             Handler handler = http._handler = _handlers.get(route); 
             if (handler!=null) { // -> context/subject/predicate
-                return handler.httpContinue(http);
+                return handler.handleRequest(http);
             } 
             int slashAt = path.indexOf('/', 1);
             if (slashAt > 0) {
-                route = base + path.substring(0, slashAt + 1);
+                route = base + path.substring(0, slashAt);
                 http._handler = handler = _handlers.get(route);
-                if (handler!=null) { // -> context/subject/
-                    return handler.httpContinue(http);
+                if (handler!=null) { // -> context/subject
+                    return handler.handleRequest(http);
                 }
             }
             route = base + '/';
             http._handler = handler = _handlers.get(route);
             if (handler!=null) { // -> context/
-                return handler.httpContinue(http);
+                return handler.handleRequest(http);
             }
             http.response(404); // Not Found
         } catch (Throwable e) {

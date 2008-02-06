@@ -23,7 +23,7 @@ import org.async.chat.Chat;
 import org.async.chat.Channel;
 import org.async.chat.Collector;
 import org.async.chat.Protocol;
-import org.async.protocols.MIME;
+import org.async.protocols.HTTP;
 import org.async.simple.Bytes;
 import org.async.simple.Strings;
 
@@ -98,7 +98,7 @@ public class ChunkCollector extends Protocol {
             return false;
         case _COLLECT_FOOTERS:
             if (_headers != null) {
-                MIME.update(_headers, _buffer.toString(), 0);
+                HTTP.update(_headers, _buffer.toString(), 0);
             }
             _collector = null;
             _buffer = null;

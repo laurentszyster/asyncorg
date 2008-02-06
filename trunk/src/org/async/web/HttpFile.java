@@ -5,29 +5,38 @@ import org.async.protocols.HTTP;
 import java.io.File;
 
 public class HttpFile implements HttpServer.Handler {
+    protected int _pathLength;
     protected String _root;
     protected String _cacheControl;
     public HttpFile() {
-        configure(".", "max-age=3600;");
+        _new(".", "max-age=3600;");
     }
     public HttpFile(String path) {
-        configure(path, "max-age=3600;");
+        _new(path, "max-age=3600;");
     }
     public HttpFile(String path, String cacheControl) {
-        configure(path, cacheControl);
+        _new(path, cacheControl);
     }
-    public final void configure (String path, String cacheControl) {
-        _root = (new File(path)).getAbsolutePath();
+    protected final void _new (String path, String cacheControl) {
+        _root = (new File(path)).getAbsolutePath().replace('\\', '/');
         _cacheControl = cacheControl;
     }
-    public final boolean httpContinue(HttpServer.Actor http) 
+    public final void handleConfigure(String route) throws Throwable {
+        int slashAt = route.indexOf('/');
+        if (slashAt < 0) {
+            throw new Error("invalid HTTP route identifier");
+        } else {
+            _pathLength = route.length() - slashAt;
+        }
+    }
+    public final boolean handleRequest(HttpServer.Actor http) 
     throws Throwable {
         http.responseHeader("Cache-control", _cacheControl);
         String path = http.uri().getPath();
         if (path.indexOf("../") > -1) {
             http.response(400); // Bad request
         } else {
-            File file = new File(_root + path);
+            File file = new File(_root + path.substring(_pathLength));
             if (file.exists() && file.isFile()) {
                 HTTP.Entity entity = new HTTP.FileEntity(file);
                 String method = http.method();
@@ -44,7 +53,7 @@ public class HttpFile implements HttpServer.Handler {
         }
         return false;
     }
-    public final void httpCollected(HttpServer.Actor http) {
+    public final void handleCollected(HttpServer.Actor http) {
         // pass, there's nothing to do for an unexpected request body.
     }
 }

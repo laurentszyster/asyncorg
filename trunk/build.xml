@@ -2,13 +2,23 @@
 <project name="asyncorg" default="jar">
   <property file="host.properties"/>
   <property file="packages.properties"/>
-  <target name="jar">
+  <target name="compile">
+    <javac 
+       srcdir="src"
+       destdir="bin"
+       debug="off"
+       source="1.5"
+    />
+  </target>
+  <target name="jar" depends="compile">
     <jar 
-      jarfile="asyncorg-${version}-bin.jar" 
+      jarfile="lib/asyncorg.jar" 
       basedir="bin"
-      includes="org/async/simple/** org/async/core/** org/async/chat/** org/async/net/**"
-      />
-    <copy file="asyncorg-${version}-bin.jar" tofile="lib/asyncorg.jar"/>
+      >
+      <manifest>
+  	    <attribute name="Main-Class" value="Asyncorg"/>
+    	</manifest>
+    </jar>
   </target>
   <target name="doc">
     <delete dir="doc/fragments"/>
@@ -16,23 +26,31 @@
   	<unzip src="lib/doctestj-browser.zip" dest="doc"/>
     <javadoc 
       docletpath=
-        "lib/doctestj.jar;
+        "lib/asyncorg.jar;
+         lib/doctestj.jar;
          lib/less4j-protocols.jar;
          lib/smalljs.jar;
          lib/xp.jar;
-         lib/servlet-api.jar;
          ${host-jdk-path}lib/tools.jar"
       doclet="org.doctestj.Doclet"
       packagenames=
-        "org.async.simple, org.async.core, org.async.chat, org.async.net" 
-      source="1.4" 
+        "org.async.simple, 
+         org.async.core, 
+         org.async.net,
+         org.async.chat, 
+         org.async.collect, 
+         org.async.produce, 
+         org.async.protocols,
+         org.async.web,
+         org.async.sql"
+      source="1.5" 
       sourcepath="src" 
       classpath=
         "lib/doctestj.jar;
+         lib/sqlite.jar;
          lib/less4j-protocols.jar;
          lib/smalljs.jar;
          lib/xp.jar;
-         lib/servlet-api.jar;
          ${host-jdk-path}lib/tools.jar"
       access="public" 
       >
