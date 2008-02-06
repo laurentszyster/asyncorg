@@ -359,6 +359,18 @@ public class JSON {
      * helps a lot and make the whole a lot clearer to read and debug. 
      */
     public static class Object extends HashMap {
+        public final void add (String name, java.lang.Object value) {
+            if (containsKey(name)) {
+                java.lang.Object curr = get(name);
+                if (curr instanceof JSON.Array) {
+                    ((JSON.Array) curr).add(value);
+                } else {
+                    put(name, JSON.list(curr, value));
+                }
+            } else {
+                put(name, value);
+            }
+        }
         /**
          * Access an <code>Number</code> value by name.
          * 

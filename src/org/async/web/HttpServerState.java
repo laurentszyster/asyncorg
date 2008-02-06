@@ -6,7 +6,10 @@ import org.async.protocols.JSON;
 import org.async.simple.Bytes;
 
 public class HttpServerState implements HttpServer.Handler {
-    public final boolean httpContinue(HttpServer.Actor http) {
+    public final void handleConfigure(String route) throws Throwable {
+    }
+    public final boolean handleRequest(HttpServer.Actor http) 
+    throws Throwable {
         Runtime rt = Runtime.getRuntime();
         HttpServer server = http.channel().server();
         JSON.Array concurrent = new JSON.Array();
@@ -42,7 +45,8 @@ public class HttpServerState implements HttpServer.Handler {
         http.response(200, Bytes.encode(JSON.pprint(json), Bytes.UTF8));
         return false;
     }
-    public final void httpCollected (HttpServer.Actor http) throws Throwable {
+    public final void handleCollected (HttpServer.Actor http) 
+    throws Throwable {
         http.channel().log("unexpected request body");
     }
 }

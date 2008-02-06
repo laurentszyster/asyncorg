@@ -23,6 +23,7 @@ import org.async.chat.Producer;
 import org.async.produce.BytesProducer;
 import org.async.simple.Objects;
 import org.async.simple.SIO;
+import org.async.simple.Strings;
 
 import java.util.Calendar;
 import java.util.HashMap;
@@ -98,6 +99,44 @@ public final class HTTP {
         return date(c);
     }
 
+    public static final void update(HashMap headers, String string, int pos) {
+        int spaceAt, colonAt, crlfAt;
+        String name = null, value = "";
+        while (pos < string.length()) {
+            spaceAt = string.indexOf(" ", pos);
+            colonAt = string.indexOf(":", pos);
+            if (0 < colonAt && (spaceAt == -1 || colonAt < spaceAt)) {
+                if (name != null) {
+                    if (headers.containsKey(name)) {
+                        // http://www.faqs.org/rfcs/rfc1945.html 4.2
+                        headers.put(name, headers.get(name) + "," + value.trim());
+                    } else {
+                        headers.put(name, value.trim());
+                    }
+                }
+                name = string.substring(pos, colonAt).toLowerCase();
+                value = "";
+                pos = colonAt + 1;
+            }
+            crlfAt = string.indexOf(Strings.CRLF, pos);
+            if (crlfAt == -1) {
+                value = value + string.substring(pos);
+                break;
+            } else {
+                value = value + string.substring(pos, crlfAt);
+                pos = crlfAt + 2;
+            }
+        }
+        if (name != null) {
+            if (headers.containsKey(name)) {
+                // http://www.faqs.org/rfcs/rfc1945.html 4.2
+                headers.put(name, headers.get(name) + "," + value.trim());
+            } else {
+                headers.put(name, value.trim());
+            }
+        }
+    }
+    
     public static abstract class Entity {
         public HashMap<String, String> headers = new HashMap();
         public abstract Producer body() throws Throwable;

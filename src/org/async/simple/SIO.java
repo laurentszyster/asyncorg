@@ -88,7 +88,7 @@ public class SIO {
      * @throws IOException
      */
     protected static String read (BufferedReader reader) throws IOException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         try {
             char[] buffer = new char[fioBufferSize];
             int readLength = reader.read(buffer);
