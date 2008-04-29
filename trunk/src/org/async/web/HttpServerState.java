@@ -8,6 +8,9 @@ import org.async.simple.Bytes;
 public class HttpServerState implements HttpServer.Handler {
     public final void handleConfigure(String route) throws Throwable {
     }
+    public boolean handleIdentify(HttpServer.Actor http) throws Throwable {
+        return true;
+    }
     public final boolean handleRequest(HttpServer.Actor http) 
     throws Throwable {
         Runtime rt = Runtime.getRuntime();
@@ -20,7 +23,7 @@ public class HttpServerState implements HttpServer.Handler {
             "bytesIn", server.bytesIn,
             "bytesOut", server.bytesOut,
             "channels", concurrent,
-            "date", http.date(),
+            "date", server.httpDate(),
             "dispatched", server.channelsDispatched(),
             "memory free", rt.freeMemory(),
             "memory maximum", rt.maxMemory(),

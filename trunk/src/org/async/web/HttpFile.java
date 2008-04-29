@@ -21,12 +21,18 @@ public class HttpFile implements HttpServer.Handler {
         _root = (new File(path)).getAbsolutePath().replace('\\', '/');
         _cacheControl = cacheControl;
     }
+    public boolean handleIdentify(HttpServer.Actor http) throws Throwable {
+        return true;
+    }
     public final void handleConfigure(String route) throws Throwable {
         int slashAt = route.indexOf('/');
         if (slashAt < 0) {
             throw new Error("invalid HTTP route identifier");
         } else {
             _pathLength = route.length() - slashAt;
+            if (_pathLength == 1) {
+                _pathLength = 0;
+            } 
         }
     }
     public final boolean handleRequest(HttpServer.Actor http) 
@@ -36,6 +42,7 @@ public class HttpFile implements HttpServer.Handler {
         if (path.indexOf("../") > -1) {
             http.response(400); // Bad request
         } else {
+            // http.channel().log(_root + path.substring(_pathLength));
             File file = new File(_root + path.substring(_pathLength));
             if (file.exists() && file.isFile()) {
                 HTTP.Entity entity = new HTTP.FileEntity(file);

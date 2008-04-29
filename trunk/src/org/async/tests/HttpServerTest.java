@@ -4,24 +4,30 @@ import org.async.core.Static;
 import org.async.web.HttpServer;
 import org.async.web.HttpServerState;
 import org.async.web.HttpFile;
+import org.async.web.Database;
+import org.async.sql.AnSQLite;
 
 public class HttpServerTest {
     public static void main (String[] args) throws Throwable {
+        AnSQLite sql = new AnSQLite(":memory:", 0);
+        Database db = new Database(sql);
         Static.loop.hookShutdown();
         try {
             HttpServer server = new HttpServer(".");
             server.httpListen((args.length > 0) ? args[0]: "127.0.0.2:8765");
-            server.httpRoute(
-                "GET " + server.httpHost() + "/doc", new HttpFile("doc")
-                );
-            server.httpRoute(
-                "GET " + server.httpHost() + "/state", new HttpServerState()
-                );
+            String host = server.httpHost();
+            server.httpRoute("GET " + host + "/", new HttpFile("www"));
+            server.httpRoute("GET " + host + "/db", db);
+            server.httpRoute("POST " + host + "/db", db);
+            server.httpRoute("GET " + host + "/doc", new HttpFile("doc"));
+            server.httpRoute("GET " + host + "/state", new HttpServerState());
             Static.loop.exits.add(server);
             server = null;
         } catch (Throwable e) {
             Static.loop.log(e);
         }
+        sql.open();
         Static.loop.dispatch();
+        sql.close();
     }
 }

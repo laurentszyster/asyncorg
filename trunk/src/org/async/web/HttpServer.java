@@ -39,11 +39,42 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 /**
- * An extensible HTTP/1.1 server for high-performance stateful applications.
+ * An extensible HTTP/1.1 server for high-performance statefull applications.
+ * 
+ * @h3 Synopsis
+ * 
+ * @p This HTTP server is made for Web 2.0 applications, with support for:
+ * IRTD2 strong identification; authorization of urlformencoded and JSON 
+ * state transitions; statefull transaction handlers.
+ * 
+ * @pre HttpServer server = new HttpServer("/var/www");
+ *server.httpListen("127.0.0.2:8765");
+ *server.httpRoute(
+ *    "/", "GET 127.0.0.2:8765/", new HttpFileCache("/var/www")
+ *    );
+ *server.loop().dispatch();
+ *    
  */
 public class HttpServer extends Server {
+    /**
+     * An Actor holding one HTTP/1.1 resource state transition with support
+     * for IRTD2 and JSON. It can be applied to handle simple HTTP/1.0 
+     * transitions as well as Web 2.0 transactions.
+     * 
+     * @h3 Synopsis
+     * 
+     * @p The <code>HttpServer</code> instanciate <code>Actor</code> instances
+     * and pass them to the <code>Handler</code>'s <code>handleRequest</code>
+     * and (maybe) the <code>handleCollected</code> instance method.
+     * 
+     * @p <code>Actor</code> class provides 
+     * 
+     * @p Note that <code>Actor</code> is a <code>Producer</code> and can
+     * therefore be 
+     */
     public static class Actor implements Producer {
         protected Channel _channel;
+        protected long _when;
         protected Handler _handler;
         protected String _status = null;
         protected String _method = "GET";
@@ -51,20 +82,46 @@ public class HttpServer extends Server {
         protected String _protocol = "HTTP/0.9";
         protected String _host;
         protected HashMap<String,String> _requestHeaders = new HashMap();
+        protected HashMap<String, String> _requestCookies = null;
         protected Collector _requestBody = null;
         protected HashMap<String,String> _responseHeaders = new HashMap();
         protected Producer _responseBody = null;
-        protected HashMap<String,String> _responseCookies = null;
+        protected HashMap<String, String> _responseCookies = null;
         private Producer _producer = null;
+        /**
+         * The identity of this resource state transition user agent.
+         */
+        public String identity;
+        /**
+         * The rights (or roles) of the user agent for this resource state 
+         * transition 
+         */
+        public String rights;
+        /**
+         * The SHA1 digest authenticating the previous resource state
+         * transition (ie: request) of its user agent. 
+         */
+        public String digested;
+        /**
+         * The SHA1 digest identifying this Actor previous request resource state
+         * transition (ie: request) of its user agent. 
+         */
+        public String digest;
         /**
          * The actor's transition state represented as a 
          * <code>JSON.Object</code>.
          */
-        public JSON.Object state = null;
+        public JSON.Object state = new JSON.Object();
+        /**
+         * 
+         */
+        public boolean test = false;
+        //
         protected Actor (
             Channel channel, String request, String buffer, int pos
             ) throws Throwable {
             _channel = channel;
+            _when = _channel._server._loop.now();
             Iterator parts = Strings.split(request, ' ');
             if (parts.hasNext()) {
                 _method = ((String) parts.next()).toUpperCase();
@@ -105,8 +162,8 @@ public class HttpServer extends Server {
         public final void handleCollected (String route) throws Throwable {
             _channel._server._handlers.get(route).handleCollected(this);
         }
-        public final String date () {
-            return _channel._server._date;
+        public final long when () {
+            return _when;
         }
         public final Channel channel () {
             return _channel;
@@ -120,6 +177,9 @@ public class HttpServer extends Server {
         public final String protocol() {
             return _protocol;
         }
+        public final String requestHeader(String name) {
+            return _requestHeaders.get(name);
+        };
         public final String requestHeader(String name, String defaultValue) {
             String value = _requestHeaders.get(name);
             if (value == null) {
@@ -129,7 +189,10 @@ public class HttpServer extends Server {
             }
         };
         public final String requestCookie(String name) {
-            return null;
+            if (_requestCookies == null) {
+                _requestCookies = HTTP.cookies(requestHeader("Cookie", ""));
+            }
+            return _requestCookies.get(name);
         }
         public final Collector requestBody() {
             return _requestBody;
@@ -144,6 +207,9 @@ public class HttpServer extends Server {
             } else {
                 return value;
             }
+        };
+        public final HashMap responseCookies() {
+            return _responseCookies;
         };
         public final void responseCookie(String name, String value) {
             if (_responseCookies == null) {
@@ -243,6 +309,17 @@ public class HttpServer extends Server {
                         sb.append(": ");
                         sb.append(_responseHeaders.get(name));
                         sb.append(Strings.CRLF);
+                    }
+                    if (_responseCookies != null) {
+                        names = _responseCookies.keySet().iterator();
+                        while (names.hasNext()) {
+                            name = (String) names.next();
+                            sb.append("Set-Cookie: ");
+                            sb.append(name);
+                            sb.append("=");
+                            sb.append(_responseCookies.get(name));
+                            sb.append(Strings.CRLF);
+                        }
                     }
                     sb.append(Strings.CRLF);
                     return Bytes.encode(sb.toString(), "UTF-8");
@@ -347,7 +424,12 @@ public class HttpServer extends Server {
                 _body = new ChunkCollector(
                     this, _body, _http._requestHeaders
                     );
-            } 
+            } else {
+                String cl = _http._requestHeaders.get("content-length");
+                if (cl != null) {
+                    setTerminator(Integer.valueOf(cl));
+                }
+            }
         }
         public final void handleClose() throws Throwable {
             // TODO: find out what to do when an HTTP server channel
@@ -366,7 +448,8 @@ public class HttpServer extends Server {
         }
     }
     public interface Handler {
-        public void handleConfigure(String route) throws Throwable; 
+        public void handleConfigure(String route) throws Throwable;
+        public boolean handleIdentify (Actor http) throws Throwable;
         public boolean handleRequest(Actor http) throws Throwable;
         public void handleCollected(Actor http) throws Throwable;
     }
@@ -377,6 +460,7 @@ public class HttpServer extends Server {
     protected String _date;
     protected File _root;
     protected HashMap<String,Handler> _handlers = new HashMap();
+    public boolean test = false;
     public HttpServer (String root) {
         super();
         _root = new File(root);
@@ -401,10 +485,20 @@ public class HttpServer extends Server {
     public final String httpHost () {
         return _host;
     }
-    public final void httpRoute (String route, Handler handler) {
+    public final String httpDate () {
+        return _date;
+    }
+    /**
+     * Route requests in the realm of a path to an <code>Handler</code>
+     * instance.
+     * 
+     * @param path of the realm handled
+     * @param handler of requests starting with this path
+     */
+    public final void httpRoute (String path, Handler handler) {
         try {
-            handler.handleConfigure(route);
-            _handlers.put(route, handler);
+            handler.handleConfigure(path);
+            _handlers.put(path, handler);
         } catch (Throwable e) {
             log(e);
         }
@@ -433,21 +527,24 @@ public class HttpServer extends Server {
             String base = http._method + ' ' + http._host;
             String path = http._uri.getPath();
             String route = base + path;
-            Handler handler = http._handler = _handlers.get(route); 
+            Handler handler = _handlers.get(route); 
             if (handler!=null) { // -> context/subject/predicate
+                http._handler = handler;
                 return handler.handleRequest(http);
             } 
             int slashAt = path.indexOf('/', 1);
             if (slashAt > 0) {
                 route = base + path.substring(0, slashAt);
-                http._handler = handler = _handlers.get(route);
+                handler = _handlers.get(route);
                 if (handler!=null) { // -> context/subject
+                    http._handler = handler;
                     return handler.handleRequest(http);
                 }
             }
             route = base + '/';
-            http._handler = handler = _handlers.get(route);
+            handler = _handlers.get(route);
             if (handler!=null) { // -> context/
+                http._handler = handler;
                 return handler.handleRequest(http);
             }
             http.response(404); // Not Found
@@ -475,6 +572,9 @@ to one of the handlers mapped by the following keys:
     "context/"
 
 or reply with a "404 Not Found" response.
+
+Most web applications can indentify their interfaces with such articulation, 
+and as many should (because "flat is better than nested").
 
 More elaborate routing may be implemented by handlers, usually using PCRE
 to match URIs and extract their metadata.

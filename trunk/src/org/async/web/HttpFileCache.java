@@ -33,6 +33,9 @@ public class HttpFileCache implements HttpServer.Handler {
         _root = (new File(path)).getAbsolutePath();
         _cacheControl = cacheControl;
     }
+    public boolean handleIdentify(HttpServer.Actor http) throws Throwable {
+        return true;
+    }
     public final void handleConfigure(String route) throws Throwable {
         int slashAt = route.indexOf('/');
         if (slashAt < 0) {
