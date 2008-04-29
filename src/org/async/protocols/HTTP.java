@@ -25,7 +25,10 @@ import org.async.simple.Objects;
 import org.async.simple.SIO;
 import org.async.simple.Strings;
 
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.util.Calendar;
+import java.util.Iterator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.io.File;
@@ -135,6 +138,20 @@ public final class HTTP {
                 headers.put(name, value.trim());
             }
         }
+    }
+    private static final Pattern _regular_cookie = Pattern.compile(
+        "^?(([^=]+)=\\s*([^;]*?)\\s*(;|$))*"
+        );
+    public static final HashMap<String, String> cookies(String encoded) {
+        HashMap<String, String> cookies = new HashMap();
+        Iterator<String> strings = Strings.split(encoded, _regular_cookie);
+        String name, value;
+        while (strings.hasNext()) {
+            name = strings.next();
+            value = strings.next();
+            cookies.put(name, value);
+        }
+        return cookies;
     }
     
     public static abstract class Entity {
