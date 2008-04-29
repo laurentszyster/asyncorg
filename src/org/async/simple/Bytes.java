@@ -80,6 +80,14 @@ public final class Bytes {
                 }
             }
         }
+        for (i=1; i<what.length; i++) {
+            if (in[from+i]!=what[i]) {
+                break;
+            }
+        }
+        if (i==what.length) {
+            return from;
+        }
         return -1;
     }
     /**
