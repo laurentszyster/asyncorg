@@ -63,17 +63,12 @@ public class Chat implements Channel, Collector {
     public static final boolean collect (
         Channel channel, Collector collector, ByteBuffer buffer
         ) throws Throwable {
-        byte[] bytes;
         Object terminator;
-        int pos;
         int lb = buffer.remaining();
-        if (buffer.hasArray()) {
-            bytes = buffer.array();
-        } else {
-            bytes = new byte[lb];
-            buffer.get(bytes);
-            buffer.flip();
-        }
+        byte[] bytes = new byte[lb];
+        int offset = buffer.position();
+        buffer.get(bytes);
+        buffer.position(offset);
         while (lb > 0) {
             terminator = channel.getTerminator();
             if (terminator == null) { // collect all
@@ -91,9 +86,9 @@ public class Chat implements Channel, Collector {
                     }
                 }
             } else { // look for a terminator
-                pos = buffer.position();
                 byte[] needle = (byte[]) terminator;
-                int found = Bytes.find(needle, bytes, pos);
+                int pos = buffer.position();
+                int found = Bytes.find(needle, bytes, pos - offset);
                 if (found < 0) { // not found, look for a prefix at the end.
                     found = _findPrefixAtEnd(buffer, needle);
                     if (found == 0) {
@@ -103,10 +98,12 @@ public class Chat implements Channel, Collector {
                     }
                     break;
                 } else { // found, maybe collect and terminate.
-                    if (found > pos) {
-                        collector.handleData(_collectIn(found-pos, buffer));
+                    if (found > 0) {
+                        collector.handleData(_collectIn(
+                            found - pos, buffer
+                            ));
                     }
-                    buffer.position(buffer.position()+needle.length);
+                    buffer.position(offset + found + needle.length);
                     if (collector.handleTerminator()) {
                         return true;
                     }
@@ -141,6 +138,7 @@ public class Chat implements Channel, Collector {
             _buffer = ByteBuffer.wrap(data);
         } else {
             byte[] left = new byte[_buffer.remaining()];
+            _buffer.get(left);
             _buffer = ByteBuffer.allocate(left.length + data.length);
             _buffer.put(left);
             _buffer.put(data);
