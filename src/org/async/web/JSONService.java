@@ -5,17 +5,13 @@ import java.net.URLDecoder;
 import org.async.web.HttpServer;
 import org.async.collect.StringCollector;
 import org.async.protocols.JSON;
+import org.async.protocols.JSONR;
 import org.async.simple.Strings;
 
-/**
- * ...
- */
 public abstract class JSONService implements HttpServer.Handler {
-    private static final String UTF8 = "UTF-8";
-    public abstract boolean apply (HttpServer.Actor http);
-    public static final JSON.Object parseQueryString (String query) 
+    protected static final 
+    void parseQueryString (String query, JSON.Object json) 
     throws Throwable {
-        JSON.Object json = new JSON.Object();
         String arg, name, value;
         int equalAt;
         Iterator<String> args = Strings.split(query, '&');
@@ -23,11 +19,11 @@ public abstract class JSONService implements HttpServer.Handler {
             arg = args.next();
             equalAt = arg.indexOf('=');
             if (equalAt < 0) {
-                name = URLDecoder.decode(arg, UTF8);
+                name = URLDecoder.decode(arg, "UTF-8");
                 value = null;
             } else {
-                name = URLDecoder.decode(arg.substring(0, equalAt), UTF8);
-                value = URLDecoder.decode(arg.substring(equalAt+1), UTF8);
+                name = URLDecoder.decode(arg.substring(0, equalAt), "UTF-8");
+                value = URLDecoder.decode(arg.substring(equalAt+1), "UTF-8");
             }
             if (json.containsKey(name)) {
                 java.lang.Object curr = json.get(name);
@@ -40,26 +36,23 @@ public abstract class JSONService implements HttpServer.Handler {
                 json.put(name, value);
             }
         }
-        return json;
     }
-    public final boolean httpContinue(HttpServer.Actor http) 
+    public final boolean handleRequest(HttpServer.Actor http) 
     throws Throwable {
         String method = http.method();
         if (method.equals("GET")) {
-            // expect urlencoded query string and maybe X-JSON input
             String query = http.uri().getRawQuery();
             if (query != null) {
-                http.state = parseQueryString(query);
+                parseQueryString(query, http.state);
+                JSONR.Type type = type(http);
+                if (type != null) {
+                    JSONR.validate(http.state, type);
+                }
+                call(http);
             } else {
-                http.state = new JSON.Object();
+                resource(http);
             }
-            String xjson = http.requestHeader("X-JSON", null);
-            if (xjson != null) {
-                new JSON().update(http.state, xjson);
-            }
-            apply(http);
         } else if (method.equals("POST")) {
-            // expect JSON and/or X-JSON encoded input
             http.collect(new StringCollector(new StringBuilder(), "UTF-8"));
         } else {
             http.response(501); // Not implemented
@@ -67,19 +60,25 @@ public abstract class JSONService implements HttpServer.Handler {
         return false;
     }
 
-    public final void httpCollected(HttpServer.Actor http) 
+    public final void handleCollected(HttpServer.Actor http) 
     throws Throwable {
-        // parse and validate the JSON request body POSTED
-        Object json = null;
-        json = JSON.decode(
-            ((StringCollector)http.requestBody()).toString()
-            );
-        if (json != null && json instanceof JSON.Object)
-            http.state = (JSON.Object) json;
-        else {
-            http.state = new JSON.Object();
-            http.state.put("arg0", json);
+        Object input = null;
+        String body = ((StringCollector) http.requestBody()).toString();
+        JSONR.Type type = type(http);
+        if (type == null) {
+            input = (new JSON()).eval(body);
+        } else {
+            input = (new JSONR(type)).eval(body);
         }
-        apply(http);
+        if (input != null && input instanceof JSON.Object) {
+            ((JSON.Object) input).putAll(http.state);
+            http.state = (JSON.Object) input;
+        } else {
+            http.state.put("arg0", input);
+        }
+        call(http);
     }
+    public abstract JSONR.Type type (HttpServer.Actor http);
+    public abstract boolean call (HttpServer.Actor http);
+    public abstract boolean resource (HttpServer.Actor http);
 }
