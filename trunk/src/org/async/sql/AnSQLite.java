@@ -6,15 +6,49 @@ import org.async.simple.Bytes;
 import SQLite.Database;
 import SQLite.Exception;
 import SQLite.Stmt;
+import SQLite.Authorizer;
+
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.HashMap;
 
 public class AnSQLite {
+    public static final int ROLE_DROP = 0;
+    public static final int ROLE_CREATE = 0;
+    public static final int ROLE_DELETE = 0;
+    public static final int ROLE_INSERT = 0;
+    public static final int ROLE_UPDATE = 0;
+    public static final int ROLE_SELECT = 0;
+    public static final int ROLE_READER = ROLE_SELECT;
+    public static final int ROLE_WRITER = ROLE_SELECT + ROLE_UPDATE;
+    public static final int ROLE_EDITOR = ROLE_WRITER + ROLE_INSERT;
+    public static final int ROLE_ADMIN = ROLE_EDITOR + ROLE_DELETE + ROLE_CREATE;
+    public static final int ROLE_SUPER = ROLE_ADMIN + ROLE_DROP + ROLE_CREATE;
+    public static final class Role implements Authorizer {
+        int _rights;
+        public Role (int rights) {
+            _rights = rights;
+        }
+        public final int authorize (
+            int i, 
+            String a,
+            String b, 
+            String c, 
+            String d
+            ) {
+            // try {
+            //    JSON.pprint(new Object[]{i, a, b, c}, System.err);
+            // } catch (IOException e) {
+            //    ;
+            // }
+            return 0;
+        }
+    }
     /**
      * The <code>SQLite.Database</code> wrapped.
      */
-    protected Database _db = new Database();
+    protected Database _db = null;
     protected String _path = ":memory:";
     protected int _options = 0;
     protected HashMap<String, Stmt> _statements;
@@ -22,18 +56,13 @@ public class AnSQLite {
         _path = path;
         _options = options;
     }
-    public void open () throws Exception {
+    public final Database db () {
+        return _db;
+    }
+    public final void open () throws Exception {
+        _db = new Database();
         _db.open(_path, _options);
         _statements = new HashMap();
-    }
-    public Stmt prepared (String statement) throws Exception {
-        Stmt st = _statements.get(statement);
-        if (st == null) {
-            return _db.prepare(statement);
-        } else {
-            st.reset();
-            return st;
-        }
     }
     public final void close () throws Exception {
         Iterator<Stmt> statements = _statements.values().iterator();
@@ -47,16 +76,25 @@ public class AnSQLite {
             _db = null;
         }
     }
+    public final Stmt prepared (String statement) throws Exception {
+        Stmt st = _statements.get(statement);
+        if (st == null) {
+            return _db.prepare(statement);
+        } else {
+            st.reset();
+            return st;
+        }
+    }
     protected static final void _prepare (Stmt st, StringBuilder sb) 
     throws Exception {
         int count = st.column_count();
         if (count > 0) {
             int col = 0;
             sb.append('[');
-            JSON.strb(sb, st.column_database_name(col));
+            JSON.strb(sb, st.column_origin_name(col));
             for (col=1; col<count; col++) {
                 sb.append(',');
-                JSON.strb(sb, st.column_database_name(col));
+                JSON.strb(sb, st.column_origin_name(col));
             }
             sb.append(']');
         } else {
@@ -65,7 +103,7 @@ public class AnSQLite {
     }
     protected static final void _bind (Stmt st, Iterator args) 
     throws Exception {
-        int i = 0;
+        int i = 1;
         Object arg;
         while (args.hasNext()) {
             arg = args.next();
@@ -225,7 +263,7 @@ public class AnSQLite {
         response.append(']');
         return true;
     }
-    protected final boolean _execute (
+    public final boolean statement (
         String statement, JSON.Array parameters, StringBuilder response
         ) {
         if (parameters == null) {
@@ -255,7 +293,7 @@ public class AnSQLite {
         Exception e = command("BEGIN");
         if (e == null) {
             while (statements.hasNext()) {
-                if (!_execute(
+                if (!statement(
                     statements.next(), parameters.next(), response
                     )) {
                     command("ROLLBACK");
@@ -268,39 +306,50 @@ public class AnSQLite {
         return false;
     }
     /**
-     * Decode and evaluate a JSON byte array and return a response string.
+     * Decode and evaluate a byte array as AnSQL statement, try to execute it
+     * and fill a response buffer with a JSON string of the result.
      * 
-     * @param request byte string to execute
+     * @param statement byte string to evaluate and execute
      * @param response to complete
      */
     public final void handle (byte[] request, StringBuilder response) {
-        JSON.Array json = new JSON.Array();
+        JSON.Array statement = new JSON.Array();
         JSON.Error error = (new JSON()).extend(
-            json, Bytes.decode(request, Bytes.UTF8)
+            statement, Bytes.decode(request, Bytes.UTF8)
             );
         if (error != null) {
             JSON.strb(response, error.getMessage());
         } else {
-            int size = json.size();
-            Object sql = (size > 0) ? json.get(0): null;
-            Object parameters = (size > 1) ? json.get(1): null;
-            if (sql == null){
-                JSON.strb(response, "AnSQL error: missing statement(s)");
-            } else if (sql instanceof String) {
-                _execute((String) sql, (JSON.Array) parameters, response);
-            } else if (sql instanceof JSON.Array) {
-                if (parameters == null) {
-                    prepare(((JSON.Array) sql).iterator(), response);
-                } else {
-                    transaction(
-                        ((JSON.Array) sql).iterator(),
-                        ((JSON.Array) parameters).iterator(),
-                        response
-                        );
-                }
+            handle(statement, response);
+        }
+    }
+    /**
+     * Try to execute AnSQL statement and fill a response buffer with a JSON 
+     * string of the result.
+     * 
+     * @param statement to execute
+     * @param response to complete
+     */
+    public final void handle (JSON.Array statement, StringBuilder response) {
+        int size = statement.size();
+        Object sql = (size > 0) ? statement.get(0): null;
+        Object parameters = (size > 1) ? statement.get(1): null;
+        if (sql == null){
+            JSON.strb(response, "AnSQL error: missing statement(s)");
+        } else if (sql instanceof String) {
+            statement((String) sql, (JSON.Array) parameters, response);
+        } else if (sql instanceof JSON.Array) {
+            if (parameters == null) {
+                prepare(((JSON.Array) sql).iterator(), response);
             } else {
-                JSON.strb(response, "AnSQL error: invalid statement(s) type");
+                transaction(
+                    ((JSON.Array) sql).iterator(),
+                    ((JSON.Array) parameters).iterator(),
+                    response
+                    );
             }
+        } else {
+            JSON.strb(response, "AnSQL error: invalid statement(s) type");
         }
     }
     protected static final JSON.Array _prepare (Stmt st) 
@@ -370,7 +419,7 @@ public class AnSQLite {
         }
         return result;
     }
-    protected final JSON.Array _execute (
+    public final JSON.Array statement (
         String statement, JSON.Array parameters 
         ) throws Exception  {
         if (parameters == null) {
@@ -391,7 +440,7 @@ public class AnSQLite {
         if (e == null) try {
             JSON.Array result = new JSON.Array();
             while (statements.hasNext()) {
-                result.add(_execute(statements.next(), parameters.next()));
+                result.add(statement(statements.next(), parameters.next()));
             }
             command("COMMIT");
             return result;
