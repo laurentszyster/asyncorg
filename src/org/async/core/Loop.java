@@ -154,8 +154,8 @@ public final class Loop {
     }
     /**
      * Set this loop's <code>Loginfo</code> logger or reset it to the default
-     * implementation (i.e.: STDOUT and STDERR) if the logger is 
-     * <code>null</code>, return the previous logger.
+     * implementation (i.e.: STDOUT and STDERR) if the <code>logger</code>
+     * argument is <code>null</code>, return the previous logger.
      * 
      * @param logger to set, null to reset the default
      * @return the previous logger
@@ -232,14 +232,14 @@ public final class Loop {
         return _concurrency;
     }
     /**
-     * ...
+     * Get this loop's precision in milliseconds, set by default to 100ms
      * 
-     * @return
+     * @p It is used by the loop to sleep that much whenever there are no
+     * dispatchers to select, keeping the loop from exhausting the CPU when 
+     * there are no I/O to handle. Practically, it also defines the best
+     * precision possible for scheduled events when there are no I/O. 
      * 
-     * @p A measure of this loop's precision, set by default to 100ms.
-     * It is used by the loop to sleep that much whenever there are no I/O
-     * to dispatch, keeping the loop from exhausting the CPU when there are
-     * no I/O to handle. 
+     * @return the precision of the loop in milliseconds
      */
     public final int precision () {
         return _precision;
@@ -255,17 +255,17 @@ public final class Loop {
     /**
      * Schedule a function's application at an approximate time.
      * 
-     * @param when in milliseconds
      * @param function to apply
+     * @param when in milliseconds
      */
-    public final void schedule (long when, Function function) {
+    public final void schedule (Function function, long when) {
         _scheduled.add(new Scheduled._Function(when, function));
     }
     /**
-     * Schedule a function's application at an approximate time.
+     * Schedule a function's application at an approximate time from now.
      * 
-     * @param when in milliseconds
-     * @param function to apply
+     * @param event scheduled
+     * @param milliseconds after now
      */
     public final void timeout (Scheduled event, long milliseconds) {
         event.when = _now + milliseconds;
