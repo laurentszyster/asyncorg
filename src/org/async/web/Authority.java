@@ -22,7 +22,7 @@ public class Authority {
     private String _qualifier;
     public Authority (String domain, String path) {
         _qualifier = (
-            "; expires=Sun, 17-Jan-2008 19:14:07 GMT; path=" + path 
+            "; expires=Sun, 17-Jan-2038 19:14:07 GMT; path=" + path 
             + "; domain=" + domain
             );
     }
@@ -44,16 +44,19 @@ public class Authority {
             if (irtd2 != null) {
                 String[] parsed = IRTD2.parse(irtd2);
                 long time = http.when()/1000;
-                if (IRTD2.digested(
+                int error = IRTD2.digested(
                     parsed, time, _authority.timeout, _authority.salts
-                    ) == 0) {
+                    );
+                if (error == 0) {
                     http.identity = parsed[0];
                     http.rights = parsed[1];
                     http.digested = parsed[4];
                     _authority.identify(http, time);
                     return _wrapped.request(http);
-                };
-            } 
+                } else {
+                    http.channel().log("IRTD2 error " + error);
+                }
+            }
             if (_wrapped.identify(http)) {
                 return _wrapped.request(http);
             }
@@ -91,24 +94,5 @@ public class Authority {
         sb.append(http.digest);
         sb.append(_qualifier);
         http.responseCookie("IRTD2", sb.toString());
-    }
-    public static final boolean authorized (
-        Actor http, String digest, String[] rights
-        ) {
-        if (digest.equals(http.state.getString("digest", ""))) {
-            String identity = http.state.getString("identity", null);
-            if (identity == null) {
-                http.identity = Strings.random(10, Strings.ALPHANUMERIC);
-            }
-            StringBuilder sb = new StringBuilder();
-            sb.append(http.rights);
-            for (int i=0; i<rights.length; i++) {
-                if (http.rights.indexOf(rights[i]) < 0) {
-                    sb.append(',');
-                    sb.append(rights[i]);
-                }
-            }
-        }
-        return false;
     }
 }
