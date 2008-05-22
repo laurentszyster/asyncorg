@@ -156,7 +156,7 @@ public class Database extends Service {
         http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
         http.response(200, Bytes.encode(_resource, Bytes.UTF8));
     }
-    public void call(Actor http) {
+    public void service(Actor http) {
         StringBuilder response = new StringBuilder();
         JSON.Array statement = http.state.getArray("arg0", null);
         if (statement == null) {

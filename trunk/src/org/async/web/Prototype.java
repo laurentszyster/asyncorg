@@ -33,7 +33,7 @@ public class Prototype extends Service {
     private Function _configure = null;
     private Function _identify = null;
     private Function _type = null;
-    private Function _call = null;
+    private Function _service = null;
     private Function _resource = null;
     public static final Prototype load(String path) throws Exception {
         Prototype prototype = new Prototype();
@@ -55,7 +55,7 @@ public class Prototype extends Service {
         _configure = _function(_scope, _cx, "configure");
         _identify = _function(_scope, _cx, "identify");
         _type = _function(_scope, _cx, "type");
-        _call = _function(_scope, _cx, "call");
+        _service = _function(_scope, _cx, "service");
         _resource = _function(_scope, _cx, "resource");
     }
     
@@ -106,11 +106,11 @@ public class Prototype extends Service {
                 ), JSONR.Type.class));
         }
     }
-    public final void call (Actor http) throws Throwable {
-        if (_call == null) {
+    public final void service (Actor http) throws Throwable {
+        if (_service == null) {
             http.response(501); // Not implemented
         } else {
-            _callFun(_call, new Object[]{http});
+            _callFun(_service, new Object[]{http});
         }
     }
     

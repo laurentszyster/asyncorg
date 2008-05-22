@@ -53,7 +53,7 @@ public abstract class Service implements Handler {
                 if (type != null) {
                     JSONR.validate(http.state, type);
                 }
-                call(http);
+                service(http);
             } else {
                 resource(http);
             }
@@ -80,9 +80,9 @@ public abstract class Service implements Handler {
         } else {
             http.state.put("arg0", input);
         }
-        call(http);
+        service(http);
     }
     public abstract JSONR.Type type (Actor http) throws Throwable;
-    public abstract void call (Actor http) throws Throwable;
+    public abstract void service (Actor http) throws Throwable;
     public abstract void resource (Actor http) throws Throwable;
 }

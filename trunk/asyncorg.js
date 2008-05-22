@@ -15,23 +15,25 @@ function jsonResponse (http, status, object) {
 var authority = new Authority("127.0.0.2", "/");
 
 var login = Prototype.bind({
-    "call": function (http) {
+    "service": function (http) {
         authority.identify(http, http.when()/1000);
         jsonResponse(http, 200, {"identity": http.identity});
     }
 });
 
+var state = authority.identified(new HttpServerState());
+
 var sql = new AnSQLite(":memory:", 0);
 
-var db = Prototype.bind({
-    "call": function (http) {
+var db = authority.identified(Prototype.bind({
+    "service": function (http) {
         var statement = http.state.getArray("arg0");
         var response = sql.handle(statement);
         http.responseHeader("Cache-control", "no-cache");
         http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
         http.response(200, response, "UTF-8");
     }
-});
+}));
 
 function open(address) {
     sql.open();
@@ -44,9 +46,7 @@ function open(address) {
     server.httpRoute("POST " + host + "/db", db);
     server.httpRoute("GET " + host + "/doc", new FileSystem("doc"));
     server.httpRoute("GET " + host + "/login", login);
-    server.httpRoute("GET " + host + "/login/state", authority.identified(
-        new HttpServerState()
-        ));
+    server.httpRoute("GET " + host + "/state", state);
     this.exits.add(server);
 }
 
