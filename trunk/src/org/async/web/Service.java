@@ -1,17 +1,23 @@
 package org.async.web;
 
-import java.util.Iterator;
-import java.net.URLDecoder;
-import org.async.web.HttpServer;
+import org.async.web.HttpServer.Actor;
+import org.async.web.HttpServer.Handler;
 import org.async.collect.StringCollector;
 import org.async.protocols.JSON;
 import org.async.protocols.JSONR;
 import org.async.simple.Strings;
 
-public abstract class JSONService implements HttpServer.Handler {
-    protected static final 
-    void parseQueryString (String query, JSON.Object json) 
-    throws Throwable {
+import java.util.Iterator;
+import java.net.URLDecoder;
+
+/**
+ * The redefinition of a web service, using JSON in place of SOAP and
+ * JSONR instead of WSDL.
+ *
+ */
+public abstract class Service implements Handler {
+    public static final 
+    void parseQueryString (String query, JSON.Object json) throws Throwable {
         String arg, name, value;
         int equalAt;
         Iterator<String> args = Strings.split(query, '&');
@@ -37,8 +43,7 @@ public abstract class JSONService implements HttpServer.Handler {
             }
         }
     }
-    public final boolean handleRequest(HttpServer.Actor http) 
-    throws Throwable {
+    public final boolean request(Actor http) throws Throwable {
         String method = http.method();
         if (method.equals("GET")) {
             String query = http.uri().getRawQuery();
@@ -60,8 +65,7 @@ public abstract class JSONService implements HttpServer.Handler {
         return false;
     }
 
-    public final void handleCollected(HttpServer.Actor http) 
-    throws Throwable {
+    public final void collected(Actor http) throws Throwable {
         Object input = null;
         String body = ((StringCollector) http.requestBody()).toString();
         JSONR.Type type = type(http);
@@ -78,7 +82,7 @@ public abstract class JSONService implements HttpServer.Handler {
         }
         call(http);
     }
-    public abstract JSONR.Type type (HttpServer.Actor http);
-    public abstract boolean call (HttpServer.Actor http);
-    public abstract boolean resource (HttpServer.Actor http);
+    public abstract JSONR.Type type (Actor http) throws Throwable;
+    public abstract void call (Actor http) throws Throwable;
+    public abstract void resource (Actor http) throws Throwable;
 }

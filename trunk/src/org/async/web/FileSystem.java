@@ -4,27 +4,27 @@ import org.async.web.HttpServer;
 import org.async.protocols.HTTP;
 import java.io.File;
 
-public class HttpFile implements HttpServer.Handler {
+public class FileSystem implements HttpServer.Handler {
     protected int _pathLength;
     protected String _root;
     protected String _cacheControl;
-    public HttpFile() {
+    public FileSystem() {
         _new(".", "max-age=3600;");
     }
-    public HttpFile(String path) {
+    public FileSystem(String path) {
         _new(path, "max-age=3600;");
     }
-    public HttpFile(String path, String cacheControl) {
+    public FileSystem(String path, String cacheControl) {
         _new(path, cacheControl);
     }
     protected final void _new (String path, String cacheControl) {
         _root = (new File(path)).getAbsolutePath().replace('\\', '/');
         _cacheControl = cacheControl;
     }
-    public boolean handleIdentify(HttpServer.Actor http) throws Throwable {
+    public boolean identify(HttpServer.Actor http) throws Throwable {
         return true;
     }
-    public final void handleConfigure(String route) throws Throwable {
+    public final void configure(String route) throws Throwable {
         int slashAt = route.indexOf('/');
         if (slashAt < 0) {
             throw new Error("invalid HTTP route identifier");
@@ -35,7 +35,7 @@ public class HttpFile implements HttpServer.Handler {
             } 
         }
     }
-    public final boolean handleRequest(HttpServer.Actor http) 
+    public final boolean request(HttpServer.Actor http) 
     throws Throwable {
         http.responseHeader("Cache-control", _cacheControl);
         String path = http.uri().getPath();
@@ -44,7 +44,7 @@ public class HttpFile implements HttpServer.Handler {
         } else {
             // http.channel().log(_root + path.substring(_pathLength));
             File file = new File(_root + path.substring(_pathLength));
-            if (file.exists() && file.isFile()) {
+            if (file.exists() && file.isFile() && !file.isHidden()) {
                 HTTP.Entity entity = new HTTP.FileEntity(file);
                 String method = http.method();
                 if (method.equals("GET")) {
@@ -60,7 +60,7 @@ public class HttpFile implements HttpServer.Handler {
         }
         return false;
     }
-    public final void handleCollected(HttpServer.Actor http) {
+    public final void collected(HttpServer.Actor http) {
         // pass, there's nothing to do for an unexpected request body.
     }
 }

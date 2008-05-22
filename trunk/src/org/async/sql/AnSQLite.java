@@ -7,44 +7,13 @@ import SQLite.Database;
 import SQLite.Exception;
 import SQLite.Stmt;
 import SQLite.Authorizer;
+import SQLite.Constants;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.HashMap;
 
 public class AnSQLite {
-    public static final int ROLE_DROP = 0;
-    public static final int ROLE_CREATE = 0;
-    public static final int ROLE_DELETE = 0;
-    public static final int ROLE_INSERT = 0;
-    public static final int ROLE_UPDATE = 0;
-    public static final int ROLE_SELECT = 0;
-    public static final int ROLE_READER = ROLE_SELECT;
-    public static final int ROLE_WRITER = ROLE_SELECT + ROLE_UPDATE;
-    public static final int ROLE_EDITOR = ROLE_WRITER + ROLE_INSERT;
-    public static final int ROLE_ADMIN = ROLE_EDITOR + ROLE_DELETE + ROLE_CREATE;
-    public static final int ROLE_SUPER = ROLE_ADMIN + ROLE_DROP + ROLE_CREATE;
-    public static final class Role implements Authorizer {
-        int _rights;
-        public Role (int rights) {
-            _rights = rights;
-        }
-        public final int authorize (
-            int i, 
-            String a,
-            String b, 
-            String c, 
-            String d
-            ) {
-            // try {
-            //    JSON.pprint(new Object[]{i, a, b, c}, System.err);
-            // } catch (IOException e) {
-            //    ;
-            // }
-            return 0;
-        }
-    }
     /**
      * The <code>SQLite.Database</code> wrapped.
      */
@@ -351,6 +320,11 @@ public class AnSQLite {
         } else {
             JSON.strb(response, "AnSQL error: invalid statement(s) type");
         }
+    }
+    public final String handle (JSON.Array statement) {
+        StringBuilder sb = new StringBuilder();
+        handle(statement, sb);
+        return sb.toString();
     }
     protected static final JSON.Array _prepare (Stmt st) 
     throws Exception {

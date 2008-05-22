@@ -112,10 +112,6 @@ public class HttpServer extends Server {
          * <code>JSON.Object</code>.
          */
         public JSON.Object state = new JSON.Object();
-        /**
-         * 
-         */
-        public boolean test = false;
         //
         protected Actor (
             Channel channel, String request, String buffer, int pos
@@ -157,10 +153,10 @@ public class HttpServer extends Server {
          * @throws Throwable
          */
         public final boolean handleRequest (String route) throws Throwable {
-            return _channel._server._handlers.get(route).handleRequest(this);
+            return _channel._server._handlers.get(route).request(this);
         }
         public final void handleCollected (String route) throws Throwable {
-            _channel._server._handlers.get(route).handleCollected(this);
+            _channel._server._handlers.get(route).collected(this);
         }
         public final long when () {
             return _when;
@@ -190,7 +186,7 @@ public class HttpServer extends Server {
         };
         public final String requestCookie(String name) {
             if (_requestCookies == null) {
-                _requestCookies = HTTP.cookies(requestHeader("Cookie", ""));
+                _requestCookies = HTTP.cookies(requestHeader("Cookie", null));
             }
             return _requestCookies.get(name);
         }
@@ -249,6 +245,9 @@ public class HttpServer extends Server {
                     );
             }
             _responseBody = new ByteProducer(body);
+        }
+        public final void response (int status, String body, String encoding) {
+            response(status, Bytes.encode(body, encoding));
         }
         private boolean _produced = false; 
         public final boolean produced () {
@@ -399,7 +398,12 @@ public class HttpServer extends Server {
                 setTerminator(Bytes.CRLFCRLF);
                 _body = null;
                 if (_http._handler != null && _http._requestBody != null) {
-                    _http._handler.handleCollected(_http);
+                    try {
+                        _http._handler.collected(_http);
+                    } catch (Throwable e) {
+                        log(e);
+                        _http.response(500); // Server error
+                    }
                 }
                 _http = null;
             }
@@ -448,10 +452,10 @@ public class HttpServer extends Server {
         }
     }
     public interface Handler {
-        public void handleConfigure(String route) throws Throwable;
-        public boolean handleIdentify (Actor http) throws Throwable;
-        public boolean handleRequest(Actor http) throws Throwable;
-        public void handleCollected(Actor http) throws Throwable;
+        public void configure(String route) throws Throwable;
+        public boolean identify (Actor http) throws Throwable;
+        public boolean request(Actor http) throws Throwable;
+        public void collected(Actor http) throws Throwable;
     }
     protected int _bufferSizeIn = 16384;
     protected int _bufferSizeOut = 16384;
@@ -497,7 +501,7 @@ public class HttpServer extends Server {
      */
     public final void httpRoute (String path, Handler handler) {
         try {
-            handler.handleConfigure(path);
+            handler.configure(path);
             _handlers.put(path, handler);
         } catch (Throwable e) {
             log(e);
@@ -530,7 +534,7 @@ public class HttpServer extends Server {
             Handler handler = _handlers.get(route); 
             if (handler!=null) { // -> context/subject/predicate
                 http._handler = handler;
-                return handler.handleRequest(http);
+                return handler.request(http);
             } 
             int slashAt = path.indexOf('/', 1);
             if (slashAt > 0) {
@@ -538,14 +542,14 @@ public class HttpServer extends Server {
                 handler = _handlers.get(route);
                 if (handler!=null) { // -> context/subject
                     http._handler = handler;
-                    return handler.handleRequest(http);
+                    return handler.request(http);
                 }
             }
             route = base + '/';
             handler = _handlers.get(route);
             if (handler!=null) { // -> context/
                 http._handler = handler;
-                return handler.handleRequest(http);
+                return handler.request(http);
             }
             http.response(404); // Not Found
         } catch (Throwable e) {

@@ -144,12 +144,14 @@ public final class HTTP {
         );
     public static final HashMap<String, String> cookies(String encoded) {
         HashMap<String, String> cookies = new HashMap();
-        Iterator<String> strings = Strings.split(encoded, _regular_cookie);
-        String name, value;
-        while (strings.hasNext()) {
-            name = strings.next();
-            value = strings.next();
-            cookies.put(name, value);
+        if (encoded != null && encoded.length() > 0) {
+            Iterator<String> strings = Strings.split(encoded, _regular_cookie);
+            String name, value;
+            while (strings.hasNext()) {
+                name = strings.next();
+                value = strings.next();
+                cookies.put(name, value);
+            }
         }
         return cookies;
     }
