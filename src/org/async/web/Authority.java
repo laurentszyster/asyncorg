@@ -8,7 +8,7 @@ import org.async.simple.Strings;
 /**
  * ...
  * 
- * @pre Authority authorize = new Authority();
+ * @pre Authority authorize = new Authority("localhost", "/");
  * authorize.salts = new byte[][]{'s', 'a', 'l', 't'};
  * authorize.timeout = 600;
  * authorize.identified(handler);
