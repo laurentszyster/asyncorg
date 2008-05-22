@@ -186,7 +186,7 @@ public class HttpServer extends Server {
         };
         public final String requestCookie(String name) {
             if (_requestCookies == null) {
-                _requestCookies = HTTP.cookies(requestHeader("Cookie", null));
+                _requestCookies = HTTP.cookies(requestHeader("cookie", null));
             }
             return _requestCookies.get(name);
         }

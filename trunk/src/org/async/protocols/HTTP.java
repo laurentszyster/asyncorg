@@ -140,7 +140,7 @@ public final class HTTP {
         }
     }
     private static final Pattern _regular_cookie = Pattern.compile(
-        "^?(([^=]+)=\\s*([^;]*?)\\s*(;|$))*"
+        "([^=]+)=([^;$]*?)(?:$|;\\s*)"
         );
     public static final HashMap<String, String> cookies(String encoded) {
         HashMap<String, String> cookies = new HashMap();
@@ -148,6 +148,7 @@ public final class HTTP {
             Iterator<String> strings = Strings.split(encoded, _regular_cookie);
             String name, value;
             while (strings.hasNext()) {
+                strings.next();
                 name = strings.next();
                 value = strings.next();
                 cookies.put(name, value);
