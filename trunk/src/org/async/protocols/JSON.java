@@ -1536,8 +1536,8 @@ public class JSON {
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
             strb(sb, object, Objects.iter(names));
-        } else if (value instanceof List)
-            strb(sb, ((List) value).iterator());
+        } else if (value instanceof Iterable)
+            strb(sb, ((Iterable) value).iterator());
         else if (value instanceof Object[]) {
             strb(sb, Objects.iter((java.lang.Object[]) value));
         } else {
@@ -1653,8 +1653,8 @@ public class JSON {
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
             xjson(sb, object, Objects.iter(names));
-        } else if (value instanceof List)
-            xjson(sb, ((List) value).iterator());
+        } else if (value instanceof Iterable)
+            xjson(sb, ((Iterable) value).iterator());
         else if (value instanceof Object[]) {
             xjson(sb, Objects.iter((java.lang.Object[]) value));
         } else {
@@ -1757,8 +1757,8 @@ public class JSON {
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
             outline(sb, object, Objects.iter(names), indent);
-        } else if (value instanceof List)
-            outline(sb, ((List) value).iterator(), indent);
+        } else if (value instanceof Iterable)
+            outline(sb, ((Iterable) value).iterator(), indent);
         else if (value instanceof Object[]) {
             outline(sb, Objects.iter((java.lang.Object[]) value), indent);
         } else {
@@ -1869,8 +1869,8 @@ public class JSON {
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
             sb = pprint(sb, object, Objects.iter(names), indent, os);
-        } else if (value instanceof List)
-            sb = pprint(sb, ((List) value).iterator(), indent, os);
+        } else if (value instanceof Iterable)
+            sb = pprint(sb, ((Iterable) value).iterator(), indent, os);
         else if (value instanceof Object[]) {
             sb = pprint(sb, Objects.iter(
                 (java.lang.Object[]) value
