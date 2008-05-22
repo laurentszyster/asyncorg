@@ -341,22 +341,31 @@ public class SIO {
         }
     };
     /**
+     * Glob from a root path the list of files whose names match a compiled
+     * regular expression.
+     * 
+     * @param root to glob
+     * @param regular expression to match
+     * @return a list of files
+     */
+    public static final ArrayList<File> glob (String root, Pattern regular) {
+        File file = new File(root);
+        ArrayList<File> files = new ArrayList();
+        glob(
+            file.getAbsolutePath().replace('\\', '/'), 
+            file.list(), regular, files
+            );
+        return files;
+    };
+    /**
      * Glob from a root path the list of files whose names match a regular 
-     * expression.
+     * expression string.
      * 
      * @param root to glob
      * @param regular expression to match
      * @return a list of files
      */
     public static final ArrayList<File> glob (String root, String regular) {
-        File file = new File(root);
-        ArrayList<File> files = new ArrayList();
-        glob(
-            file.getAbsolutePath().replace('\\', '/'), 
-            file.list(), 
-            Pattern.compile(regular), 
-            files
-            );
-        return files;
+        return glob(root, Pattern.compile(regular));
     };
 }

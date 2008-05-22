@@ -40,33 +40,33 @@ import java.util.regex.Matcher;
  * @author Laurent Szyster
  *
  */
-public class RegularRoutes implements Handler {
+public class Routes implements Handler {
     private Handler _routed;
     private Pattern _re; 
     private String[] _names;
-    public RegularRoutes (Handler routed, Pattern regular, String ... names) {
+    public Routes (Handler routed, Pattern regular, String ... names) {
         _re = regular;
         _names = names;
         _routed = routed;
     }
-    public final void handleConfigure (String route) throws Throwable {
-        _routed.handleConfigure(route);
+    public final void configure (String route) throws Throwable {
+        _routed.configure(route);
     }
-    public boolean handleIdentify(HttpServer.Actor http) throws Throwable {
-        return _routed.handleIdentify(http);
+    public boolean identify(HttpServer.Actor http) throws Throwable {
+        return _routed.identify(http);
     }
-    public final boolean handleRequest (Actor http) throws Throwable {
+    public final boolean request (Actor http) throws Throwable {
         Matcher re = _re.matcher(http.uri().getPath());
         if (re.matches()) {
             for (int i=0, n=re.groupCount()-1; i<n; i++) {
                 http.state.put(_names, re.group(i+1));
             } 
-            return _routed.handleRequest(http);
+            return _routed.request(http);
         }
         return false;
     }
-    public final void handleCollected (Actor http) throws Throwable {
-        _routed.handleCollected(http);
+    public final void collected (Actor http) throws Throwable {
+        _routed.collected(http);
     }
 
 }

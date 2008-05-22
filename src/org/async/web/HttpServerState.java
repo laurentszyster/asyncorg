@@ -6,12 +6,13 @@ import org.async.protocols.JSON;
 import org.async.simple.Bytes;
 
 public class HttpServerState implements HttpServer.Handler {
-    public final void handleConfigure(String route) throws Throwable {
+    public final void configure(String route) throws Throwable {
     }
-    public boolean handleIdentify(HttpServer.Actor http) throws Throwable {
-        return true;
+    public boolean identify(HttpServer.Actor http) throws Throwable {
+        http.response(401); // Unauthorized;
+        return false;
     }
-    public final boolean handleRequest(HttpServer.Actor http) 
+    public final boolean request(HttpServer.Actor http) 
     throws Throwable {
         Runtime rt = Runtime.getRuntime();
         HttpServer server = http.channel().server();
@@ -48,7 +49,7 @@ public class HttpServerState implements HttpServer.Handler {
         http.response(200, Bytes.encode(JSON.pprint(json), Bytes.UTF8));
         return false;
     }
-    public final void handleCollected (HttpServer.Actor http) 
+    public final void collected (HttpServer.Actor http) 
     throws Throwable {
         http.channel().log("unexpected request body");
     }

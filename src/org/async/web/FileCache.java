@@ -10,20 +10,20 @@ import java.util.HashMap;
 /**
  * ...
  */
-public class HttpFileCache implements HttpServer.Handler {
+public class FileCache implements HttpServer.Handler {
     protected String _path;
     protected String _root;
     protected HashMap<String,HTTP.Entity> _cache;
     protected String _cacheControl;
-    public HttpFileCache() 
+    public FileCache() 
     throws Throwable {
         _new(".", "max-age=3600;");
     }
-    public HttpFileCache(String path) 
+    public FileCache(String path) 
     throws Throwable {
         _new(path, "max-age=3600;");
     }
-    public HttpFileCache(String path, String cacheControl) 
+    public FileCache(String path, String cacheControl) 
     throws Throwable {
         _new(path, cacheControl);
     }
@@ -33,10 +33,10 @@ public class HttpFileCache implements HttpServer.Handler {
         _root = (new File(path)).getAbsolutePath();
         _cacheControl = cacheControl;
     }
-    public boolean handleIdentify(HttpServer.Actor http) throws Throwable {
+    public boolean identify(HttpServer.Actor http) throws Throwable {
         return true;
     }
-    public final void handleConfigure(String route) throws Throwable {
+    public final void configure(String route) throws Throwable {
         int slashAt = route.indexOf('/');
         if (slashAt < 0) {
             throw new Error("invalid HTTP route identifier");
@@ -55,7 +55,7 @@ public class HttpFileCache implements HttpServer.Handler {
                 );
         }
     }
-    public final boolean handleRequest(HttpServer.Actor http) 
+    public final boolean request(HttpServer.Actor http) 
     throws Throwable {
         http.responseHeader("Cache-control", _cacheControl);
         HTTP.Entity entity = _cache.get(http.uri().getPath());
@@ -73,7 +73,7 @@ public class HttpFileCache implements HttpServer.Handler {
         }
         return false;
     }
-    public final void handleCollected(HttpServer.Actor http) {
+    public final void collected(HttpServer.Actor http) {
         // pass, there's nothing to do for an unexpected request body.
     }
 }

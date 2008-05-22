@@ -3,38 +3,43 @@ package org.async.web;
 import org.async.web.HttpServer.Handler;
 import org.async.web.HttpServer.Actor;
 import org.async.protocols.IRTD2;
-import org.async.protocols.SHA1;
 import org.async.simple.Strings;
 
 /**
  * ...
  * 
- * @pre IRTD2Authority authorize = new IRTD2Authority();
+ * @pre Authority authorize = new Authority();
  * authorize.salts = new byte[][]{'s', 'a', 'l', 't'};
  * authorize.timeout = 600;
  * authorize.identified(handler);
  * 
  */
-public class IRTD2Authority {
+public class Authority {
     public byte[][] salts = new byte[][]{
         Strings.random(10, Strings.ALPHANUMERIC).getBytes()
     };
     public int timeout = 600;
-    protected static class IRTD2Identified implements Handler {
+    private String _qualifier;
+    public Authority (String domain, String path) {
+        _qualifier = (
+            "; expires=Sun, 17-Jan-2008 19:14:07 GMT; path=" + path 
+            + "; domain=" + domain
+            );
+    }
+    protected static class Identified implements Handler {
         private HttpServer.Handler _wrapped;
-        private IRTD2Authority _authority;
-        public IRTD2Identified (Handler handler, IRTD2Authority authority) {
+        private Authority _authority;
+        public Identified (Handler handler, Authority authority) {
             _wrapped = handler;
             _authority = authority;
         }
-        public final void handleConfigure(String route) throws Throwable {
-            _wrapped.handleConfigure(route);
+        public final void configure(String route) throws Throwable {
+            _wrapped.configure(route);
         }
-        public final boolean handleIdentify (Actor http) {
+        public final boolean identify (Actor http) throws Throwable {
             return true;
         }
-        public final boolean handleRequest(Actor http) 
-        throws Throwable {
+        public final boolean request(Actor http) throws Throwable {
             String irtd2 = http.requestCookie("IRTD2");
             if (irtd2 != null) {
                 String[] parsed = IRTD2.parse(irtd2);
@@ -46,27 +51,23 @@ public class IRTD2Authority {
                     http.rights = parsed[1];
                     http.digested = parsed[4];
                     _authority.identify(http, time);
-                    return _wrapped.handleRequest(http);
+                    return _wrapped.request(http);
                 };
             } 
-            if (_wrapped.handleIdentify(http)) {
-                return _wrapped.handleRequest(http);
+            if (_wrapped.identify(http)) {
+                return _wrapped.request(http);
             }
             return false;
         }
-        public final void handleCollected(Actor http) 
-        throws Throwable {
-            _wrapped.handleCollected(http);
+        public final void collected(Actor http) throws Throwable {
+            _wrapped.collected(http);
         }
     }
     public final Handler identified(Handler handler) { 
-        return new IRTD2Identified(handler, this);
+        return new Identified(handler, this);
     }
     public final void identify (Actor http, long time) {
-        if (
-                http.identity.length() == 0 || 
-                http.identity.indexOf(" ") >= 0
-                ) {
+        if (http.identity == null || http.identity.length() == 0) {
             http.identity = Strings.random(10, Strings.ALPHANUMERIC); 
         } 
         String[] irtd2 = new String[]{
@@ -88,10 +89,7 @@ public class IRTD2Authority {
         }
         sb.append(' ');
         sb.append(http.digest);
-        sb.append("; expires=Sun, 17-Jan-2008 19:14:07 GMT; path=");
-        sb.append(http._uri.getPath());
-        sb.append("; domain=");
-        sb.append(http._host);
+        sb.append(_qualifier);
         http.responseCookie("IRTD2", sb.toString());
     }
     public static final boolean authorized (
