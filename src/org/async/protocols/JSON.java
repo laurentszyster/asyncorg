@@ -32,6 +32,10 @@ import org.async.simple.Bytes;
 import org.async.simple.SIO;
 import org.async.simple.Objects;
 
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.NativeObject;
+import org.mozilla.javascript.NativeJavaObject;
+
 /**
  * A relatively strict JSON intepreter to evaluate a UNICODE string 
  * as a tree of basic Java instances with maximum limits on the number
@@ -1536,10 +1540,39 @@ public class JSON {
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
             strb(sb, object, Objects.iter(names));
-        } else if (value instanceof Iterable)
+        } else if (value instanceof Iterable) {
             strb(sb, ((Iterable) value).iterator());
-        else if (value instanceof Object[]) {
+        } else if (value instanceof Object[]) {
             strb(sb, Objects.iter((java.lang.Object[]) value));
+        } else if (value instanceof NativeArray) {
+            NativeArray array = (NativeArray) value;
+            java.lang.Object[] ids = (array).getIds();
+            if (ids.length == 0)
+                sb.append(_array);
+            else {
+                java.lang.Object[] list = new java.lang.Object[ids.length]; 
+                for (int i=0; i < ids.length; i++) {
+                    list[i] = array.get(i, array);
+                }
+                strb(sb, Objects.iter(list));
+            }
+        } else if (value instanceof NativeObject) {
+            NativeObject object = (NativeObject) value;
+            java.lang.Object[] ids = (object).getIds();
+            if (ids.length == 0)
+                sb.append(_object);
+            else {
+                Arrays.sort(ids);
+                JSON.Object map = new JSON.Object();
+                String key;
+                for (int i=0; i < ids.length; i++) {
+                    key = (String) ids[i];
+                    map.put(key, object.get(key, object));
+                }
+                strb(sb, map, Objects.iter(ids));
+            }
+        } else if (value instanceof NativeJavaObject) {
+            strb(sb, ((NativeJavaObject) value).unwrap());
         } else {
             Class type = null;
             try {type = value.getClass();} catch (Throwable e) {;}
@@ -1653,10 +1686,39 @@ public class JSON {
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
             xjson(sb, object, Objects.iter(names));
-        } else if (value instanceof Iterable)
+        } else if (value instanceof Iterable) {
             xjson(sb, ((Iterable) value).iterator());
-        else if (value instanceof Object[]) {
+        } else if (value instanceof Object[]) {
             xjson(sb, Objects.iter((java.lang.Object[]) value));
+        } else if (value instanceof NativeArray) {
+            NativeArray array = (NativeArray) value;
+            java.lang.Object[] ids = (array).getIds();
+            if (ids.length == 0)
+                sb.append(_array);
+            else {
+                java.lang.Object[] list = new java.lang.Object[ids.length]; 
+                for (int i=0; i < ids.length; i++) {
+                    list[i] = array.get(i, array);
+                }
+                xjson(sb, Objects.iter(list));
+            }
+        } else if (value instanceof NativeObject) {
+            NativeObject object = (NativeObject) value;
+            java.lang.Object[] ids = (object).getIds();
+            if (ids.length == 0)
+                sb.append(_object);
+            else {
+                Arrays.sort(ids);
+                JSON.Object map = new JSON.Object();
+                String key;
+                for (int i=0; i < ids.length; i++) {
+                    key = (String) ids[i];
+                    map.put(key, object.get(key, object));
+                }
+                xjson(sb, map, Objects.iter(ids));
+            }
+        } else if (value instanceof NativeJavaObject) {
+            xjson(sb, ((NativeJavaObject) value).unwrap());
         } else {
             Class type = null;
             try {type = value.getClass();} catch (Throwable e) {;}
@@ -1757,10 +1819,39 @@ public class JSON {
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
             outline(sb, object, Objects.iter(names), indent);
-        } else if (value instanceof Iterable)
+        } else if (value instanceof Iterable) {
             outline(sb, ((Iterable) value).iterator(), indent);
-        else if (value instanceof Object[]) {
+        } else if (value instanceof Object[]) {
             outline(sb, Objects.iter((java.lang.Object[]) value), indent);
+        } else if (value instanceof NativeArray) {
+            NativeArray array = (NativeArray) value;
+            java.lang.Object[] ids = (array).getIds();
+            if (ids.length == 0)
+                sb.append(_array);
+            else {
+                java.lang.Object[] list = new java.lang.Object[ids.length]; 
+                for (int i=0; i < ids.length; i++) {
+                    list[i] = array.get(i, array);
+                }
+                outline(sb, Objects.iter(list), indent);
+            }
+        } else if (value instanceof NativeObject) {
+            NativeObject object = (NativeObject) value;
+            java.lang.Object[] ids = (object).getIds();
+            if (ids.length == 0)
+                sb.append(_object);
+            else {
+                Arrays.sort(ids);
+                JSON.Object map = new JSON.Object();
+                String key;
+                for (int i=0; i < ids.length; i++) {
+                    key = (String) ids[i];
+                    map.put(key, object.get(key, object));
+                }
+                outline(sb, map, Objects.iter(ids), indent);
+            }
+        } else if (value instanceof NativeJavaObject) {
+            outline(sb, ((NativeJavaObject) value).unwrap(), indent);
         } else {
             Class type = null;
             try {type = value.getClass();} catch (Throwable e) {;}
@@ -1869,12 +1960,41 @@ public class JSON {
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
             sb = pprint(sb, object, Objects.iter(names), indent, os);
-        } else if (value instanceof Iterable)
+        } else if (value instanceof Iterable) {
             sb = pprint(sb, ((Iterable) value).iterator(), indent, os);
-        else if (value instanceof Object[]) {
+        } else if (value instanceof Object[]) {
             sb = pprint(sb, Objects.iter(
                 (java.lang.Object[]) value
                 ), indent, os);
+        } else if (value instanceof NativeArray) {
+            NativeArray array = (NativeArray) value;
+            java.lang.Object[] ids = (array).getIds();
+            if (ids.length == 0)
+                sb.append(_array);
+            else {
+                java.lang.Object[] list = new java.lang.Object[ids.length]; 
+                for (int i=0; i < ids.length; i++) {
+                    list[i] = array.get(i, array);
+                }
+                pprint(sb, Objects.iter(list), indent, os);
+            }
+        } else if (value instanceof NativeObject) {
+            NativeObject object = (NativeObject) value;
+            java.lang.Object[] ids = (object).getIds();
+            if (ids.length == 0)
+                sb.append(_object);
+            else {
+                Arrays.sort(ids);
+                JSON.Object map = new JSON.Object();
+                String key;
+                for (int i=0; i < ids.length; i++) {
+                    key = (String) ids[i];
+                    map.put(key, object.get(key, object));
+                }
+                pprint(sb, map, Objects.iter(ids), indent, os);
+            }
+        } else if (value instanceof NativeJavaObject) {
+            pprint(sb, ((NativeJavaObject) value).unwrap(), indent, os);
         } else {
             Class type = null;
             try {type = value.getClass();} catch (Throwable e) {;}
