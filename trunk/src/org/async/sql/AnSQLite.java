@@ -6,8 +6,6 @@ import org.async.simple.Bytes;
 import SQLite.Database;
 import SQLite.Exception;
 import SQLite.Stmt;
-import SQLite.Authorizer;
-import SQLite.Constants;
 
 import java.math.BigDecimal;
 import java.util.Iterator;
@@ -17,22 +15,52 @@ public class AnSQLite {
     /**
      * The <code>SQLite.Database</code> wrapped.
      */
+    private Stmt _BEGIN;
+    private Stmt _COMMIT;
+    private Stmt _ROLLBACK;
     protected Database _db = null;
     protected String _path = ":memory:";
     protected int _options = 0;
     protected HashMap<String, Stmt> _statements;
+    /**
+     * 
+     * @param path
+     */
+    public AnSQLite(String path) {
+        _path = path;
+    }
+    /**
+     * 
+     * @param path
+     * @param options
+     */
     public AnSQLite(String path, int options) {
         _path = path;
         _options = options;
     }
+    /**
+     * 
+     * @return
+     */
     public final Database db () {
         return _db;
     }
+    /**
+     * 
+     * @throws Exception
+     */
     public final void open () throws Exception {
         _db = new Database();
         _db.open(_path, _options);
         _statements = new HashMap();
+        _BEGIN = prepared("BEGIN");
+        _COMMIT = prepared("COMMIT");
+        _ROLLBACK = prepared("ROLLBACK");
     }
+    /**
+     * 
+     * @throws Exception
+     */
     public final void close () throws Exception {
         Iterator<Stmt> statements = _statements.values().iterator();
         try {
@@ -45,6 +73,12 @@ public class AnSQLite {
             _db = null;
         }
     }
+    /**
+     * 
+     * @param statement
+     * @return
+     * @throws Exception
+     */
     public final Stmt prepared (String statement) throws Exception {
         Stmt st = _statements.get(statement);
         if (st == null) {
@@ -54,6 +88,12 @@ public class AnSQLite {
             return st;
         }
     }
+    /**
+     * 
+     * @param st
+     * @param sb
+     * @throws Exception
+     */
     protected static final void _prepare (Stmt st, StringBuilder sb) 
     throws Exception {
         int count = st.column_count();
@@ -64,53 +104,6 @@ public class AnSQLite {
             for (col=1; col<count; col++) {
                 sb.append(',');
                 JSON.strb(sb, st.column_origin_name(col));
-            }
-            sb.append(']');
-        } else {
-            sb.append("null");
-        }
-    }
-    protected static final void _bind (Stmt st, Iterator args) 
-    throws Exception {
-        int i = 1;
-        Object arg;
-        while (args.hasNext()) {
-            arg = args.next();
-            if (arg == null) { // null
-                st.bind(i);
-            } if (arg instanceof String) { // "text"
-                st.bind(i, (String) arg);
-            } else if (arg instanceof Integer) { // 100
-                st.bind(i, ((Integer) arg).longValue());
-            } else if (arg instanceof Double) { // 1.292020292e+6
-                st.bind(i, ((Double) arg).doubleValue());
-            } else if (arg instanceof BigDecimal) { // 1010.23 as text
-                st.bind(i, ((BigDecimal) arg).toString());
-            } else if (arg instanceof Boolean) { // true or false as 1 or 0
-                st.bind(i, ((Boolean) arg) ? 1 : 0);
-            }
-            i++;
-        }
-    }
-    protected static final void _resultset (Stmt st, StringBuilder sb) 
-    throws Exception {
-        int col, count = st.column_count();
-        if (st.step()) {
-            sb.append("[[");
-            JSON.strb(sb, st.column(0));
-            for (col=1; col<count; col++) {
-                sb.append(',');
-                JSON.strb(sb, st.column(col));
-            }
-            sb.append(']');
-            while (st.step()) {
-                sb.append(",[");
-                JSON.strb(sb, st.column(0));
-                for (col=1; col<count; col++) {
-                    sb.append(',');
-                    JSON.strb(sb, st.column(col));
-                }
-                sb.append(']');
             }
             sb.append(']');
         } else {
@@ -169,6 +162,150 @@ public class AnSQLite {
         return null;
     }
     /**
+     * 
+     * @return
+     */
+    public final Exception begin () {
+        try {
+            while (_BEGIN.step());
+        } catch (Exception e) {
+            return e; 
+        }
+        return null;
+    }
+    /**
+     * 
+     * @return
+     */
+    public final Exception commit () {
+        try {
+            while (_COMMIT.step());
+        } catch (Exception e) {
+            return e; 
+        }
+        return null;
+    }
+    /**
+     * 
+     * @return
+     */
+    public final Exception rollback () {
+        try {
+            while (_ROLLBACK.step());
+        } catch (Exception e) {
+            return e; 
+        }
+        return null;
+    }
+    /**
+     * 
+     * @param st
+     * @param args
+     * @throws Exception
+     */
+    public static final void bind (Stmt st, Iterator args) 
+    throws Exception {
+        int i = 1;
+        Object arg;
+        while (args.hasNext()) {
+            arg = args.next();
+            if (arg == null) { // null
+                st.bind(i);
+            } if (arg instanceof String) { // "text"
+                st.bind(i, (String) arg);
+            } else if (arg instanceof Integer) { // 100
+                st.bind(i, ((Integer) arg).longValue());
+            } else if (arg instanceof Double) { // 1.292020292e+6
+                st.bind(i, ((Double) arg).doubleValue());
+            } else if (arg instanceof BigDecimal) { // 1010.23 as text
+                st.bind(i, ((BigDecimal) arg).toString());
+            } else if (arg instanceof Boolean) { // true or false as 1 or 0
+                st.bind(i, ((Boolean) arg) ? 1 : 0);
+            }
+            i++;
+        }
+    }
+    /**
+     * 
+     * @param st
+     * @param sb
+     * @throws Exception
+     */
+    public static final void resultset (Stmt st, StringBuilder sb) 
+    throws Exception {
+        int col, count = st.column_count();
+        if (st.step()) {
+            sb.append("[[");
+            JSON.strb(sb, st.column(0));
+            for (col=1; col<count; col++) {
+                sb.append(',');
+                JSON.strb(sb, st.column(col));
+            }
+            sb.append(']');
+            while (st.step()) {
+                sb.append(",[");
+                JSON.strb(sb, st.column(0));
+                for (col=1; col<count; col++) {
+                    sb.append(',');
+                    JSON.strb(sb, st.column(col));
+                }
+                sb.append(']');
+            }
+            sb.append(']');
+        } else {
+            sb.append("null");
+        }
+    }
+    public static final void resultmap (Stmt st, StringBuilder sb) 
+    throws Exception {
+        int col, count = st.column_count();
+        if (st.step()) {
+            sb.append("{");
+            if (count > 2) {
+                JSON.strb(sb, st.column(0));
+                sb.append(":[");
+                JSON.strb(sb, st.column(1));
+                for (col=2; col<count; col++) {
+                    sb.append(',');
+                    JSON.strb(sb, st.column(col));
+                }
+                sb.append(']');
+                while (st.step()) {
+                    sb.append(",");
+                    JSON.strb(sb, st.column(0));
+                    sb.append(":[");
+                    JSON.strb(sb, st.column(1));
+                    for (col=2; col<count; col++) {
+                        sb.append(',');
+                        JSON.strb(sb, st.column(col));
+                    }
+                    sb.append(']');
+                }
+            } else if (count > 1) {
+                JSON.strb(sb, st.column(0));
+                sb.append(":");
+                JSON.strb(sb, st.column(1));
+                while (st.step()) {
+                    sb.append(",");
+                    JSON.strb(sb, st.column(0));
+                    sb.append(":");
+                    JSON.strb(sb, st.column(1));
+                }
+            } else {
+                JSON.strb(sb, st.column(0));
+                sb.append(":null");
+                while (st.step()) {
+                    sb.append(",");
+                    JSON.strb(sb, st.column(0));
+                    sb.append(":null");
+                }
+            }
+            sb.append('}');
+        } else {
+            sb.append("null");
+        }
+    }
+    /**
      * Execute a statement without parameters, complete the
      * response <code>StringBuilder</code> and report success or failure.
      * 
@@ -178,25 +315,73 @@ public class AnSQLite {
      */
     public final boolean execute (String statement, StringBuilder response) {
         try {
-            _resultset(prepared(statement), response);
+            resultset(prepared(statement), response);
         } catch (Exception e) {
             JSON.strb(response, e.getMessage());
             return false;
         }
         return true;
     }
+    /**
+     * 
+     * @param statement
+     * @param parameters
+     * @param response
+     * @return
+     */
     public final boolean execute (
         String statement, Iterator parameters, StringBuilder response) {
         try {
             Stmt st = prepared(statement);
-            _bind(st, parameters);
-            _resultset(st, response);
+            bind(st, parameters);
+            resultset(st, response);
         } catch (Exception e) {
             JSON.strb(response, e.getMessage());
             return false;
         }
         return true;
     }
+    /**
+     * 
+     * @param statement
+     * @param response
+     * @return
+     */
+    public final boolean map (String statement, StringBuilder response) {
+        try {
+            resultmap(prepared(statement), response);
+        } catch (Exception e) {
+            JSON.strb(response, e.getMessage());
+            return false;
+        }
+        return true;
+    }
+    /**
+     * 
+     * @param statement
+     * @param parameters
+     * @param response
+     * @return
+     */
+    public final boolean map (
+        String statement, Iterator parameters, StringBuilder response) {
+        try {
+            Stmt st = prepared(statement);
+            bind(st, parameters);
+            resultmap(st, response);
+        } catch (Exception e) {
+            JSON.strb(response, e.getMessage());
+            return false;
+        }
+        return true;
+    }
+    /**
+     * 
+     * @param statement
+     * @param parameters
+     * @param response
+     * @return
+     */
     public final boolean batch (
         String statement, 
         Iterator<Iterable> parameters, 
@@ -206,8 +391,8 @@ public class AnSQLite {
             Stmt st = prepared(statement);
             response.append('[');
             try {
-                _bind(st, parameters.next().iterator());
-                _resultset(st, response);
+                bind(st, parameters.next().iterator());
+                resultset(st, response);
             } catch (Exception e) {
                 JSON.strb(response, e.getMessage());
                 response.append(']');
@@ -217,8 +402,8 @@ public class AnSQLite {
                 response.append(',');
                 try {
                     st.reset();
-                    _bind(st, parameters.next().iterator());
-                    _resultset(st, response);
+                    bind(st, parameters.next().iterator());
+                    resultset(st, response);
                 } catch (Exception e) {
                     JSON.strb(response, e.getMessage());
                     response.append(']');
@@ -232,6 +417,13 @@ public class AnSQLite {
         response.append(']');
         return true;
     }
+    /**
+     * 
+     * @param statement
+     * @param parameters
+     * @param response
+     * @return
+     */
     public final boolean statement (
         String statement, JSON.Array parameters, StringBuilder response
         ) {
@@ -259,18 +451,17 @@ public class AnSQLite {
         Iterator<JSON.Array> parameters, 
         StringBuilder response
         ) {
-        Exception e = command("BEGIN");
+        Exception e = begin();
         if (e == null) {
             while (statements.hasNext()) {
                 if (!statement(
                     statements.next(), parameters.next(), response
                     )) {
-                    command("ROLLBACK");
+                    rollback();
                     return false;
                 };
             }
-            command("COMMIT");
-            return true;
+            return (commit() == null);
         }
         return false;
     }
@@ -321,6 +512,11 @@ public class AnSQLite {
             JSON.strb(response, "AnSQL error: invalid statement(s) type");
         }
     }
+    /**
+     * 
+     * @param statement
+     * @return
+     */
     public final String handle (JSON.Array statement) {
         StringBuilder sb = new StringBuilder();
         handle(statement, sb);
@@ -332,35 +528,87 @@ public class AnSQLite {
         if (count > 0) {
             JSON.Array result = new JSON.Array();
             for (int col=0; col<count; col++) {
-                result.add(st.column_database_name(col));
+                result.add(st.column_origin_name(col));
             }
             return result;
         } else {
             return null;
         }
     }
-    protected static final JSON.Array _resultset (Stmt st) 
+    /**
+     * 
+     * @param st
+     * @return
+     * @throws Exception
+     */
+    public static final JSON.Array resultset (Stmt st) 
     throws Exception {
         if (st.step()) {
             JSON.Array rs = new JSON.Array();
             int col, count = st.column_count();
             JSON.Array row;
-            while (st.step()) {
+            do {
                 row = new JSON.Array();
                 for (col=0; col<count; col++) {
                     row.add(st.column(col));
                 }
                 rs.add(row);
-            }
+            } while (st.step());
             return rs;
         } else {
             return null;
         }
     }
+    /**
+     * 
+     * @param st
+     * @return
+     * @throws Exception
+     */
+    public static final JSON.Object resultmap (Stmt st) 
+    throws Exception {
+        if (st.step()) {
+            JSON.Object rm = new JSON.Object();
+            int col, count = st.column_count();
+            if (count > 2) {
+                JSON.Array row;
+                do {
+                    row = new JSON.Array();
+                    for (col=1; col<count; col++) {
+                        row.add(st.column(col));
+                    }
+                    rm.put(st.column_string(0), row);
+                } while (st.step());
+            } else if (count > 1) {
+                do {
+                    rm.put(st.column_string(0), st.column(1));
+                } while (st.step());
+            } else {
+                do {
+                    rm.put(st.column_string(0), null);
+                } while (st.step());
+            }
+            return rm;
+        } else {
+            return null;
+        }
+    }
+    /**
+     * 
+     * @param statement
+     * @return
+     * @throws Exception
+     */
     public final JSON.Array prepare (String statement) 
     throws Exception {
         return _prepare(prepared(statement));
     }
+    /**
+     * 
+     * @param statements
+     * @return
+     * @throws Exception
+     */
     public final JSON.Array prepare (Iterator<String> statements) 
     throws Exception {
         JSON.Array rs = new JSON.Array();
@@ -369,30 +617,80 @@ public class AnSQLite {
         }
         return rs;
     }
+    /**
+     * 
+     * @param statement
+     * @return
+     * @throws Exception
+     */
     public final JSON.Array execute (String statement) 
     throws Exception {
-        return _resultset(prepared(statement));
+        return resultset(prepared(statement));
     }
+    /**
+     * 
+     * @param statement
+     * @param parameters
+     * @return
+     * @throws Exception
+     */
     public final JSON.Array execute (String statement, Iterator parameters) 
     throws Exception {
         Stmt st = prepared(statement);
-        _bind(st, parameters);
-        return _resultset(st);
+        bind(st, parameters);
+        return resultset(st);
     }
+    /**
+     * 
+     * @param statement
+     * @return
+     * @throws Exception
+     */
+    public final JSON.Object map (String statement) 
+    throws Exception {
+        return resultmap(prepared(statement));
+    }
+    /**
+     * 
+     * @param statement
+     * @param parameters
+     * @return
+     * @throws Exception
+     */
+    public final JSON.Object map (String statement, Iterator parameters) 
+    throws Exception {
+        Stmt st = prepared(statement);
+        bind(st, parameters);
+        return resultmap(st);
+    }
+    /**
+     * 
+     * @param statement
+     * @param parameters
+     * @return
+     * @throws Exception
+     */
     public final JSON.Array batch (
         String statement, Iterator<Iterable> parameters
         ) throws Exception {
         JSON.Array result = new JSON.Array();
         Stmt st = prepared(statement);
-        _bind(st, ((Iterable) parameters.next()).iterator());
-        result.add(_resultset(st));
+        bind(st, ((Iterable) parameters.next()).iterator());
+        result.add(resultset(st));
         while (parameters.hasNext()) {
             st.reset();
-            _bind(st, ((Iterable) parameters.next()).iterator());
-            result.add(_resultset(st));
+            bind(st, ((Iterable) parameters.next()).iterator());
+            result.add(resultset(st));
         }
         return result;
     }
+    /**
+     * 
+     * @param statement
+     * @param parameters
+     * @return
+     * @throws Exception
+     */
     public final JSON.Array statement (
         String statement, JSON.Array parameters 
         ) throws Exception  {
@@ -406,20 +704,27 @@ public class AnSQLite {
             return execute(statement, parameters.iterator());
         }
     }
+    /**
+     * 
+     * @param statements
+     * @param parameters
+     * @return
+     * @throws Exception
+     */
     public final JSON.Array transaction (
         Iterator<String> statements, 
         Iterator<JSON.Array> parameters
         ) throws Exception {
-        Exception e = command("BEGIN");
+        Exception e = begin();
         if (e == null) try {
             JSON.Array result = new JSON.Array();
             while (statements.hasNext()) {
                 result.add(statement(statements.next(), parameters.next()));
             }
-            command("COMMIT");
+            commit();
             return result;
         } catch (Exception ee) {
-            command("ROLLBACK");
+            rollback();
             throw ee;
         } else {
             throw e;
