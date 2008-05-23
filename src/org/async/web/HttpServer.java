@@ -145,13 +145,6 @@ public class HttpServer extends Server {
                 + " " + _status
                 );
         }
-        /**
-         * Dispatch the actor to
-         * 
-         * @param route
-         * @return
-         * @throws Throwable
-         */
         public final boolean handleRequest (String route) throws Throwable {
             return _channel._server._handlers.get(route).request(this);
         }
@@ -196,13 +189,8 @@ public class HttpServer extends Server {
         public final HashMap responseHeaders() {
             return _responseHeaders;
         };
-        public final String responseHeader(String name, String defaultValue) {
-            String value = _responseHeaders.get(name);
-            if (value == null) {
-                return defaultValue;
-            } else {
-                return value;
-            }
+        public final void responseHeader(String name, String value) {
+            _responseHeaders.put(name, value);
         };
         public final HashMap responseCookies() {
             return _responseCookies;
@@ -565,15 +553,15 @@ public class HttpServer extends Server {
 
 /*
 
-This HTTP server routes a request for the URI below:
+This HTTP server routes a GET request for the URI below:
 
     "http://context/subject/predicate"
 
 to one of the handlers mapped by the following keys:
 
-    "context/subject/predicate"
-    "context/subject/"
-    "context/"
+    "GET context/subject/predicate"
+    "GET context/subject/"
+    "GET context/"
 
 or reply with a "404 Not Found" response.
 
