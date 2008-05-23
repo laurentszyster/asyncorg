@@ -65,7 +65,7 @@ public class Prototype extends Service {
         scope.setPrototype(_scope);
         scope.setParentScope(null);
         return function.call(
-            _cx, scope, (Scriptable) Context.javaToJS(this, scope), args 
+            _cx, scope, (Scriptable) Context.javaToJS(_scope, scope), args 
             );
     }
     
@@ -101,9 +101,9 @@ public class Prototype extends Service {
         if (_type == null) {
             return null;
         } else {
-            return ((JSONR.Type) Context.jsToJava(_callFun(
+            return (JSONR.Type) Context.jsToJava(_callFun(
                 _type, new Object[]{http}
-                ), JSONR.Type.class));
+                ), JSONR.Type.class);
         }
     }
     public final void service (Actor http) throws Throwable {
@@ -130,28 +130,31 @@ public class Prototype extends Service {
      * @throws Throwable
      */
     public static final void main (String[] args) throws Throwable {
+        Static.loop.hookShutdown();
         _cx = Context.enter();
+        ScriptableObject scope = new ImporterTopLevel(_cx, false);
+        Scriptable self = (Scriptable) Context.javaToJS(Static.loop, scope);
         try {
-            ScriptableObject scope = new ImporterTopLevel(_cx, false);
-            File file = new File("asyncorg.js");
+            if (args.length == 0) {
+                args = new String[]{"asyncorg.js"};
+            }
+            File file = new File(args[0]);
             String path = file.getAbsolutePath();
             _cx.evaluateString(scope, SIO.read(path), path, 1, null);
-            Static.loop.hookShutdown();
-            Scriptable self = (Scriptable) Context.javaToJS(Static.loop, scope);
-            Function open = _function(scope, _cx, "open");
+            Function open = _function(scope, _cx, "Open");
             if (open != null) {
                 open.call(_cx, scope, self, args);
             } else {
-                Static.loop.log("no function", "open");
+                Static.loop.log("no function", "Open");
             }
             try {
                 Static.loop.dispatch();
             } finally {
-                Function close = _function(scope, _cx, "close");
+                Function close = _function(scope, _cx, "Close");
                 if (close != null) {
                     close.call(_cx, scope, self, args);
                 } else {
-                    Static.loop.log("no function", "close");
+                    Static.loop.log("no function", "Close");
                 }
             }
         } catch (Throwable e) {
