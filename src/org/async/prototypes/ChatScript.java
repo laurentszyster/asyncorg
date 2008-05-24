@@ -1,0 +1,61 @@
+package org.async.prototypes;
+
+import org.async.chat.ChatDispatcher;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.ScriptableObject;
+
+public class ChatScript extends ChatDispatcher {
+    private ScriptableObject _scope;
+    private Function _handleData = null;
+    private Function _handleTerminator = null;
+    private Function _handleConnect = null;
+    private Function _handleClose = null;
+    protected final void _bind (ScriptableObject scope) {
+        _scope = scope;
+        _handleData = Stateful._function(_scope, "handleData");
+        _handleTerminator = Stateful._function(_scope, "handleTerminator");
+        _handleConnect = Stateful._function(_scope, "handleConnect");
+        _handleClose = Stateful._function(_scope, "handleClose");
+    }
+    public static final ChatScript bind(Object scope) {
+        ChatScript prototype = new ChatScript();
+        prototype._bind(
+            (ScriptableObject) Context.jsToJava(scope, ScriptableObject.class)
+            );
+        return prototype;
+    }
+    public final void handleData(byte[] data) throws Throwable {
+        if (_handleData == null) {
+            throw new Exception("handleData not implemented");
+        } else {
+            Stateful._call(_scope, _handleData, new Object[]{data});
+        }
+    }
+    public final boolean handleTerminator() throws Throwable {
+        if (_handleTerminator == null) {
+            throw new Exception("handleTerminator not implemented");
+        } else {
+            return ((Boolean) Context.jsToJava(Stateful._call(
+                _scope, _handleTerminator, new Object[]{this}
+                ), Boolean.class)).booleanValue();
+        }
+    }
+    public final void handleConnect() throws Throwable {
+        if (_handleConnect == null) {
+            throw new Exception("handleConnect not implemented");
+        } else {
+            Stateful._call(_scope, _handleConnect, new Object[]{this});
+        }
+    }
+    public final void handleClose() throws Throwable {
+        if (_handleClose == null) {
+            throw new Exception("handleClose not implemented");
+        } else {
+            Stateful._call(_scope, _handleClose, new Object[]{this});
+        }
+    }
+    public final Object apply(Object input) throws Throwable {
+        return null;
+    }
+}
