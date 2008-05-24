@@ -19,7 +19,7 @@
 
 package org.async.core;
 
-import org.async.simple.Function;
+import org.async.simple.Fun;
 
 /**
  * ...
@@ -76,8 +76,8 @@ public abstract class Scheduled implements Comparable {
      */
     public abstract long apply (Loop loop) throws Throwable;
     protected static final class _Function extends Scheduled {
-        public Function function;
-        public _Function (long when, Function function) {
+        public Fun function;
+        public _Function (long when, Fun function) {
             this.when = when;
             this.function = function;
         }

@@ -1,6 +1,6 @@
 package org.async.sql;
 
-import org.async.simple.Function;
+import org.async.simple.Fun;
 import org.async.simple.Bytes;
 import org.async.net.NetDispatcher;
 import org.async.protocols.JSON;
@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
  * @pre AnSQL.connect("127.0.0.2:3999").execute(
  *    "SELECT * from SALES where COUNTRY = ? and YEAR > ? ", 
  *    JSON.list("Belgium", 1998), 
- *    new Function () {
+ *    new Fun () {
  *        public Object apply (Object response) {
  *            JSON.pprint(response, System.out);
  *            return null;
@@ -27,8 +27,8 @@ import java.nio.ByteBuffer;
  */
 public class AnSQL extends NetDispatcher  {
     private ByteBuffer _buffer;
-    protected LinkedList<Function> _requests;
-    protected final void _push (Object statement, Function callback) {
+    protected LinkedList<Fun> _requests;
+    protected final void _push (Object statement, Fun callback) {
         if (_channel == null) try {
             connect();
         } catch (Throwable e) {
@@ -42,32 +42,32 @@ public class AnSQL extends NetDispatcher  {
         push(Bytes.encode(JSON.encode(statement), Bytes.UTF8));
         _requests.add(callback);
     }
-    public final void prepare (String statement, Function callback) {
+    public final void prepare (String statement, Fun callback) {
         _push(JSON.list(statement, null), callback);
     }
     public final void prepare (
-        Iterator<String> statements, Function callback
+        Iterator<String> statements, Fun callback
         ) {
         _push(JSON.list(statements, null), callback);
     }
     private static final JSON.Array _empty_list = JSON.list();
-    public final void execute (String statement, Function callback) {
+    public final void execute (String statement, Fun callback) {
         _push(JSON.list(statement, _empty_list), callback);
     }
     public final void execute (
-        String statement, Iterator parameters, Function callback
+        String statement, Iterator parameters, Fun callback
         ) {
         _push(JSON.list(statement, parameters), callback);
     }
     public final void batch (
-        String statement, Iterator<Iterable> parameters, Function callback
+        String statement, Iterator<Iterable> parameters, Fun callback
         ) {
         _push(JSON.list(statement, parameters), callback);
     }
     public final void transaction (
         Iterator<String> statements, 
         Iterator<Iterable> parameters, 
-        Function callback
+        Fun callback
         ) {
         _push(JSON.list(statements, parameters), callback);
     }

@@ -57,7 +57,7 @@ public class FileClassLoader extends ClassLoader {
      *        Class cl = (new FileClassLoader("bin/")).findClass(
      *            "org.async.tests.DispatcherTest"
      *            ); 
-     *        ((Function) cl.newInstance()).apply(args);
+     *        ((Fun) cl.newInstance()).apply(args);
      *        Static.loop.dispatch();
      *    }
      *}

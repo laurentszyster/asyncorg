@@ -1,6 +1,7 @@
 package org.async.prototypes;
 
 import org.async.core.Static;
+import org.async.simple.Fun;
 import org.async.simple.SIO;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -24,8 +25,9 @@ public class Stateful {
             function == null || function == Scriptable.NOT_FOUND
             ) && function instanceof Function) {
             return (Function) function;
-        } else 
+        } else {
             return null;
+        }
     }
     protected static final Object _call (
         Scriptable self, Function function, Object[] args
@@ -36,6 +38,27 @@ public class Stateful {
         return function.call(
             _cx, scope, (Scriptable) Context.javaToJS(self, scope), args 
             );
+    }
+    protected static final class FunScript implements Fun {
+        private Function _scope = null;
+        public FunScript(Function scope) {
+            _scope = scope;
+        }
+        public final Object apply(Object input) throws Throwable {
+            return (Object) Context.jsToJava(Stateful._call(
+                _scope, _scope, new Object[]{input}
+                ), Object.class);
+        }
+    }
+    public static final Fun fun (ScriptableObject function) 
+    throws Exception {
+        if (!(
+            function == null || function == Scriptable.NOT_FOUND
+            ) && function instanceof Function) {
+            return new FunScript((Function) function);
+        } else {
+            throw new Exception("the object bound is not a function");
+        }
     }
     /**
      * Try to evaluate a named Javascript or the default file 

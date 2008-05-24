@@ -22,7 +22,7 @@ package org.async.net;
 import org.async.core.Loop;
 import org.async.core.Loginfo;
 import org.async.simple.Bytes;
-import org.async.simple.Function;
+import org.async.simple.Fun;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,7 +36,7 @@ import java.net.InetSocketAddress;
  *netlog.connect("127.0.0.2", 12345, "DEBUG");
  *
  */
-public class Log implements Function, Loginfo {
+public class Log implements Fun, Loginfo {
     protected class Channel extends NetDispatcher {
         public final Object apply(Object value) throws Throwable {
             return null;
