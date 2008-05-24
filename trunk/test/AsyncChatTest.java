@@ -20,7 +20,7 @@
 import org.async.chat.ChatDispatcher;
 import org.async.core.Static;
 import org.async.produce.StringsProducer;
-import org.async.simple.Function;
+import org.async.simple.Fun;
 
 import java.net.InetSocketAddress;
 
@@ -62,7 +62,7 @@ public class AsyncChatTest extends ChatDispatcher {
                     }, "UTF-8"
                 ));
             chat.setTerminator("\r\n\r\n".getBytes());
-            chat.finalization = new Function () {
+            chat.finalization = new Fun () {
                 public final Object apply (Object input) throws Throwable {
                     Static.loop.log("finalized", (input==null) ? 
                         "null": input.toString()

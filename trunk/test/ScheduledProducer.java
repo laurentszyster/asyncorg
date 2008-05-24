@@ -18,11 +18,11 @@
  */
 
 import org.async.chat.Producer;
-import org.async.simple.Function;
+import org.async.simple.Fun;
 
 /**
  * A wrapping <code>Producer</code> that stalls until its 
- * <code>Function</code> is applied.
+ * <code>Fun</code> is applied.
  * 
  * @p Synopsis
  * 
@@ -41,7 +41,7 @@ import org.async.simple.Function;
  * interface, for instance to schedule recurring state transitions (think
  * producer timeouts or pulsing protocols, use your imagination ...).
  */
-public class ScheduledProducer implements Function, Producer {
+public class ScheduledProducer implements Fun, Producer {
     protected boolean _stalled = true;
     protected Producer _defered;
     public ScheduledProducer(Producer defered) {
