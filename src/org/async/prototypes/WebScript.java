@@ -7,20 +7,13 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.ScriptableObject;
 
-public class WebScript extends Service {
+public final class WebScript extends Service {
     private ScriptableObject _scope;
     private Function _configure = null;
     private Function _identify = null;
     private Function _type = null;
     private Function _service = null;
     private Function _resource = null;
-    public static final WebScript bind(Object scope) {
-        WebScript prototype = new WebScript();
-        prototype._bind(
-            (ScriptableObject) Context.jsToJava(scope, ScriptableObject.class)
-            );
-        return prototype;
-    }
     protected final void _bind (ScriptableObject scope) {
         _scope = scope;
         _configure = Stateful._function(_scope, "configure");

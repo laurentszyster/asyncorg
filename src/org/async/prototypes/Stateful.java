@@ -3,6 +3,7 @@ package org.async.prototypes;
 import org.async.core.Static;
 import org.async.simple.Fun;
 import org.async.simple.SIO;
+
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.ImporterTopLevel;
@@ -50,8 +51,7 @@ public class Stateful {
                 ), Object.class);
         }
     }
-    public static final Fun fun (ScriptableObject function) 
-    throws Exception {
+    public static final Fun fun (Object function) throws Exception {
         if (!(
             function == null || function == Scriptable.NOT_FOUND
             ) && function instanceof Function) {
@@ -59,6 +59,20 @@ public class Stateful {
         } else {
             throw new Exception("the object bound is not a function");
         }
+    }
+    public static final ChatScript chat(Object scope) {
+        ChatScript prototype = new ChatScript();
+        prototype._bind(
+            (ScriptableObject) Context.jsToJava(scope, ScriptableObject.class)
+            );
+        return prototype;
+    }
+    public static final WebScript web(Object scope) {
+        WebScript prototype = new WebScript();
+        prototype._bind(
+            (ScriptableObject) Context.jsToJava(scope, ScriptableObject.class)
+            );
+        return prototype;
     }
     /**
      * Try to evaluate a named Javascript or the default file 
