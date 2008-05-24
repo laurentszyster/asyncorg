@@ -1,1 +1,1 @@
-%JAVA_HOME%\java -cp lib\asyncorg.jar;lib\sqlite.jar;lib\smalljs.jar -Djava.library.path=lib org.async.web.Prototype 1> log\http.out
+%JAVA_HOME%\java -cp lib\asyncorg.jar;lib\sqlite.jar;lib\smalljs.jar -Djava.library.path=lib org.async.prototypes.Stateful 1> log\http.out
