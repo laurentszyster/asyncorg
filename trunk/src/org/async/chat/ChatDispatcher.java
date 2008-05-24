@@ -42,8 +42,8 @@ implements Channel, Collector  {
     public final Object getTerminator () {
         return _terminator;
     }
-    public final void setTerminator(int terminator) {
-        _terminator = new Integer(terminator);
+    public final void setTerminator(Integer terminator) {
+        _terminator = terminator;
     }
     public final void setTerminator(byte[] terminator) {
         if (terminator == null) {

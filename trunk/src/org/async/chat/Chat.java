@@ -127,8 +127,8 @@ public class Chat implements Channel, Collector {
     public void setTerminator() {
         _terminator = null;
     }
-    public void setTerminator(int terminator) {
-        _terminator = new Integer(terminator);
+    public void setTerminator(Integer terminator) {
+        _terminator = terminator;
     }
     public void setTerminator(byte[] terminator) {
         _terminator = terminator;
