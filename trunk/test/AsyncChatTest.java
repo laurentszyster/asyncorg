@@ -22,8 +22,6 @@ import org.async.core.Static;
 import org.async.produce.StringsProducer;
 import org.async.simple.Fun;
 
-import java.net.InetSocketAddress;
-
 public class AsyncChatTest extends ChatDispatcher {
     public AsyncChatTest() {
         super(16384, 4096); // buffer 16KB in, 4KB out  
@@ -53,12 +51,12 @@ public class AsyncChatTest extends ChatDispatcher {
     public static final void main (String[] args) throws Throwable {
         try {
             AsyncChatTest chat = new AsyncChatTest();
-            chat.connect(new InetSocketAddress("127.0.0.2", 80));
+            chat.connect("127.0.0.2", 8765);
             chat.push(StringsProducer.wrap(
                 new String[]{
-                    "GET /one HTTP/1.1\r\n\r\n",
-                    "GET /two HTTP/1.1\r\n\r\n",
-                    "GET /three HTTP/1.1\r\n\r\n",
+                    "GET /index.html HTTP/1.1\r\n\r\n",
+                    "GET /login HTTP/1.1\r\n\r\n",
+                    "GET /favicon.ico HTTP/1.1\r\n\r\n",
                     }, "UTF-8"
                 ));
             chat.setTerminator("\r\n\r\n".getBytes());
