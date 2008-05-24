@@ -28,6 +28,10 @@ import java.nio.charset.CharsetDecoder;
 public class StringCollector implements Collector {
     protected CharsetDecoder _decoder;
     protected StringBuilder _sb;
+    public StringCollector (String encoding) {
+        _decoder = Charset.forName(encoding).newDecoder();
+        _sb = new StringBuilder();
+    }
     public StringCollector (StringBuilder buffer, String encoding) {
         _decoder = Charset.forName(encoding).newDecoder();
         _sb = buffer;
