@@ -28,6 +28,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.spi.AbstractSelectableChannel;
 
 import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 
 import java.io.IOException;
 
@@ -232,6 +233,18 @@ public abstract class Dispatcher extends Call {
      */
     public final boolean connected () {
         return _connected;
+    }
+    /**
+     * Set the dispatcher host and port address, update the dispatcher's name 
+     * to the address string representation and try to connect a socket to 
+     * that address.
+     * 
+     * @param address to connect
+     * @throws Throwable
+     */
+    public final void connect (String host, int port) throws Throwable {
+        SocketAddress address = new InetSocketAddress(host, port); 
+        connect(address);
     }
     /**
      * Set the dispatcher address, update the dispatcher's name to the
