@@ -37,7 +37,7 @@ public interface Channel {
      * 
      * @param terminator
      */
-    public void setTerminator(int terminator);
+    public void setTerminator(Integer terminator);
     /**
      * Set a byte string terminator, collect data until that string of bytes
      * is found in the incoming stream.
