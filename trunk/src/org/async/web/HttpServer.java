@@ -257,7 +257,7 @@ public class HttpServer extends Server {
                         if (_protocol.equals("HTTP/1.1")) {
                             _responseHeaders.put("Transfer-Encoding", "chunked");
                             _producer = new ChunkProducer(_responseBody);
-                            if (requestHeader("connection", "")
+                            if (requestHeader("connection", "keep-alive")
                                     .toLowerCase().equals("keep-alive")) {
                                 _responseHeaders.put("Connection", "keep-alive");
                             } else {
