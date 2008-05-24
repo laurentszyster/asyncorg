@@ -1,6 +1,5 @@
 import org.async.core.Static;
 import org.async.web.HttpServer;
-import org.async.web.HttpServerState;
 import org.async.web.FileSystem;
 import org.async.web.Database;
 import org.async.sql.AnSQLite;
@@ -18,7 +17,6 @@ public class HttpServerTest {
             server.httpRoute("GET " + host + "/db", db);
             server.httpRoute("POST " + host + "/db", db);
             server.httpRoute("GET " + host + "/doc", new FileSystem("doc"));
-            server.httpRoute("GET " + host + "/state", new HttpServerState());
             Static.loop.exits.add(server);
             server = null;
         } catch (Throwable e) {

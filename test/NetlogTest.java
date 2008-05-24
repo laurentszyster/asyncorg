@@ -19,7 +19,7 @@
 
 import org.async.core.Static;
 import org.async.net.Log;
-import org.async.simple.Function;
+import org.async.simple.Fun;
 
 import java.net.InetSocketAddress;
 
@@ -33,18 +33,18 @@ public class NetlogTest {
             new InetSocketAddress("127.0.0.2", 12345), "TRACEBACK"
             );
         Static.loop.log("one");
-        Static.loop.timeout(2000, new Function() {
+        Static.loop.timeout(2000, new Fun() {
             public final Object apply (Object current) throws Throwable {
                 Static.loop.log("two");
                 return new Long(-1);
             }
         });
-        Static.loop.timeout(4000, new Function() {
+        Static.loop.timeout(4000, new Fun() {
             public final Object apply (Object current) throws Throwable {
                 throw new Error("three");
             }
         });
-        Static.loop.timeout(6000, new Function() {
+        Static.loop.timeout(6000, new Fun() {
             public final Object apply (Object current) throws Throwable {
                 Static.loop.log("four");
                 return new Long(-1);
