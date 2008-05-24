@@ -20,7 +20,7 @@
 package org.async.dns;
 
 import org.async.core.Dispatcher;
-import org.async.simple.Function;
+import org.async.simple.Fun;
 import org.async.simple.Strings;
 
 import java.util.Iterator;
@@ -129,7 +129,7 @@ public class DNSClient extends Dispatcher {
     }
     
     public void resolve(
-        String[] question, Function resolved, SocketAddress[] servers
+        String[] question, Fun resolved, SocketAddress[] servers
         ) throws Throwable {
         Request req = (Request) _cache.get(question);
         if (req == null) {

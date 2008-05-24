@@ -25,7 +25,7 @@ package org.async.simple;
  * 
  * @p ...
  * 
- * @pre Function print = new Function () {
+ * @pre Fun print = new Fun () {
  *    public Object apply (Object input) throws Throwable {
  *        System.out(argument.toString());
  *    }
@@ -35,7 +35,7 @@ package org.async.simple;
  * @p ...
  * 
  */
-public interface Function {
+public interface Fun {
     /**
      * Apply the function.
      * 

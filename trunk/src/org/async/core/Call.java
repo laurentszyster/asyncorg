@@ -21,11 +21,11 @@ package org.async.core;
 
 import java.util.Iterator;
 
-import org.async.simple.Function;
+import org.async.simple.Fun;
 
-public abstract class Call implements Function {
+public abstract class Call implements Fun {
     protected Loop _loop = Static.loop;
-    public Function finalization = null;
+    public Fun finalization = null;
     /**
      * Defer an asynchronous call to this finalization if there is one.
      */
@@ -44,13 +44,13 @@ public abstract class Call implements Function {
         }
         return joining;
     }
-    protected static class List implements Function {
-        private Iterable<Function> _calls;
-        protected List(Iterable<Function> calls) {
+    protected static class List implements Fun {
+        private Iterable<Fun> _calls;
+        protected List(Iterable<Fun> calls) {
             _calls = calls;
         }
         public final Object apply (Object input) throws Throwable {
-            Iterator<Function> calls = _calls.iterator();
+            Iterator<Fun> calls = _calls.iterator();
             while (calls.hasNext()) {
                 input = calls.next().apply(input);
             }
@@ -62,7 +62,7 @@ public abstract class Call implements Function {
      * @param calls
      * @return
      */
-    public static final Function list(Iterable<Function> calls) {
+    public static final Fun list(Iterable<Fun> calls) {
         return new List(calls);
     }
 }

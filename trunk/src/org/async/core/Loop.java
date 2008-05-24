@@ -33,7 +33,7 @@ import java.util.Iterator;
 
 import java.lang.Runtime;
 
-import org.async.simple.Function;
+import org.async.simple.Fun;
 
 /**
  * An asynchronous loop around NIO selectable sockets, events scheduled 
@@ -119,7 +119,7 @@ public final class Loop {
     protected Selector _selector;
     protected HashMap<String,Dispatcher> _dispatched = new HashMap();
     protected TreeSet<Scheduled> _scheduled = new TreeSet();
-    protected LinkedList<Function> _finalized =  new LinkedList();
+    protected LinkedList<Fun> _finalized =  new LinkedList();
     
     protected Loginfo _log = _stdoe;
     protected int _precision = 100;
@@ -130,7 +130,7 @@ public final class Loop {
     protected int _concurrent = 0;
     protected int _concurrency = 512;
     /**
-     * The list of <code>Function</code> applied when an <code>Exit</code> 
+     * The list of <code>Fun</code> applied when an <code>Exit</code> 
      * exception was throwed in the loop.
      */
     public ArrayList exits = new ArrayList();
@@ -258,7 +258,7 @@ public final class Loop {
      * @param function to apply
      * @param when in milliseconds
      */
-    public final void schedule (Function function, long when) {
+    public final void schedule (Fun function, long when) {
         _scheduled.add(new Scheduled._Function(when, function));
     }
     /**
@@ -277,7 +277,7 @@ public final class Loop {
      * @param milliseconds to wait
      * @param function to apply
      */
-    public final void timeout (int milliseconds, Function function) {
+    public final void timeout (int milliseconds, Fun function) {
         _scheduled.add(new Scheduled._Function(_now + milliseconds, function));
     }
     private static final void _sleep (int milliseconds) throws Exit {
@@ -409,11 +409,11 @@ public final class Loop {
                 }
                 _dispatch_finalizations ();
             } catch (Exit e) {
-                Function fun; 
+                Fun fun; 
                 Iterator exit = exits.iterator();
                 exits = new ArrayList();
                 while (exit.hasNext()) {
-                    fun = ((Function) exit.next());
+                    fun = ((Fun) exit.next());
                     Object result = fun.apply(e);
                     if (
                         result instanceof Boolean && 
