@@ -11,9 +11,8 @@ importClass(asyncorg.protocols.JSONR);
 importClass(asyncorg.sql.AnSQLite);
 importClass(asyncorg.web.HttpServer);
 importClass(asyncorg.web.Authority);
-importClass(asyncorg.web.HttpServerState);
 importClass(asyncorg.web.FileSystem);
-importClass(asyncorg.prototypes.WebScript);
+importClass(asyncorg.prototypes.Stateful);
 
 importClass(java.lang.Runtime);
 
@@ -32,7 +31,7 @@ function _200_JSON_UTF8 (http, body) {
 function Service (model, service) {
     var _resource = JSON.pprint(model);
     var _type = JSONR.compile(_resource);
-    return WebScript.bind ({
+    return Stateful.web({
         "type": function (http) {return _type;},
         "service": service,
         "resource": function (http) {
@@ -42,7 +41,7 @@ function Service (model, service) {
 }
 
 function Resource (body) {
-    return WebScript.bind ({
+    return Stateful.web({
         "resource": function (http) {
             _200_JSON_UTF8 (http, body);
             }
@@ -116,10 +115,11 @@ var state = {
 
 function Open(filename, address) {
     db.open();
-    this.exits.add(server);
     server.httpListen(
         typeof(address) == "undefined" ? "127.0.0.2:8765": address
         );
+    this.hookShutdown();
+    this.exits.add(server);
     var host = server.httpHost();
     server.httpRoute("GET " + host + "/", new FileSystem("www"));
     server.httpRoute("GET " + host + "/doc", new FileSystem("doc"));
@@ -140,7 +140,7 @@ function Open(filename, address) {
         );
     server.httpRoute(
         "GET " + host + "/state", 
-        authority.identified(WebScript.bind(state))
+        authority.identified(Stateful.web(state))
         );
     server.httpRoute(
         "GET " + host + "/inspect", 
