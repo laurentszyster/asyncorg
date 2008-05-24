@@ -95,4 +95,8 @@ public class Authority {
         sb.append(_qualifier);
         http.responseCookie("IRTD2", sb.toString());
     }
+    public final String unidentify (Actor http) {
+        http.responseCookie("IRTD2", _qualifier);
+        return http.identity;
+    }
 }
