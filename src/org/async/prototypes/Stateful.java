@@ -88,7 +88,6 @@ public class Stateful {
      * @throws Throwable
      */
     public static final void main (String[] args) throws Throwable {
-        Static.loop.hookShutdown();
         _cx = Context.enter();
         ScriptableObject scope = new ImporterTopLevel(_cx, false);
         Scriptable self = (Scriptable) Context.javaToJS(Static.loop, scope);
