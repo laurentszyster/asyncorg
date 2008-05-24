@@ -2,21 +2,35 @@
 <project name="asyncorg" default="jar">
   <property file="host.properties"/>
   <property file="packages.properties"/>
-  <target name="compile">
+  <target name="debug">
+    <javac 
+       srcdir="src"
+       destdir="bin"
+       debug="on"
+       source="1.5"
+    />
+    <jar 
+      jarfile="lib/asyncorg.jar" 
+      basedir="bin"
+      >
+      <manifest>
+  	    <attribute name="Main-Class" value="org.async.prototypes.Stateful"/>
+    	</manifest>
+    </jar>
+  </target>
+  <target name="dist">
     <javac 
        srcdir="src"
        destdir="bin"
        debug="off"
        source="1.5"
     />
-  </target>
-  <target name="jar" depends="compile">
     <jar 
-      jarfile="lib/asyncorg.jar" 
+      jarfile="asyncorg-${version}.jar" 
       basedir="bin"
       >
       <manifest>
-  	    <attribute name="Main-Class" value="Asyncorg"/>
+  	    <attribute name="Main-Class" value="org.async.prototypes.Stateful"/>
     	</manifest>
     </jar>
   </target>
