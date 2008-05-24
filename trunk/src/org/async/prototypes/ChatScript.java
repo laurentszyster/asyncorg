@@ -5,7 +5,7 @@ import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.ScriptableObject;
 
-public class ChatScript extends ChatDispatcher {
+public final class ChatScript extends ChatDispatcher {
     private ScriptableObject _scope;
     private Function _handleData = null;
     private Function _handleTerminator = null;
@@ -17,13 +17,6 @@ public class ChatScript extends ChatDispatcher {
         _handleTerminator = Stateful._function(_scope, "handleTerminator");
         _handleConnect = Stateful._function(_scope, "handleConnect");
         _handleClose = Stateful._function(_scope, "handleClose");
-    }
-    public static final ChatScript bind(Object scope) {
-        ChatScript prototype = new ChatScript();
-        prototype._bind(
-            (ScriptableObject) Context.jsToJava(scope, ScriptableObject.class)
-            );
-        return prototype;
     }
     public final void handleData(byte[] data) throws Throwable {
         if (_handleData == null) {
