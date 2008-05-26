@@ -41,24 +41,24 @@ public class FileCache implements HttpServer.Handler {
         if (slashAt < 0) {
             throw new Error("invalid HTTP route identifier");
         } else {
-            _path = route.substring(slashAt);
+            _path = route.substring(0, slashAt);
         }
         _cache = new HashMap<String, HTTP.Entity>();
         HTTP.FileEntity entity;
+        String key;
         int rootLength = _root.length();
         Iterator<File> files = SIO.glob(_root, "^[^.].*$").iterator();
         while (files.hasNext()) {
             entity = new HTTP.FileEntity(files.next());
-            _cache.put(
-                _path + entity.absolutePath.substring(rootLength).replace('\\', '/'), 
-                new HTTP.CacheEntity(entity)
-                );
+            key = entity.absolutePath.substring(rootLength).replace('\\', '/');
+            _cache.put(key, new HTTP.CacheEntity(entity));
         }
     }
     public final boolean request(HttpServer.Actor http) 
     throws Throwable {
         http.responseHeader("Cache-control", _cacheControl);
-        HTTP.Entity entity = _cache.get(http.uri().getPath());
+        String key = http.uri().getPath();
+        HTTP.Entity entity = _cache.get(key);
         if (entity == null) {
             http.response(404); // Not Found
         } else {
