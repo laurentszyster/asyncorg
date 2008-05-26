@@ -172,7 +172,7 @@ public final class HTTP {
             long lastModified = file.lastModified();
             sb.append(lastModified);
             sha1.update(sb.toString().getBytes());
-            String mimeType = MIME.TYPES.get("");
+            String mimeType = MIME.type(absolutePath);
             if (mimeType != null) {
                 headers.put("Content-type", mimeType);
             }

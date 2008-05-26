@@ -157,6 +157,14 @@ public class MIME {
         ".xwd"    , "image/x-xwindowdump",
         ".zip"    , "application/zip"
         );
+    public static final String type (String filename) {
+        int dotAt = filename.lastIndexOf('.');
+        if (dotAt > -1)
+            return TYPES.get(filename.substring(dotAt));
+        else {
+            return null;
+        }
+    }
     private static final byte[] _COLON = new byte[]{':'}; 
     private static final byte[] _SPACE = new byte[]{' '}; 
     private static final byte[] _CRLF = "\r\n".getBytes(); 
