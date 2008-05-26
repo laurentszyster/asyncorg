@@ -11,6 +11,7 @@ importClass(asyncorg.protocols.JSONR);
 importClass(asyncorg.sql.AnSQLite);
 importClass(asyncorg.web.HttpServer);
 importClass(asyncorg.web.Authority);
+importClass(asyncorg.web.FileCache);
 importClass(asyncorg.web.FileSystem);
 importClass(asyncorg.prototypes.Stateful);
 
@@ -26,6 +27,11 @@ function _200_JSON_UTF8 (http, body) {
     http.responseHeader("Cache-control", "no-cache");
     http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
     http.response(200, body, "UTF-8");
+}
+
+function _500_JSON_UTF8 (http, body) {
+    http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
+    http.response(500, body, "UTF-8");
 }
 
 function Service (model, service) {
@@ -67,15 +73,25 @@ var ansql = function (http) {
 }
 
 var inspect = function (http) {
-    _200_JSON_UTF8(http, JSON.pprint(eval(
-        '(' + http.state.getString("arg0") + ')'
-        )));
+    try {
+        var result = eval(
+            '(' + http.state.getString("arg0", "null") + ')'
+            );
+        _200_JSON_UTF8(http, JSON.pprint(result));
+    } catch (e) {
+        _500_JSON_UTF8(http, JSON.pprint(e));
+    }
 }
 
 var execute = function (http) {
-    _200_JSON_UTF8(http, JSON.pprint(eval(
-        "(function(){" + http.state.get("arg0", "null") + "})()"
-        )));
+    try {
+        var result = eval(
+            "(function(){" + http.state.getString("arg0", "null") + "})()"
+            );
+        _200_JSON_UTF8(http, JSON.pprint(result));
+    } catch (e) {
+        _500_JSON_UTF8(http, JSON.pprint(e));
+    }
 }
 
 var state = {
@@ -118,10 +134,9 @@ function Open(filename, address) {
     server.httpListen(
         typeof(address) == "undefined" ? "127.0.0.2:8765": address
         );
-    this.hookShutdown();
-    this.exits.add(server);
+    this.hookShutdown([server]);
     var host = server.httpHost();
-    server.httpRoute("GET " + host + "/", new FileSystem("www"));
+    server.httpRoute("GET " + host + "/", new FileCache("www"));
     server.httpRoute("GET " + host + "/doc", new FileSystem("doc"));
     server.httpRoute(
         "GET " + host + "/login", 
@@ -140,7 +155,7 @@ function Open(filename, address) {
         );
     server.httpRoute(
         "GET " + host + "/state", 
-        authority.identified(Stateful.web(state))
+        Stateful.web(state)
         );
     server.httpRoute(
         "GET " + host + "/inspect", 
