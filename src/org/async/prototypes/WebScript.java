@@ -24,7 +24,9 @@ public final class WebScript extends Service {
     }
     public final void configure (String route) throws Throwable {
         if (_configure != null) {
-            Stateful._call(_scope, _configure, new Object[]{route});
+            _configure.call(
+                Stateful.context, _scope, _scope, new Object[]{route}
+                );
         }
     }
     public final boolean identify (Actor http) throws Throwable {
@@ -32,8 +34,8 @@ public final class WebScript extends Service {
             http.response(401); // Unauthorized
             return false;
         } else {
-            return ((Boolean) Context.jsToJava(Stateful._call(
-                _scope, _identify, new Object[]{http}
+            return ((Boolean) Context.jsToJava(_identify.call(
+                Stateful.context, _scope, _scope, new Object[]{http}
                 ), Boolean.class)).booleanValue();
         }
     }
@@ -41,8 +43,8 @@ public final class WebScript extends Service {
         if (_type == null) {
             return null;
         } else {
-            return (JSONR.Type) Context.jsToJava(Stateful._call(
-                _scope, _type, new Object[]{http}
+            return (JSONR.Type) Context.jsToJava(_type.call(
+                Stateful.context, _scope, _scope, new Object[]{http}
                 ), JSONR.Type.class);
         }
     }
@@ -50,14 +52,18 @@ public final class WebScript extends Service {
         if (_service == null) {
             http.response(501); // Not implemented
         } else {
-            Stateful._call(_scope, _service, new Object[]{http});
+            _service.call(
+                Stateful.context, _scope, _scope, new Object[]{http}
+                );
         }
     }
     public final void resource (Actor http) throws Throwable {
         if (_resource == null) {
             http.response(404); // Not found
         } else {
-            Stateful._call(_scope, _resource, new Object[]{http});
+            _resource.call(
+                Stateful.context, _scope, _scope, new Object[]{http}
+                );
         }
     }    
 }
