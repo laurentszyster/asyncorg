@@ -5,6 +5,7 @@ import org.async.simple.Fun;
 import org.async.simple.SIO;
 
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.ImporterTopLevel;
 import org.mozilla.javascript.Scriptable;
@@ -13,11 +14,17 @@ import org.mozilla.javascript.ScriptableObject;
 import java.io.File;
 
 /**
- * A convenience to prototype stateful applications in JavaScript.
+ * A convenience to prototype and configure stateful applications in 
+ * JavaScript, providing a fast development cycle and a clear optimization
+ * path down to Java and C libraries for CPU intensive processes.
+ * 
+ * It depends the Java 1.5 JRE, Rhino and usually on SQLite too.
+ * 
+ * See asyncorg.js for a complete demonstration.
  */
-public class Stateful {
+public final class Stateful {
     protected static final Object[] _NO_ARGS = new Object[]{};
-    protected static Context _cx;
+    protected static Context context;
     protected static final Function _function (
         ScriptableObject scope, String name
         ) {
@@ -30,25 +37,16 @@ public class Stateful {
             return null;
         }
     }
-    protected static final Object _call (
-        Scriptable self, Function function, Object[] args
-        ) throws Exception {
-        Scriptable scope = _cx.newObject(self);
-        scope.setPrototype(self);
-        scope.setParentScope(null);
-        return function.call(
-            _cx, scope, (Scriptable) Context.javaToJS(self, scope), args 
-            );
-    }
     protected static final class FunScript implements Fun {
         private Function _scope = null;
         public FunScript(Function scope) {
             _scope = scope;
         }
         public final Object apply(Object input) throws Throwable {
-            return (Object) Context.jsToJava(Stateful._call(
-                _scope, _scope, new Object[]{input}
-                ), Object.class);
+            return (Object) Context.jsToJava(
+                _scope.call(context, _scope, _scope, new Object[]{input}),
+                Object.class
+                );
         }
     }
     public static final Fun fun (Object function) throws Exception {
@@ -60,8 +58,18 @@ public class Stateful {
             throw new Exception("the object bound is not a function");
         }
     }
+    public static final NetScript net(Object scope) {
+        NetScript prototype = new NetScript();
+        prototype._bind(
+            (ScriptableObject) Context.jsToJava(scope, ScriptableObject.class)
+            );
+        return prototype;
+    }
     public static final ChatScript chat(Object scope) {
-        ChatScript prototype = new ChatScript();
+        return chat(scope, 16384, 16384);
+    }
+    public static final ChatScript chat(Object scope, int in, int out) {
+        ChatScript prototype = new ChatScript(in, out);
         prototype._bind(
             (ScriptableObject) Context.jsToJava(scope, ScriptableObject.class)
             );
@@ -80,16 +88,13 @@ public class Stateful {
      * function, dispatch the <code>Static.loop</code> and then finally
      * call its <code>Close</code> function.
      * 
-     * @h3 Synopsis
-     * 
-     * @pre java -jar lib/asyncorg.jar [asyncorg.js]
-     * 
      * @param args
      * @throws Throwable
      */
     public static final void main (String[] args) throws Throwable {
-        _cx = Context.enter();
-        ScriptableObject scope = new ImporterTopLevel(_cx, false);
+        ContextFactory cf = new ContextFactory();
+        context = cf.enterContext();
+        ScriptableObject scope = new ImporterTopLevel(context, false);
         Scriptable self = (Scriptable) Context.javaToJS(Static.loop, scope);
         try {
             if (args.length == 0) {
@@ -97,10 +102,10 @@ public class Stateful {
             }
             File file = new File(args[0]);
             String path = file.getAbsolutePath();
-            _cx.evaluateString(scope, SIO.read(path), path, 1, null);
+            context.evaluateString(scope, SIO.read(path), path, 1, null);
             Function open = _function(scope, "Open");
             if (open != null) {
-                open.call(_cx, scope, self, args);
+                open.call(context, scope, self, args);
             } else {
                 Static.loop.log("no function", "Open");
             }
@@ -109,7 +114,7 @@ public class Stateful {
             } finally {
                 Function close = _function(scope, "Close");
                 if (close != null) {
-                    close.call(_cx, scope, self, args);
+                    close.call(context, scope, self, args);
                 } else {
                     Static.loop.log("no function", "Close");
                 }
@@ -118,7 +123,7 @@ public class Stateful {
             Static.loop.log(e);
         } finally {
             Context.exit();
-            _cx = null;
+            context = null;
         }
     }
 }
