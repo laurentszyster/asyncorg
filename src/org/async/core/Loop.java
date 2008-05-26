@@ -153,6 +153,18 @@ public final class Loop {
         _hook = new ShutdownHook();
     }
     /**
+     * Hook this loop's exit to the JVM shutdown procedure, enable a
+     * gracefull shutdown signaled by SIGINT (aka CTRL-C) and set a list
+     * of functions as exits.
+     * 
+     */
+    public final void hookShutdown (Fun ... functions) {
+        _hook = new ShutdownHook();
+        for (int i=0; i<functions.length; i++) {
+            exits.add(functions[i]);
+        }
+    }
+    /**
      * Set this loop's <code>Loginfo</code> logger or reset it to the default
      * implementation (i.e.: STDOUT and STDERR) if the <code>logger</code>
      * argument is <code>null</code>, return the previous logger.
