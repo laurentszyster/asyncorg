@@ -30,7 +30,6 @@ import java.util.Iterator;
  * the semantic chaos of network application interfaces names).
  */
 public class PublicNames {
-    
     /**
      * ...
      * 
@@ -82,13 +81,7 @@ public class PublicNames {
         String encoded, HashSet field, int horizon, ArrayList tree
         ) {
         Iterator names = Netunicode.iter(encoded);
-        if (!names.hasNext()) {
-            if (field.contains(encoded)) {
-                return null;
-            }
-            field.add(encoded); 
-            return encoded;
-        } else {
+        if (names.hasNext()) {
             String name;
             ArrayList valid = new ArrayList();
             ArrayList branch = new ArrayList();
@@ -115,6 +108,12 @@ public class PublicNames {
                 return (String)valid.get(0);
             }
             return null;
+        } else {
+            if (field.contains(encoded)) {
+                return null;
+            }
+            field.add(encoded); 
+            return encoded;
         }
     }
     
