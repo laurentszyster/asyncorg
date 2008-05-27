@@ -1,0 +1,83 @@
+span.null,
+span.boolean, 
+span.string, 
+span.number { padding-left: 4px; padding-right: 4px; }
+span.name { font-weight: bold;  padding-right: 4px; }
+div.array span { border-top: 1px solid #DDDDDD; border-left: 1px solid #DDDDDD; }
+div.property { padding-left: 4px; padding-bottom: 4px; border-bottom: 1px solid #DDDDDD; }
+div.object { margin-right: 4px; border-left: 1px solid #DDDDDD; border-top: 1px solid #DDDDDD; border-right: 1px solid #DDDDDD; }
+
+#hourGlass.wait { background-color: #fb6; color: #fb6; }
+
+input, textarea, button { font-size: 1em; }
+input, textarea, button { font-family: "Lucida Grande", Arial, Verdana, sans-serif; }
+input, textarea, button { border: none; padding: 0em 0em 0em 0em; margin: 0em 0em 0em 0em; } 
+input, textarea { background-color: #fff; color: #666; }
+button { background-color: #eef; color: #69c; font-weight: bold; }
+textarea { font-family: 'courier new', 'andale mono', 'monotype.com', 'lucida console', monospace; }
+textarea { font-size: 1.5; line-height: 1.5; }
+
+.strong { font-weight: bold; }
+.field { float: left; }
+.error { background: #FBE3E4; color: #D12F19; }
+.success { background: #E6EFC2; color: #529214; }
+.notice { background: #FFF6BF; color: #817134; }
+
+button.hover { background-color: #69c; color: #fff; }
+button.active { background-color: #9cf; color: #fff; }
+
+input.number { text-align: right; }
+
+input.error, textarea.error { background-color: #f9f7ed; }
+input.hover, textarea.hover { color: #000; }
+
+span.action { cursor: pointer; }
+
+div.actions { text-align: right; }
+div.quiet a { color: #99f; }
+div.form { padding: 1.5em 20px 1.5em 20px; background-color: #eef; }
+div.field { float: left; }
+
+div.actions span.action { color: #99f; }
+div.actions span.hover { color: #66f; background-color: #eef; }
+div.actions span.active { color: #fff; background-color: #66f; }
+
+div.column button, 
+div.column input.pcre, 
+div.column input.number, 
+div.column textarea.string,
+div.column textarea.null { width: 100%; }
+div.column textarea.string,
+div.column textarea.null { height: 100%; }
+div.column input.boolean { width: 20px; }
+
+div.box input, 
+div.box textarea { background-color: #fff; }
+div.box div.actions {margin-top: 1em;}
+
+div.namespace button,
+div.dictionary button,
+div.collection button { background-color: #ccc; color: #fff; }
+
+div.namespace button.hover,
+div.dictionary button.hover,
+div.collection button.hover { background-color: #69c; color: #fff; }
+
+div.namespace button.active,
+div.dictionary button.active,
+div.collection button.active { background-color: #9cf; color: #fff; }
+
+div.error button { background: #FBE3E4; color: #D12F19; }
+div.error button.hover { background-color: #D12F19; color: #fff; }
+div.error button.active { background-color: #f66; color: #fff; }
+
+div.success button { background: #E6EFC2; color: #529214; }
+div.success button.hover { background-color: #529214; color: #fff; }
+div.success button.active { background-color: #6f6; color: #fff; }
+
+div.notice button { background: #FFF6BF; color: #fc6; }
+div.notice button.hover { background-color: #fc6; color: #fff; }
+div.notice button.active { background-color: #ff9; color: #fff; }
+
+div.disabled button { background-color: #eee; color: #999; }
+
