@@ -1,2 +1,0 @@
-<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public abstract">handleWrite</span> ()</h3><p>Handle a write event, when a dispatcher is writable and the socket's 
- outgoing buffer has room for more output data.</p><dl><di></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><hr></hr></div></div>

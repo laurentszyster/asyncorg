@@ -1,2 +1,0 @@
-<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public final">send</span> (buffer) → int</h3><p>Try to write a buffer's remaining to this dispatcher's socket, account
- and return the number of bytes sent.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>ByteBuffer</code> - <span>buffer</span> <span>to write from</span></div></dd></di><di><dt>Return</dt><dd>the number of bytes sent</dd></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><hr></hr></div></div>

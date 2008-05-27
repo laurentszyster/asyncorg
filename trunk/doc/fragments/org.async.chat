@@ -1,3 +1,0 @@
-<div class="javaPackage"><h2>Package Overview</h2><h3>Interfaces</h3><dl><di><dt>Producer</dt><dd></dd></di><di><dt>Collector</dt><dd></dd></di></dl><h3>Implementations</h3><dl><di><dt>StringsProducer</dt><dd>The obvious producer of 8-bit encoded UNICODE strings iterator, with 
- a convenience for wrapping <code>String</code> arrays.</dd></di><di><dt>StringsCollector</dt><dd></dd></di><di><dt>GuardCollector</dt><dd></dd></di><di><dt>Dispatcher</dt><dd></dd></di><di><dt>BytesProducer</dt><dd>The obvious producer of 8-bit bytes iterator, with a convenience for 
- wrapping <code>String</code> arrays.</dd></di></dl></div>

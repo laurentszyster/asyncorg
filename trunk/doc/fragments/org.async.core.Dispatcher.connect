@@ -1,3 +1,0 @@
-<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public final">connect</span> (address)</h3><p>Set the dispatcher address, update the dispatcher's name to the
- address string representation and try to connect a socket to that
- address.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>SocketAddress</code> - <span>address</span> <span>to connect</span></div></dd></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><hr></hr></div><div><h3><span class="javaMethod public final">connect</span> ()</h3><p>Try to connect to this dispatcher's current address.</p><dl><di></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><hr></hr></div></div>

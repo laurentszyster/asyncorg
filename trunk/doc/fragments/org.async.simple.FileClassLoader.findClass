@@ -1,3 +1,0 @@
-<div class="javaMethods"><h2>FileClassLoader</h2><div><h3><span class="javaMethod public final">findClass</span> (name) → Class</h3><p>Find and load a class by its fully qualified name.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>String</code> - <span>name</span> <span>of the class</span></div></dd></di></dl><p>For instance:</p><pre>Class cl = (new FileClassLoader(&quot;bin/&quot;)).findClass(
-    &quot;org.async.tests.DispatcherTest&quot;
-    );</pre><p>will load the binary class file found at:</p><pre>bin/org/async/tests/DispatcherTest</pre><p>Note that this implementation will fail to load enclosed classes.</p><hr></hr></div></div>

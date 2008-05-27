@@ -1,2 +1,0 @@
-<div class="javaMethods"><h2>Loop</h2><div><h3><span class="javaMethod public final">hookShutdown</span> ()</h3><p>Hook this loop's exit to the JVM shutdown procedure and enable a
- gracefull shutdown signaled by SIGINT (aka CTRL-C).</p><dl><di></di></dl><hr></hr></div></div>

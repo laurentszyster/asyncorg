@@ -1,2 +1,0 @@
-<div class="javaClass"><h2>Dispatcher</h2><p>A <code>Stream</code> dispatcher implementation for <a href="http://cr.yp.to/protocols/netstring.txt">netstring</a> applications.</p><h3>Synopsis</h3><p>See <code>Netlog</code> and <code>Netlogger</code> for implementations 
- of netstring client and server channels.</p></div>

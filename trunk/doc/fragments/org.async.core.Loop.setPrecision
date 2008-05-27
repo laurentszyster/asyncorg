@@ -1,2 +1,0 @@
-<div class="javaMethods"><h2>Loop</h2><div><h3><span class="javaMethod public final">setPrecision</span> (milliseconds) → int</h3><p>Set this loop's precision in milliseconds and return the previous 
- precision.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>int</code> - <span>milliseconds</span> <span>of precision</span></div></dd></di><di><dt>Return</dt><dd>the previous precision</dd></di><di><dt>Throws</dt><dd>Error if the precision set is lower than 10ms</dd></di></dl><hr></hr></div></div>

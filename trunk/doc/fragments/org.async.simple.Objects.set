@@ -1,2 +1,0 @@
-<div class="javaMethods"><h2>Objects</h2><div><h3><span class="javaMethod public static final">set</span> (items) → HashSet</h3><p>A convenience to build a <code>HashSet</code> from an array of 
- <code>Objects</code>.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>java.lang.Object[]</code> - <span>items</span> <span>to add in the set</span></div></dd></di><di><dt>Return</dt><dd>a <code>HashSet</code></dd></di></dl><pre>HashSet set = Simple.set(new String[]{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;});</pre><hr></hr></div></div>

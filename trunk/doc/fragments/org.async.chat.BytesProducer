@@ -1,2 +1,0 @@
-<div class="javaClass"><h2>BytesProducer</h2><p>The obvious producer of 8-bit bytes iterator, with a convenience for 
- wrapping <code>String</code> arrays.</p></div>

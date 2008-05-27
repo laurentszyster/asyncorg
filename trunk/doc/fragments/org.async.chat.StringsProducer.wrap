@@ -1,7 +1,0 @@
-<div class="javaMethods"><h2>StringsProducer</h2><div><h3><span class="javaMethod public static final">wrap</span> (strings, encoding) → StringsProducer</h3><p>...</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>java.lang.String[]</code> - <span>strings</span> <span></span></div><div class="parameter"><code>String</code> - <span>encoding</span> <span></span></div></dd></di><di><dt>Return</dt><dd></dd></di></dl><pre>String[] strings = new String[] {
-    &quot;GET / HTTP/1.0\r\n&quot;,
-    &quot;Host: 127.0.0.1:8080\r\n&quot;,
-    &quot;\r\n&quot;
-    }; 
-StringProducer producer = StringProducer.wrap(strings, &quot;UTF-8&quot;);
-dispatcher.push (producer);</pre><hr></hr></div></div>

@@ -1,2 +1,0 @@
-<div class="javaClass"><h2>StringsProducer</h2><p>The obvious producer of 8-bit encoded UNICODE strings iterator, with 
- a convenience for wrapping <code>String</code> arrays.</p></div>

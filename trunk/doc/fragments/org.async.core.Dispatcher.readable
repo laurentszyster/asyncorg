@@ -1,3 +1,0 @@
-<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public abstract">readable</span> () → boolean</h3><p>Sets the readable status of this dispatcher in its loop's selector.</p><dl><di></di><di><dt>Return</dt><dd><code>true</code> if the dispatcher is readable.</dd></di></dl><pre>public final int readable() {
-    return true;
-}</pre><hr></hr></div></div>

@@ -1,4 +1,0 @@
-<div class="javaMethods"><h2>Objects</h2><div><h3><span class="javaMethod public static final">extend</span> (List, Object[]) → List</h3><p>A convenience to extend a <code>List</code> from an array of 
- <code>Objects</code>.</p><dl><di><dt>Parameters</dt><dd></dd></di><di><dt>Return</dt><dd>the extended <code>List</code></dd></di></dl><pre>List sequence = Simple.extend(
-     new ArrayList(), new Object[]{&quot;a&quot;, &quot;b&quot;, &quot;c&quot;}
-     );</pre><hr></hr></div></div>

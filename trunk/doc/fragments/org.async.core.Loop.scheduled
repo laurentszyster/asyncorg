@@ -1,1 +1,0 @@
-<div class="javaMethods"><h2>Loop</h2><div><h3><span class="javaMethod public final">scheduled</span> () → TreeSet</h3><p>Get the <code>TreeSet</code> of <code>Scheduled</code> events in time.</p><dl><di></di><di><dt>Return</dt><dd>an ordered set of scheduled events in time.</dd></di></dl><hr></hr></div></div>

@@ -1,2 +1,0 @@
-<div><h2>Dispatcher</h2><h3><span class="javaField public">when</span> → long</h3><p>Time in milliseconds at which the <code>Dispatcher</code> was
- instanciated.</p></div>
