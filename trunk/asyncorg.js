@@ -136,7 +136,7 @@ function Open(filename, address) {
         );
     this.hookShutdown([server]);
     var host = server.httpHost();
-    server.httpRoute("GET " + host + "/", new FileCache("www"));
+    server.httpRoute("GET " + host + "/", new FileSystem("www"));
     server.httpRoute("GET " + host + "/doc", new FileSystem("doc"));
     server.httpRoute(
         "GET " + host + "/login", 
