@@ -1,3 +1,0 @@
-<div><h2>Dispatcher</h2><h3><span class="javaField public">whenOut</span> → long</h3><p>Time in milliseconds at which the last call to <code>send</code> or
- <code>sendto</code> was made, or <code>-1</code> if none were
- ever made.</p></div>

@@ -1,3 +1,0 @@
-<div><h2>Strings</h2><h3><span class="javaField public static final">ALPHANUMERIC</span> → char</h3><p>The strictly alphanumeric set of ASCII characters, usefull for
- ubiquitous identifiers on any devices and in any languages, including
- American English and all phone slangs.</p></div>

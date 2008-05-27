@@ -1,4 +1,0 @@
-<div class="javaMethods"><h2>Loop</h2><div><h3><span class="javaMethod public final">concurrency</span> () → int</h3><p>Get this loop's maximum concurrency level.</p><dl><di></di><di><dt>Return</dt><dd>the maximum number of dispatchers selected in a single run</dd></di></dl><p>A limit on the maximum of dispatchers that can be registered 
- concurrently in this loop's selector. By default it is set to 512, 
- a common limit set by some OS on the number of file descriptors passed 
- to the <code>select</code> call.</p><hr></hr></div></div>

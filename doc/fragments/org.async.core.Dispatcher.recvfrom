@@ -1,5 +1,0 @@
-<div class="javaMethods"><h2>Dispatcher</h2><div><h3><span class="javaMethod public final">recvfrom</span> (buffer) → SocketAddress</h3><p>Try to read a datagram from this dispatcher's socket into a byte 
- buffer, account the number of bytes received and return the address 
- of the peer or null if no datagram was available.</p><dl><di><dt>Parameters</dt><dd><div class="parameter"><code>ByteBuffer</code> - <span>buffer</span> <span>to read into</span></div></dd></di><di><dt>Return</dt><dd>the <code>SocketAddress</code> of the sending peer or null</dd></di><di><dt>Throws</dt><dd>Throwable</dd></di></dl><p>Note that this method may <code>close</code> the dispatcher and 
- call its <code>handleClose</code> method if an <code>IOException</code> 
- occurs.</p><hr></hr></div></div>

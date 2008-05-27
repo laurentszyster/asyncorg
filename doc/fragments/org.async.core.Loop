@@ -1,5 +1,0 @@
-<div class="javaClass"><h2>Loop</h2><p>An asynchronous loop around NIO selectable sockets, events scheduled 
- in time and defered continuations of finalized instances.</p><div><h3><span class="javaConstructor public">Loop</span> ()</h3><p>...</p><dl><di></di></dl><pre>Loop.loop = new Loop();</pre><hr></hr></div><p>The preferred application is to use a single loop in a single thread,
- as the static member and methods of <code>Async</code> do.</p><p>Managing more than one loop is still possible, but then they should all
- be independant if their application don't want to combine the problems
- of threads with the complexity asynchrony.</p></div>

@@ -1,5 +1,0 @@
-<div class="javaPackage"><h2>Package Overview</h2><h3>Interfaces</h3><dl><di><dt>Loginfo</dt><dd>A logger interface for unobtrusive and flexible logging.</dd></di><di><dt>Function</dt><dd>The simplest possible first class function in Java.</dd></di></dl><h3>Implementations</h3><dl><di><dt>Stream</dt><dd></dd></di><di><dt>Static</dt><dd></dd></di><di><dt>Scheduled</dt><dd>...</dd></di><di><dt>Loop</dt><dd>An asynchronous loop around NIO selectable sockets, events scheduled 
- in time and defered continuations of finalized instances.</dd></di><di><dt>Listen</dt><dd></dd></di><di><dt>Dispatcher</dt><dd>A base abstract class for all dispatchers in <code>org.async</code>.</dd></di><di><dt>Call</dt><dd>Practical asynchronous continuations, kinda coroutine meets closures
- in a Java loop. Slowly, unobviously and yet damn practical in I/O bound
- stateful network applications experiencing high levels of concurrency and 
- latency between processes.</dd></di></dl></div>
