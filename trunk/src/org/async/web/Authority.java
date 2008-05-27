@@ -20,54 +20,14 @@ public class Authority {
     };
     public int timeout = 600;
     private String _qualifier;
+    public Authority () {
+        _qualifier = "; expires=Sun, 17-Jan-2038 19:14:07 GMT";
+    }
     public Authority (String domain, String path) {
         _qualifier = (
             "; expires=Sun, 17-Jan-2038 19:14:07 GMT; path=" + path 
             + "; domain=" + domain
             );
-    }
-    protected static class Identified implements Handler {
-        private HttpServer.Handler _wrapped;
-        private Authority _authority;
-        public Identified (Handler handler, Authority authority) {
-            _wrapped = handler;
-            _authority = authority;
-        }
-        public final void configure(String route) throws Throwable {
-            _wrapped.configure(route);
-        }
-        public final boolean identify (Actor http) throws Throwable {
-            return true;
-        }
-        public final boolean request(Actor http) throws Throwable {
-            String irtd2 = http.requestCookie("IRTD2");
-            if (irtd2 != null) {
-                String[] parsed = IRTD2.parse(irtd2);
-                long time = http.when()/1000;
-                int error = IRTD2.digested(
-                    parsed, time, _authority.timeout, _authority.salts
-                    );
-                if (error == 0) {
-                    http.identity = parsed[0];
-                    http.rights = parsed[1];
-                    http.digested = parsed[4];
-                    _authority.identify(http, time);
-                    return _wrapped.request(http);
-                } else {
-                    http.channel().log("IRTD2 error " + error);
-                }
-            }
-            if (_wrapped.identify(http)) {
-                return _wrapped.request(http);
-            }
-            return false;
-        }
-        public final void collected(Actor http) throws Throwable {
-            _wrapped.collected(http);
-        }
-    }
-    public final Handler identified(Handler handler) { 
-        return new Identified(handler, this);
     }
     public final void identify (Actor http, long time) {
         if (http.identity == null || http.identity.length() == 0) {
@@ -98,5 +58,81 @@ public class Authority {
     public final String unidentify (Actor http) {
         http.responseCookie("IRTD2", _qualifier);
         return http.identity;
+    }
+    protected static class Identified implements Handler {
+        private HttpServer.Handler _wrapped;
+        private Authority _authority;
+        public Identified (Handler handler, Authority authority) {
+            _wrapped = handler;
+            _authority = authority;
+        }
+        public final void configure(String route) throws Throwable {
+            _wrapped.configure(route);
+        }
+        public final boolean identify (Actor http) throws Throwable {
+            http.response(401); // Unauthorized
+            return false;
+        }
+        public final boolean request(Actor http) throws Throwable {
+            String irtd2 = http.requestCookie("IRTD2");
+            if (irtd2 != null) {
+                String[] parsed = IRTD2.parse(irtd2);
+                long time = http.when()/1000;
+                int error = IRTD2.digested(
+                    parsed, time, _authority.timeout, _authority.salts
+                    );
+                if (error == 0) {
+                    http.identity = parsed[0];
+                    http.rights = parsed[1];
+                    http.digested = parsed[4];
+                    _authority.identify(http, time);
+                    return _wrapped.request(http);
+                } else {
+                    http.channel().log("IRTD2 error " + error);
+                }
+            }
+            if (_wrapped.identify(http)) {
+                return _wrapped.request(http);
+            }
+            return false;
+        }
+        public final void collected(Actor http) throws Throwable {
+            if (http.identity != null) {
+                _wrapped.collected(http);
+            }
+        }
+    }
+    public final Handler identified(Handler handler) { 
+        return new Identified(handler, this);
+    }
+    protected static class Authorized implements Handler {
+        private HttpServer.Handler _wrapped;
+        private String _right;
+        public Authorized (Handler handler, String right) {
+            _wrapped = handler;
+            _right = right;
+        }
+        public final void configure(String route) throws Throwable {
+            _wrapped.configure(route);
+        }
+        public final boolean identify (Actor http) throws Throwable {
+            http.response(401); // Unauthorized
+            return false;
+        }
+        public final boolean request(Actor http) throws Throwable {
+            if (http.rights == null || http.rights.indexOf(_right) < 0) {
+                return false;
+            } else {
+                return _wrapped.request(http);
+            }
+        }
+        public final void collected(Actor http) throws Throwable {
+            if (http.rights != null && http.rights.indexOf(_right) > -1) {
+                _wrapped.collected(http);
+            }
+        }
+    }
+    public static final Handler authorized (Handler handler, String right) {
+        return new Authorized(handler, right);
     }
 }
