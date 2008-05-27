@@ -10,7 +10,7 @@
        source="1.5"
     />
     <jar 
-      jarfile="lib/asyncorg.jar" 
+      jarfile="asyncorg.jar" 
       basedir="bin"
       >
       <manifest>
@@ -37,7 +37,9 @@
   <target name="doc">
     <delete dir="doc/fragments"/>
     <delete dir="doc/tests"/>
-  	<unzip src="lib/doctestj-browser.zip" dest="doc"/>
+  	<!-- 
+      <unzip src="lib/doctestj-browser.zip" dest="doc"/>
+      -->
     <javadoc 
       docletpath=
         "lib/asyncorg.jar;
@@ -48,15 +50,16 @@
          ${host-jdk-path}lib/tools.jar"
       doclet="org.doctestj.Doclet"
       packagenames=
-        "org.async.simple, 
+        "org.async.chat, 
          org.async.core, 
-         org.async.net,
-         org.async.chat, 
          org.async.collect, 
+         org.async.net,
          org.async.produce, 
          org.async.protocols,
-         org.async.web,
-         org.async.sql"
+         org.async.prototypes,
+         org.async.simple, 
+         org.async.sql,
+         org.async.web"
       source="1.5" 
       sourcepath="src" 
       classpath=
