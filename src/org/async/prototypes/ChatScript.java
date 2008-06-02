@@ -58,6 +58,7 @@ public final class ChatScript extends ChatDispatcher {
         }
     }
     public final Object apply(Object input) throws Throwable {
-        return null;
+        closeWhenDone();
+        return Boolean.TRUE;
     }
 }
