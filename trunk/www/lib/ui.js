@@ -15,16 +15,8 @@ $$.extend('disable', function (el) {
 $$.extend('clearValue', function (el) { 
     el.value=''; 
 });
-$$.extend('fitAreaToText', function (el) {
-    var lines = el.value.split('\n').length;
-    el.parentNode.style.height = (1.5*lines) + "em";
-    el.rows = lines;
-});
 
-var UI = {
-    bound2: {},
-    onclick: {}
-};
+var UI = {};
 
 UI.bindHoverActive = function (selector, el) {
     $$(selector, el)
@@ -48,6 +40,9 @@ UI.bindHoverActive = function (selector, el) {
         })
         ;
 };
+
+UI.bound2 = {};
+UI.onclick = {};
 
 UI.ok = function (response) {
     

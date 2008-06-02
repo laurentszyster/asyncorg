@@ -55,10 +55,12 @@ div.box input,
 div.box textarea { background-color: #fff; }
 div.box div.actions {margin-top: 1em;}
 
+div.action button,
 div.namespace button,
 div.dictionary button,
 div.collection button { background-color: #ccc; color: #fff; }
 
+div.action button,
 div.namespace button.hover,
 div.dictionary button.hover,
 div.collection button.hover { background-color: #69c; color: #fff; }
@@ -80,4 +82,3 @@ div.notice button.hover { background-color: #fc6; color: #fff; }
 div.notice button.active { background-color: #ff9; color: #fff; }
 
 div.disabled button { background-color: #eee; color: #999; }
-

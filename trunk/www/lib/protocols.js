@@ -4,7 +4,7 @@ Copyright(c) 2006-2007, Jack Slocum.
 
     http://extjs.com/license.txt
 
-Copyright © 2007 Laurent A.V. Szyster
+Copyright ï¿½ 2007 Laurent A.V. Szyster
 
 This library is free software; you can redistribute it and/or modify it under 
 the terms of version 3 of the GNU Lesser General Public License as published 
@@ -98,11 +98,11 @@ $.browser = (function () {
     var ua = navigator.userAgent.toLowerCase();
     return {
         name: ua,
-    	version: (ua.match(/.+(?:rv|it|ra|ie)[\/: ]([\d.]+)/) || [])[1],
-    	safari: /webkit/.test(ua),
-    	opera: /opera/.test(ua),
-    	msie: /msie/.test(ua) && !/opera/.test(ua),
-    	mozilla: /mozilla/.test(ua) && !/(compatible|webkit)/.test(ua)
+        version: (ua.match(/.+(?:rv|it|ra|ie)[\/: ]([\d.]+)/) || [])[1],
+        safari: /webkit/.test(ua),
+        opera: /opera/.test(ua),
+        msie: /msie/.test(ua) && !/opera/.test(ua),
+        mozilla: /mozilla/.test(ua) && !/(compatible|webkit)/.test(ua)
         };
 })(); // browser detection, jQuery style and syntax
 
@@ -143,11 +143,11 @@ HTTP.state = function (active) {
 
 HTTP.urlencode = (function () {
     var _encode = function (s) {
-    	var a = s.split("+");
-    	for (var i=0, L=a.length; i<L; i++) {
-    		a[i] = escape(a[i]);
-    	}
-    	return a.join("%2B");
+        var a = s.split("+");
+        for (var i=0, L=a.length; i<L; i++) {
+            a[i] = escape(a[i]);
+        }
+        return a.join("%2B");
     };
     return function (sb, query) {
         var value, prefix, start = sb.length;
@@ -894,17 +894,17 @@ var CSS = (function(){
     
     function clean(d){
         var n = d.firstChild, ni = -1;
- 	    while(n){
- 	        var nx = n.nextSibling;
- 	        if(n.nodeType == 3 && !nonSpace.test(n.nodeValue)){
- 	            d.removeChild(n);
- 	        }else{
- 	            n.nodeIndex = ++ni;
- 	        }
- 	        n = nx;
- 	    }
- 	    return this;
- 	};
+         while(n){
+             var nx = n.nextSibling;
+             if(n.nodeType == 3 && !nonSpace.test(n.nodeValue)){
+                 d.removeChild(n);
+             }else{
+                 n.nodeIndex = ++ni;
+             }
+             n = nx;
+         }
+         return this;
+     };
 
     function byClassName(c, a, v, re, cn){
         if(!v){
@@ -1160,13 +1160,13 @@ var CSS = (function(){
     
     return {
         getStyle : function(el, style){
-        	if (el.currentStyle)
-        		var v = el.currentStyle[style];
-        	else if (window.getComputedStyle)
-        		var v = document.defaultView.getComputedStyle(
-        		    el, null
-        		    ).getPropertyValue(style);
-        	return v;
+            if (el.currentStyle)
+                var v = el.currentStyle[style];
+            else if (window.getComputedStyle)
+                var v = document.defaultView.getComputedStyle(
+                    el, null
+                    ).getPropertyValue(style);
+            return v;
         },
         /**
          * Compiles a selector/xpath query into a reusable function. The 
