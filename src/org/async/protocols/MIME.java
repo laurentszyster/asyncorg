@@ -185,6 +185,34 @@ public class MIME {
             headers.put(name, value);
         }
     }
+    public static final void update(HashMap headers, String lines, int pos) {
+        int spaceAt, colonAt, crlfAt;
+        String name = null, value = "";
+        int length = lines.length();
+        while (pos < length) {
+            spaceAt = lines.indexOf(" ", pos);
+            colonAt = lines.indexOf(":", pos);
+            if (0 < colonAt && (spaceAt == -1 || colonAt < spaceAt)) {
+                if (name != null) {
+                    put(headers, name, value.trim());
+                }
+                name = lines.substring(pos, colonAt).toLowerCase();
+                value = "";
+                pos = colonAt + 1;
+            }
+            crlfAt = lines.indexOf("\r\n", pos);
+            if (crlfAt == -1) {
+                value = value + lines.substring(pos, length);
+                break;
+            } else {
+                value = value + lines.substring(pos, crlfAt);
+                pos = crlfAt + 2;
+            }
+        }
+        if (name != null) {
+            put(headers, name, value.trim());
+        }
+    }
     public static final void update(HashMap headers, byte[] bytes, int pos) {
         int spaceAt, colonAt, crlfAt;
         String name = null, value = "";
