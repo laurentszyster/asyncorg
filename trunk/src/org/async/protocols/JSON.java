@@ -32,6 +32,7 @@ import org.async.simple.Bytes;
 import org.async.simple.SIO;
 import org.async.simple.Objects;
 
+import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.NativeJavaObject;
@@ -1513,6 +1514,29 @@ public class JSON {
         return "0";
     }
     
+    protected static final Object _jsMap (
+		NativeObject object, java.lang.Object[] ids, String[] keys
+		) {
+        int i;
+    	java.lang.Object v; 
+        for (i=0; i < ids.length; i++) {
+            keys[i] = ids[i].toString();
+        }
+        Arrays.sort(keys);
+        JSON.Object map = new JSON.Object();
+        for (i=0; i < keys.length; i++) {
+        	v = NativeObject.getProperty(object, keys[i]);
+        	if (v == Scriptable.NOT_FOUND) {
+        		map.put(keys[i], NativeObject.getProperty(
+    				object, Integer.parseInt(keys[i])
+		            ));
+        	} else {
+        		map.put(keys[i], v);
+        	}
+        }
+    	return map;
+    }
+    
     /**
      * Serialize a JSON type in a <code>StringBuilder</code>
      * 
@@ -1558,18 +1582,13 @@ public class JSON {
             }
         } else if (value instanceof NativeObject) {
             NativeObject object = (NativeObject) value;
-            java.lang.Object[] ids = (object).getIds();
+            java.lang.Object[] ids = object.getIds();
             if (ids.length == 0)
                 sb.append(_object);
             else {
-                Arrays.sort(ids);
-                JSON.Object map = new JSON.Object();
-                String key;
-                for (int i=0; i < ids.length; i++) {
-                    key = (String) ids[i];
-                    map.put(key, object.get(key, object));
-                }
-                strb(sb, map, Objects.iter(ids));
+                String keys[] = new String[ids.length];
+                JSON.Object map = _jsMap (object, ids, keys);
+                strb(sb, map, Objects.iter(keys));
             }
         } else if (value instanceof NativeJavaObject) {
             strb(sb, ((NativeJavaObject) value).unwrap());
@@ -1708,14 +1727,9 @@ public class JSON {
             if (ids.length == 0)
                 sb.append(_object);
             else {
-                Arrays.sort(ids);
-                JSON.Object map = new JSON.Object();
-                String key;
-                for (int i=0; i < ids.length; i++) {
-                    key = (String) ids[i];
-                    map.put(key, object.get(key, object));
-                }
-                xjson(sb, map, Objects.iter(ids));
+                String keys[] = new String[ids.length];
+                JSON.Object map = _jsMap (object, ids, keys);
+                xjson(sb, map, Objects.iter(keys));
             }
         } else if (value instanceof NativeJavaObject) {
             xjson(sb, ((NativeJavaObject) value).unwrap());
@@ -1837,18 +1851,13 @@ public class JSON {
             }
         } else if (value instanceof NativeObject) {
             NativeObject object = (NativeObject) value;
-            java.lang.Object[] ids = (object).getIds();
+            java.lang.Object[] ids = NativeObject.getPropertyIds(object);
             if (ids.length == 0)
                 sb.append(_object);
             else {
-                Arrays.sort(ids);
-                JSON.Object map = new JSON.Object();
-                String key;
-                for (int i=0; i < ids.length; i++) {
-                    key = (String) ids[i];
-                    map.put(key, object.get(key, object));
-                }
-                outline(sb, map, Objects.iter(ids), indent);
+                String keys[] = new String[ids.length];
+                JSON.Object map = _jsMap (object, ids, keys);
+                outline(sb, map, Objects.iter(keys), indent);
             }
         } else if (value instanceof NativeJavaObject) {
             outline(sb, ((NativeJavaObject) value).unwrap(), indent);
@@ -1980,18 +1989,13 @@ public class JSON {
             }
         } else if (value instanceof NativeObject) {
             NativeObject object = (NativeObject) value;
-            java.lang.Object[] ids = (object).getIds();
+            java.lang.Object[] ids = NativeObject.getPropertyIds(object);
             if (ids.length == 0)
                 sb.append(_object);
             else {
-                Arrays.sort(ids);
-                JSON.Object map = new JSON.Object();
-                String key;
-                for (int i=0; i < ids.length; i++) {
-                    key = (String) ids[i];
-                    map.put(key, object.get(key, object));
-                }
-                pprint(sb, map, Objects.iter(ids), indent, os);
+                String keys[] = new String[ids.length];
+                JSON.Object map = _jsMap (object, ids, keys);
+                pprint(sb, map, Objects.iter(keys), indent, os);
             }
         } else if (value instanceof NativeJavaObject) {
             pprint(sb, ((NativeJavaObject) value).unwrap(), indent, os);
