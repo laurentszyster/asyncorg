@@ -187,7 +187,7 @@ public class SAT {
     /**
      * The Public RDF consumer for statements articulated.
      */
-    public PublicRDF.Statements consumer;
+    public PublicRDF consumer;
     /**
      * The statements' predicate.
      */
@@ -207,7 +207,7 @@ public class SAT {
      * @param chunk
      * @param consumer
      */
-    public SAT (String context, int chunk, PublicRDF.Statements consumer) {
+    public SAT (String context, int chunk, PublicRDF consumer) {
         this.context = context;
         this.chunk = chunk;
         this.consumer = consumer;
@@ -223,7 +223,7 @@ public class SAT {
      * @param horizon
      */
     public SAT (
-        String context, int chunk, PublicRDF.Statements consumer,  
+        String context, int chunk, PublicRDF consumer,  
         String predicate, Pattern[] articulators, int horizon
         ) {
         this.context = context;
@@ -234,7 +234,7 @@ public class SAT {
         this.horizon = horizon;
     }
     
-    public void articulate (String text, int depth) {
+    public void articulate (String text, int depth) throws Throwable {
         ArrayList articulated = new ArrayList();
         depth = split(text, articulators, depth, articulated);
         HashSet field = new HashSet();
