@@ -267,19 +267,19 @@ public final class Loop {
     /**
      * Schedule a function's application at an approximate time.
      * 
-     * @param function to apply
      * @param when in milliseconds
+     * @param function to apply
      */
-    public final void schedule (Fun function, long when) {
+    public final void schedule (long when, Fun function) {
         _scheduled.add(new Scheduled._Function(when, function));
     }
     /**
      * Schedule a function's application at an approximate time from now.
      * 
-     * @param event scheduled
      * @param milliseconds after now
+     * @param event scheduled
      */
-    public final void timeout (Scheduled event, long milliseconds) {
+    public final void timeout (long milliseconds, Scheduled event) {
         event.when = _now + milliseconds;
         _scheduled.add(event);
     }
