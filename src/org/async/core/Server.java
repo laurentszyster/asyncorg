@@ -82,7 +82,7 @@ public abstract class Server extends Dispatcher {
             _accepted++;
             if (_active == null) {
                 _active = new Maintenance(this);
-                _loop.timeout(_active, 3000);
+                _loop.timeout(3000, _active);
                 serverWakeUp();
             }
         }
