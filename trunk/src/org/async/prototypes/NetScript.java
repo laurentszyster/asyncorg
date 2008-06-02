@@ -66,6 +66,7 @@ public class NetScript extends NetDispatcher {
         }
     }
     public Object apply(Object input) throws Throwable {
-        return null;
+        closeWhenDone();
+        return Boolean.TRUE;
     }
 }
