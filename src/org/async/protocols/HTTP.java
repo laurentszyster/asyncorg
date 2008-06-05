@@ -85,14 +85,10 @@ public final class HTTP {
 
     public static final String date(Calendar calendar) {
         return String.format(
-            "%s, %d %s %d %d:%d:%d GMT",
+            "%1$s, %3$te %2$s %3$tY %3$tH:%3$tM:%3$tS GMT %3$tz",
             _dow[calendar.get(Calendar.DAY_OF_WEEK)],
-            calendar.get(Calendar.DAY_OF_MONTH),
             _moy[calendar.get(Calendar.MONTH)],
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.HOUR),
-            calendar.get(Calendar.MINUTE),
-            calendar.get(Calendar.SECOND)
+            calendar
             );
     }
     public static final String date(long milliseconds) {

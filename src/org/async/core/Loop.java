@@ -198,7 +198,7 @@ public final class Loop {
         return previous;
     }
     /**
-     * Return this loop's current time in milliseconds.
+     * Return this loop's current time in milliseconds as a <code>long</code>.
      * 
      * @return a time in milliseconds
      */
