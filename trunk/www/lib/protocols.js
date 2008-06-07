@@ -750,11 +750,7 @@ JSON.GET = function (url, query, ok, headers, timeout) {
         if (typeof query.length == 'undefined') {
             url = HTTP.urlencode([url], query).join ('');
         } else {
-            var args = {};
-            for (var i=0, L=query.length; i<L; i++) {
-                args['arg'+i] = query[i];
-            }
-            url = HTTP.urlencode([url], args).join ('');
+            url = HTTP.urlencode([url], {"arg0": query}).join ('');
         }
     }
     if (headers) {
