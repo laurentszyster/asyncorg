@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project name="asyncorg" default="jar">
+<project name="asyncorg" default="debug">
   <property file="host.properties"/>
   <property file="packages.properties"/>
   <target name="debug">
