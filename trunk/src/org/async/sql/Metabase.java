@@ -84,6 +84,10 @@ public class Metabase implements PublicRDF {
         _ansql = ansql;
         _horizon = horizon;
     }
+    /**
+     * Interpret a statement sent to the metabase and push the result to be
+     * retrieved with the <code>next</code> method.
+     */
     public final void send ( // let's generate ;-)
         String subject, String predicate, String object, String context
         ) throws Throwable {
@@ -122,6 +126,8 @@ public class Metabase implements PublicRDF {
         _statements.removeFirst();
     }
     /**
+     * Insert or update a statement's object in the metabase, eventually index
+     * the subject and return null or the previous object if any.  
      * 
      * @param subject
      * @param predicate
@@ -168,6 +174,15 @@ public class Metabase implements PublicRDF {
         }
         return previous;
     }
+    /**
+     * Get a statement's object or null if it does not exist.
+     * 
+     * @param subject
+     * @param predicate
+     * @param context
+     * @return
+     * @throws Exception
+     */
     public final String get (
         String subject, String predicate, String context
         ) throws Exception {
@@ -181,6 +196,15 @@ public class Metabase implements PublicRDF {
             return null;
         }
     }
+    /**
+     * Fill a <code>HashMap</code> with one or more statements' object, keyed by
+     * context, for a given subject and predicate.
+     * 
+     * @param subject
+     * @param predicate
+     * @param objects
+     * @throws Exception
+     */
     public final void map (
         String subject, String predicate, HashMap objects
         ) throws Exception {
@@ -196,6 +220,13 @@ public class Metabase implements PublicRDF {
             }
         }
     }
+    /**
+     * Return a name's index. 
+     * 
+     * @param name
+     * @return
+     * @throws Exception
+     */
     public final String indexed (String name) throws Exception {
         _SELECT_INDEX.reset();
         _SELECT_INDEX.bind(1, name);
@@ -205,19 +236,17 @@ public class Metabase implements PublicRDF {
             return null;
         }
     }
-    public final void indexes (String index, String subject, String context) 
+    protected final void indexes (String index, String subject, String context) 
     throws Exception {
         if (index == null) {
             _INSERT_INDEX.reset();
             _INSERT_INDEX.bind(1, subject);
             _INSERT_INDEX.bind(2, context);
-            _SELECT_INDEX.step();
+            _INSERT_INDEX.step();
         } else if (!index.equals("")) {
             HashSet field = new HashSet();
             String updated = PublicNames.validate(
-                index + context.length() + ':' + context + ',', 
-                field, 
-                _horizon 
+                index + context.length() + ':' + context + ',', field, _horizon 
                 );
             _UPDATE_INDEX.reset();
             _UPDATE_INDEX.bind(1, updated);
@@ -235,8 +264,6 @@ public class Metabase implements PublicRDF {
                 name = articulated.next();
                 indexes(indexed(name), name, subject);
             } while (articulated.hasNext());
-        } else {
-            ;
         }
     }
 }

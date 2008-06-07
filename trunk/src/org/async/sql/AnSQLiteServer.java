@@ -50,7 +50,7 @@ import java.net.InetSocketAddress;
  * large network of controllers; 
  * 
  * @p AnSQLite is mostly practical for web controllers that distribute
- * data presentation to applications running in the userg agents. 
+ * data presentation to applications running in the user agents. 
  * 
  */
 public class AnSQLiteServer extends Server {
