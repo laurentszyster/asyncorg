@@ -51,10 +51,14 @@ public final class WebScript extends Service {
     public final void service (Actor http) throws Throwable {
         if (_service == null) {
             http.response(501); // Not implemented
-        } else {
+        } else try {
             _service.call(
                 Stateful.context, _scope, _scope, new Object[]{http}
                 );
+        } catch (Exception e) {
+        	http.channel().log(e);
+            http.responseHeader("Content-Type", "text/plain; charset=UTF-8");
+        	http.response(500, e.getMessage(), "UTF-8");
         }
     }
     public final void resource (Actor http) throws Throwable {
