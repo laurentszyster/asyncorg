@@ -9,6 +9,7 @@ var asyncorg = Packages.org.async;
 importClass(asyncorg.protocols.JSON);
 importClass(asyncorg.protocols.JSONR);
 importClass(asyncorg.sql.AnSQLite);
+importClass(asyncorg.sql.Metabase);
 importClass(asyncorg.web.HttpServer);
 importClass(asyncorg.web.Authority);
 importClass(asyncorg.web.FileCache);
@@ -17,11 +18,6 @@ importClass(asyncorg.prototypes.Stateful);
 
 importClass(java.lang.Runtime);
 
-var server = new HttpServer(".");
-
-var authority = new Authority("127.0.0.2", "/");
-
-var db = new AnSQLite(":memory:");
 
 function _200_JSON_UTF8 (http, body) {
     http.responseHeader("Cache-control", "no-cache");
@@ -34,9 +30,9 @@ function _500_JSON_UTF8 (http, body) {
     http.response(500, body, "UTF-8");
 }
 
-function Service (model, service) {
+function Service (service, model) {
     var _resource = JSON.pprint(model);
-    var _type = JSONR.compile(_resource);
+    var _type = (model == null) ? null: JSONR.compile(_resource);
     return Stateful.web({
         "type": function (http) {return _type;},
         "service": service,
@@ -54,6 +50,8 @@ function Resource (body) {
     });
 }
 
+var server = new HttpServer(".");
+
 var login = function (http) {
     http.identity = http.state.get("user");
     var password = http.state.get("pass");
@@ -68,30 +66,20 @@ var logoff = function (http) {
     _200_JSON_UTF8(http, JSON.encode(authority.unidentify(http)));
 }
 
-var ansql = function (http) {
-    _200_JSON_UTF8(http, ansqlite.handle(http.state.getArray("arg0")));
+var data = function (http) {
+    _200_JSON_UTF8(http, ansql.handle(http.state.getArray("arg0")));
 }
 
 var inspect = function (http) {
-    try {
-        var result = eval(
-            '(' + http.state.getString("arg0", "null") + ')'
-            );
-        _200_JSON_UTF8(http, JSON.pprint(result));
-    } catch (e) {
-        _500_JSON_UTF8(http, JSON.pprint(e));
-    }
+    _200_JSON_UTF8(http, JSON.pprint(eval(
+        '(' + http.state.getString("arg0", "null") + ')'
+        )));
 }
 
 var execute = function (http) {
-    try {
-        var result = eval(
-            "(function(){" + http.state.getString("arg0", "null") + "})()"
-            );
-        _200_JSON_UTF8(http, JSON.pprint(result));
-    } catch (e) {
-        _500_JSON_UTF8(http, JSON.pprint(e));
-    }
+    _200_JSON_UTF8(http, JSON.pprint(eval(
+        "(function(){" + http.state.getString("arg0", "null") + "})()"
+        )));
 }
 
 var state = {
@@ -129,29 +117,61 @@ var state = {
     }
 }
 
+var ansql = new AnSQLite("met4.db");
+
+ansql.open();
+
+var metabase = new Metabase(ansql, 126);
+
+var publicNames = function (http) {
+    var responses = [];
+    var requests = http.state.get("arg0").iterator();
+    while (requests.hasNext()) {
+        responses.push(metabase.names(requests.next()));
+    }
+    _200_JSON_UTF8(http, JSON.encode(responses));
+}
+
+var publicRDF = function (http) {
+    var st, requests = http.state.getArray("arg0").iterator();
+    while (requests.hasNext()) {
+        st = requests.next();
+        metabase.send(st.get(0), st.get(1), st.get(2), st.get(3));
+    }
+    _200_JSON_UTF8(http, JSON.encode(metabase));
+}
+
+var authority = new Authority("127.0.0.2", "/");
+
 function Open(filename, address) {
-    db.open();
     server.httpListen(
         typeof(address) == "undefined" ? "127.0.0.2:8765": address
         );
     this.hookShutdown([server]);
     var host = server.httpHost();
     server.httpRoute("GET " + host + "/", new FileSystem("www"));
-    server.httpRoute("GET " + host + "/doc", new FileSystem("doc"));
     server.httpRoute(
         "GET " + host + "/login", 
-        Service({
+        Service(login, {
             "user": "^[^/s]{4,40}$",
             "pass": "^[^/s]{4,40}$"
-            }, login)
+            })
         );
     server.httpRoute(
         "GET " + host + "/logoff", 
-        authority.identified(Service(null, logoff))
+        authority.identified(Service(logoff, null))
         );
     server.httpRoute(
-        "POST " + host + "/db", 
-        authority.identified(Service([null, null], ansql))
+        "GET " + host + "/meta", 
+        Service(publicNames, {"arg0": [""]})
+        );
+    server.httpRoute(
+        "POST " + host + "/meta", 
+        Service(publicRDF, [["", "", "", ""]])
+        );
+    server.httpRoute(
+        "POST " + host + "/data", 
+        Service(data, [null, null])
         );
     server.httpRoute(
         "GET " + host + "/state", 
@@ -159,16 +179,16 @@ function Open(filename, address) {
         );
     server.httpRoute(
         "GET " + host + "/inspect", 
-        authority.identified(Service(null, inspect))
+        Service(inspect, "")
         );
     server.httpRoute(
         "POST " + host + "/execute", 
-        authority.identified(Service(null, execute))
+        Service(execute, "")
         );
 }
 
 // ... asynchronous loop ...
 
 function Close() {
-    db.close();
+    ansql.close();
 }
