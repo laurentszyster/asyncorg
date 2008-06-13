@@ -127,13 +127,13 @@ var publicNames = function (http) {
     var responses = [];
     var requests = http.state.get("arg0").iterator();
     while (requests.hasNext()) {
-        responses.push(metabase.names(requests.next()));
+        responses.push(metabase.indexed(requests.next()));
     }
     _200_JSON_UTF8(http, JSON.encode(responses));
 }
 
 var publicRDF = function (http) {
-    var st, requests = http.state.getArray("arg0").iterator();
+    var st, requests = http.state.get("arg0").iterator();
     while (requests.hasNext()) {
         st = requests.next();
         metabase.send(st.get(0), st.get(1), st.get(2), st.get(3));
@@ -162,11 +162,11 @@ function Open(filename, address) {
         authority.identified(Service(logoff, null))
         );
     server.httpRoute(
-        "GET " + host + "/meta", 
-        Service(publicNames, {"arg0": [""]})
+        "POST " + host + "/publicNames", 
+        Service(publicNames, [""])
         );
     server.httpRoute(
-        "POST " + host + "/meta", 
+        "POST " + host + "/publicRDF", 
         Service(publicRDF, [["", "", "", ""]])
         );
     server.httpRoute(
@@ -178,8 +178,8 @@ function Open(filename, address) {
         Stateful.web(state)
         );
     server.httpRoute(
-        "GET " + host + "/inspect", 
-        Service(inspect, "")
+        "GET " + host + "/eval", 
+        Service(inspect, {"arg0": ""})
         );
     server.httpRoute(
         "POST " + host + "/execute", 
