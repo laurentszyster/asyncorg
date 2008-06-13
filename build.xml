@@ -15,9 +15,23 @@
       >
       <manifest>
   	    <attribute name="Main-Class" value="org.async.prototypes.Stateful"/>
-    	</manifest>
+      </manifest>
     </jar>
   </target>
+  <target name="tests">
+    <javac 
+       srcdir="test"
+       destdir="bin"
+       debug="on"
+       source="1.5"
+    />
+    <jar 
+      jarfile="tests.jar" 
+      basedir="bin"
+      >
+    </jar>
+  </target>
+	
   <target name="dist">
     <javac 
        srcdir="src"
