@@ -55,7 +55,7 @@ public abstract class Timeouts extends Scheduled {
             _loop._precision: precision;
     }
     public final void push (long when, Object reference) {
-        if (_deque == null) {
+        if (_deque.isEmpty()) {
             _start();
         }
         _deque.add(new Timeout(when, reference));
