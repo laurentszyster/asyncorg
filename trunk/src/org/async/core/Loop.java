@@ -322,12 +322,15 @@ public final class Loop {
                         _selector, ops, dispatcher
                         );
                 } else if (ops != dispatcher._key.interestOps()) {
+                	/*
                     if (ops > 0) {
                         dispatcher._key.interestOps(ops);
                     } else {
                         dispatcher._key.cancel();
                         dispatcher._key = null;
                     }
+                    */
+                	dispatcher._key.interestOps(ops);
                 }
             } catch (ClosedChannelException e) {
                 dispatcher.handleError(e);
