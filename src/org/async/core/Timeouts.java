@@ -33,7 +33,7 @@ public abstract class Timeouts extends Scheduled {
     protected int _period;
     protected int _precision;
     protected Loop _loop;
-    protected LinkedList _deque = null;
+    protected LinkedList _deque = new LinkedList();
     public Timeouts (int period) {
         _loop = Static.loop;
         _period = (period < _loop._precision) ? 
@@ -54,11 +54,11 @@ public abstract class Timeouts extends Scheduled {
         _precision = (precision < _loop._precision) ? 
             _loop._precision: precision;
     }
-    public final void push (Object reference) {
+    public final void push (long when, Object reference) {
         if (_deque == null) {
             _start();
         }
-        _deque.add(new Timeout(_loop._now, reference));
+        _deque.add(new Timeout(when, reference));
     }
     protected final void _start() {
         _loop._scheduled.add(this);
@@ -70,18 +70,26 @@ public abstract class Timeouts extends Scheduled {
             to = (Timeout) _deque.peek();
             if (to._when < then) {
                 _deque.removeFirst();
-                timeout(to._reference);
+                try {
+                	timeout(to._reference);
+                } catch (Throwable e) {
+                	_loop.log(e);
+                }
             } else {
                 break;
             }
         }
         if (_deque.isEmpty()) {
-            stop();
+        	try {
+        		stop();
+        	} catch (Throwable e) {
+            	_loop.log(e);
+        	}
             return -1;
         } else {
             return loop._now + _precision;
         }
     }
-    public abstract void timeout (Object reference);
-    public abstract void stop ();
+    public abstract void timeout (Object reference) throws Throwable;
+    public abstract void stop () throws Throwable;
 }
