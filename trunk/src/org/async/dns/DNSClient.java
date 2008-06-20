@@ -20,6 +20,7 @@
 package org.async.dns;
 
 import org.async.simple.Fun;
+import org.async.simple.Strings;
 import org.async.core.Timeouts;
 import org.async.core.Dispatcher;
 
@@ -55,12 +56,7 @@ public class DNSClient extends Dispatcher {
             return _template;
         }
         public final boolean collect(byte[] datagram, int pos) {
-            if (
-                datagram[pos] == '\000' && 
-                datagram[pos+1] == '\001' && 
-                datagram[pos+2] == '\000' && 
-                datagram[pos+3] == '\001' 
-                ) {
+            if (datagram[pos+1] == '\001' && datagram[pos+3] == '\001') {
                 ttl = DNS._unpackTTL(datagram, pos+4);
                 resources.add(
                     ((int) datagram[pos+10] & 0xff) + "." +
@@ -108,12 +104,7 @@ public class DNSClient extends Dispatcher {
             return _template;
         }
         public final boolean collect(byte[] datagram, int pos) {
-            if (
-                datagram[pos] == '\000' && 
-                datagram[pos+1] == '\002' && 
-                datagram[pos+2] == '\000' && 
-                datagram[pos+3] == '\001' 
-                ) {
+            if (datagram[pos+1] == '\002' && datagram[pos+3] == '\001') {
                 _records.add(new RecordNS(
                 	DNS._unpackName(datagram, pos+10),
                 	DNS._unpackTTL(datagram, pos+4)
@@ -148,12 +139,7 @@ public class DNSClient extends Dispatcher {
             return _template;
         }
         public final boolean collect(byte[] datagram, int pos) {
-            if (
-                datagram[pos] == '\000' && 
-                datagram[pos+1] == '\014' && 
-                datagram[pos+2] == '\000' && 
-                datagram[pos+3] == '\001' 
-                ) {
+            if (datagram[pos+1] == '\014' && datagram[pos+3] == '\001') {
                 ttl = DNS._unpackTTL(datagram, pos+4);
                 resources.add(DNS._unpackName(datagram, pos+10));
                 return true;
@@ -171,20 +157,15 @@ public class DNSClient extends Dispatcher {
         }
         private static final String[] _template = new String[]{
             "\001\000\000\001\000\000\000\000\000\000",
-            "\000\000\016\000\001"
+            "\000\000\020\000\001"
             };
         public String[] template() {
             return _template;
         }
         public final boolean collect(byte[] datagram, int pos) {
-            if (
-                datagram[pos] == '\000' && 
-                datagram[pos+1] == '\016' && 
-                datagram[pos+2] == '\000' && 
-                datagram[pos+3] == '\001' 
-                ) {
+            if (datagram[pos+1] == '\020' && datagram[pos+3] == '\001') {
                 ttl = DNS._unpackTTL(datagram, pos+4);
-                resources.add(DNS._unpackName(datagram, pos+10));
+                resources.add(DNS._unpackText(datagram, pos+10));
                 return true;
             }
             return false;
@@ -227,12 +208,7 @@ public class DNSClient extends Dispatcher {
             return _template;
         }
         public final boolean collect(byte[] datagram, int pos) {
-            if (
-                datagram[pos] == '\000' && 
-                datagram[pos+1] == '\017' && 
-                datagram[pos+2] == '\000' && 
-                datagram[pos+3] == '\001' 
-                ) {
+            if (datagram[pos+1] == '\017' && datagram[pos+3] == '\001') {
                 _records.add(new RecordMX(
                 	DNS._unpackPreference(datagram, pos+10),
                 	DNS._unpackName(datagram, pos+12),
@@ -350,7 +326,7 @@ public class DNSClient extends Dispatcher {
     }
 
     public final void handleRead() throws Throwable {
-    	byte[] datagram = new byte[512];
+    	byte[] datagram = new byte[2048];
     	while (true) {
 	    	SocketAddress peer = recvfrom(ByteBuffer.wrap(datagram));
 	    	if (peer == null) {
@@ -405,6 +381,9 @@ public class DNSClient extends Dispatcher {
     }
     
     protected final void dnsContinue (DNSRequest request) {
+    	if (request.defered == null) {
+    		return;
+    	}
     	if (request.response != null) {
     		request.response = null;
     		_cache.put(request.question, request);

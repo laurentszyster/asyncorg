@@ -28,6 +28,22 @@ public class DNS {
         return pos;
     }
 
+    protected static final Iterable<String> _unpackText (byte[] datagram, int pos) {
+        ArrayList t = new ArrayList();
+        int ll;
+        while (pos < datagram.length) {
+            ll = (datagram[pos] & 0xff);
+            if (ll == 0 || ll == 0xc0) {
+                break;
+            } else {
+                pos = pos + 1;
+                t.add(new String(datagram, pos, ll));
+                pos = pos + ll;
+            }
+        }
+        return t;
+    }
+
     protected static final String _unpackName (byte[] datagram, int pos) {
         ArrayList n = new ArrayList();
         int ll;
