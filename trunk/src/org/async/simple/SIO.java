@@ -28,6 +28,9 @@ import java.io.OutputStream;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.util.Iterator;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -87,7 +90,7 @@ public class SIO {
      * @return the string read 
      * @throws IOException
      */
-    protected static String read (BufferedReader reader) throws IOException {
+    protected static final String read (BufferedReader reader) throws IOException {
         StringBuilder sb = new StringBuilder();
         try {
             char[] buffer = new char[fioBufferSize];
@@ -154,35 +157,11 @@ public class SIO {
             ));
     }
 
-    /**
-     * Try to open and read a named file or URL into a <code>String</code>
-     * using a buffer of <code>fioBufferSize</code>, return a default in
-     * case of failure.
-     * 
-     * @pre String resource = Simple.read("my.xml");
-     *     
-     * @p Note that since it does not throw exceptions, this method can
-     * be used to load static class String members, piggy-backing the 
-     * class loader to fetch text resources at runtime. 
-     * 
-     * @param name the file's name
-     * @param def the default <code>String</code> to return, may be null
-     * @return the string read or <code>null</code>
-     */
-    public static final String read (String name, String def) {
-        try {
-            return read(new BufferedReader(
-                new FileReader(name), fioBufferSize
-                ));
-        } catch (IOException e) {
-            return null;
-        }
-    }
-    protected static final class StreamIterator implements Iterator<byte[]> {
+    protected static final class ReadBytes implements Iterator<byte[]> {
         private InputStream _input;
         private byte[] _next;
         private int _read;
-        public StreamIterator (InputStream input, int chunk) 
+        public ReadBytes (InputStream input, int chunk) 
         throws IOException {
             _input = input;
             _next = new byte[chunk];
@@ -208,7 +187,47 @@ public class SIO {
     }
     public static final Iterator<byte[]> read(InputStream input, int chunk) 
     throws IOException {
-        return new StreamIterator(input, chunk);
+        return new ReadBytes(input, chunk);
+    }
+    protected static final class ReadStrings implements Iterator<String> {
+        private InputStream _input;
+        private byte[] _next;
+        private int _read;
+        private CharsetDecoder _decoder;
+        public ReadStrings (InputStream input, int chunk, String encoding) 
+        throws IOException {
+        	_decoder = Charset.forName(encoding).newDecoder();
+            _input = input;
+            _next = new byte[chunk];
+            _read = _input.read(_next);
+        }
+        public final boolean hasNext() {
+            return _read > 0;
+        }
+        public final String next () {
+        	byte[] data = new byte[_read];
+        	ByteBuffer buffer = ByteBuffer.wrap(data); 
+            buffer.put(_next, 0, _read);
+            buffer.flip();
+            try {
+                _read = _input.read(_next);
+                if (_read == -1) {
+                    _input.close();
+                }
+            } catch (IOException e) {
+                ;
+            }
+            CharBuffer decoded = CharBuffer.allocate(data.length); 
+            _decoder.decode(buffer, decoded, false);
+            decoded.flip();
+            return decoded.toString();
+        }
+        public final void remove () {}
+    }
+    public static final Iterator<String> read(
+		InputStream input, int chunk, String encoding
+    	) throws IOException {
+    	return null;
     }
     /**
      * Send to an output stream the content of a byte buffer by chunks of
