@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
  * @pre AnSQL.connect("127.0.0.2:3999").execute(
  *    "SELECT * from SALES where COUNTRY = ? and YEAR > ? ", 
  *    JSON.list("Belgium", 1998), 
- *    new Fun () {
+ *    new Fun {
  *        public Object apply (Object response) {
  *            JSON.pprint(response, System.out);
  *            return null;
@@ -71,20 +71,21 @@ public class AnSQL extends NetDispatcher  {
         ) {
         _push(JSON.list(statements, parameters), callback);
     }
-    public final Object apply(Object value) throws Throwable {
-        return null;
+    public final Object apply(Object value) {
+		close();
+		return Boolean.TRUE;
     }
-    public final void handleConnect() throws Throwable {
+    public final void handleConnect() {
         log("connected");
     }
-    public final boolean handleLength(int length) throws Throwable {
+    public final boolean handleLength(int length) {
         _buffer = ByteBuffer.wrap(new byte[length]);
         return true;
     }
     public final void handleData (byte[] data) {
         _buffer.put(data);
     }
-    public final boolean handleTerminator() throws Throwable {
+    public final boolean handleTerminator() {
         try {
             _requests.removeFirst().apply(
                 JSON.decode(Bytes.decode(_buffer.array(), Bytes.UTF8))
@@ -94,10 +95,14 @@ public class AnSQL extends NetDispatcher  {
         }
         return (_requests.isEmpty());
     }
-    public final void handleClose() throws Throwable {
-        log("close");
+    public final void handleClose() {
+        log("closed");
         while (!_requests.isEmpty()) {
-            _requests.removeFirst().apply(null); 
+            try {
+            	_requests.removeFirst().apply(null); 
+            } catch (Throwable e) {
+                log(e);
+            }
         }
     }
 }
