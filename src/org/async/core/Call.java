@@ -32,7 +32,7 @@ public abstract class Call implements Fun {
     public final void finalize () {
         if (finalization != null) {
             synchronized (_loop) {
-                _loop._finalized.add(finalization);
+                _loop._defered.add(finalization);
             }
             finalization = null;
         }

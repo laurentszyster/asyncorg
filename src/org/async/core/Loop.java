@@ -119,7 +119,7 @@ public final class Loop {
     protected Selector _selector;
     protected HashMap<String,Dispatcher> _dispatched = new HashMap();
     protected TreeSet<Scheduled> _scheduled = new TreeSet();
-    protected LinkedList<Fun> _finalized =  new LinkedList();
+    protected LinkedList<Fun> _defered =  new LinkedList();
     
     protected Loginfo _log = _stdoe;
     protected int _precision = 100;
@@ -292,6 +292,9 @@ public final class Loop {
     public final void timeout (int milliseconds, Fun function) {
         _scheduled.add(new Scheduled._Function(_now + milliseconds, function));
     }
+    public final void defer (Fun function) {
+    	_defered.add(function);
+    }
     private static final void _sleep (int milliseconds) throws Exit {
         try {
             Thread.sleep(milliseconds);
@@ -377,11 +380,11 @@ public final class Loop {
             event = _scheduled.first();
         }
     }
-    private final void _dispatch_finalizations () throws Exit {
-        synchronized(_finalized) {
-            while (!_finalized.isEmpty()) {
+    private final void _dispatch_defered () throws Exit {
+        synchronized(_defered) {
+            while (!_defered.isEmpty()) {
                 try {
-                    _finalized.removeFirst().apply(_finalized);
+                    _defered.removeFirst().apply(_defered);
                 } catch (Exit e) {
                     throw e;
                 } catch (Throwable e) {
@@ -396,7 +399,7 @@ public final class Loop {
         } else if (_scheduled.isEmpty()) {
             System.gc();
             System.runFinalization();
-            return !(_finalized.isEmpty());
+            return !(_defered.isEmpty());
         } else if (_scheduled.first().when > _now) {
             System.gc();
             System.runFinalization();
@@ -422,7 +425,7 @@ public final class Loop {
                 if (!_scheduled.isEmpty()) {
                     _dispatch_scheduled ();
                 }
-                _dispatch_finalizations ();
+                _dispatch_defered ();
             } catch (Exit e) {
                 Fun fun; 
                 Iterator exit = exits.iterator();
