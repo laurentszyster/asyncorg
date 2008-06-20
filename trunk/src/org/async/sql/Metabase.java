@@ -3,6 +3,7 @@ package org.async.sql;
 import org.async.protocols.Netunicode;
 import org.async.protocols.PublicNames;
 import org.async.protocols.PublicRDF;
+import org.async.protocols.JSON;
 
 import SQLite.Stmt;
 import SQLite.Exception;
@@ -97,13 +98,13 @@ public class Metabase implements PublicRDF {
                 _SELECT_CONTEXTS.bind(1, subject);
                 _SELECT_CONTEXTS.bind(2, predicate);
                 if (_SELECT_CONTEXTS.step()) {
-                    while (_SELECT_CONTEXTS.step()) {
+                    do {
                         _statements.add(new String[]{
                             subject, predicate,
                             _SELECT_CONTEXTS.column_string(0), 
                             _SELECT_CONTEXTS.column_string(1)
                             });
-                    }
+                    } while (_SELECT_CONTEXTS.step());
                 }
             } else {
                 String[] statement = new String[]{subject, predicate, null, context};
@@ -139,10 +140,16 @@ public class Metabase implements PublicRDF {
     public final String put (
         String subject, String predicate, String context, String object
         ) throws Exception {
-        String previous = get(subject, predicate, context);
+    	String previous = null;
         _ansql.begin();
         try {
+            previous = get(subject, predicate, context);
             if (previous == null) {
+            	if (indexed(context) == null && !PublicNames.validate(
+            		context, new HashSet(), _horizon
+        			).equals(context)) {
+            		throw new Exception("invalid context");
+            	}
                 String index = indexed(subject);
                 if (index == null) {
                     PublicNames names = new PublicNames(subject, _horizon);
@@ -174,6 +181,50 @@ public class Metabase implements PublicRDF {
         }
         return previous;
     }
+    public final void put (
+        String subject, String predicate, HashMap<String, Object> objects
+        ) throws Exception {
+        _ansql.begin();
+        try {
+	    	String context, previous;
+	    	String contexts = PublicNames.validate(
+        		objects.keySet(), new HashSet(), _horizon
+    			);
+	        String index = indexed(subject);
+	        if (index == null) {
+	            PublicNames names = new PublicNames(subject, _horizon);
+	            if (names.encoded.equals(subject)) {
+	                indexes(index, subject, contexts);
+	            } else {
+	                throw new Exception("invalid subject");
+	            }
+	        } else if (!index.equals("")) {
+	            indexes(index, subject, contexts);
+	        }
+	    	Iterator<String> names = objects.keySet().iterator();
+	    	while (names.hasNext()) {
+	    		context = names.next();
+	            previous = get(subject, predicate, context);
+	            if (previous == null) {
+	                _INSERT_STATEMENT.reset();
+	                _INSERT_STATEMENT.bind(1, subject);
+	                _INSERT_STATEMENT.bind(2, predicate);
+	                _INSERT_STATEMENT.bind(3, JSON.encode(objects.get(context)));
+	                _INSERT_STATEMENT.bind(4, context);
+	                _INSERT_STATEMENT.step();
+	            } else {
+	                _UPDATE_STATEMENT.reset();
+	                _UPDATE_STATEMENT.bind(1, JSON.encode(objects.get(context)));
+	                _UPDATE_STATEMENT.bind(2, subject);
+	                _UPDATE_STATEMENT.bind(3, predicate);
+	                _UPDATE_STATEMENT.bind(4, context);
+	                _UPDATE_STATEMENT.step();
+	            }
+	    	}
+        } catch (Exception e) {
+            _ansql.rollback();
+        }
+    }
     /**
      * Get a statement's object or null if it does not exist.
      * 
@@ -197,6 +248,28 @@ public class Metabase implements PublicRDF {
         }
     }
     /**
+     * Get a statement's object or null if it does not exist.
+     * 
+     * @param subject
+     * @param predicate
+     * @param context
+     * @return
+     * @throws Exception
+     */
+    public final byte[] bytes (
+        String subject, String predicate, String context
+        ) throws Exception {
+        _SELECT_OBJECT.reset();
+        _SELECT_OBJECT.bind(1, subject);
+        _SELECT_OBJECT.bind(2, predicate);
+        _SELECT_OBJECT.bind(3, context);
+        if (_SELECT_OBJECT.step()) {
+            return _SELECT_OBJECT.column_bytes(0);
+        } else {
+            return null;
+        }
+    }
+    /**
      * Fill a <code>HashMap</code> with one or more statements' object, keyed by
      * context, for a given subject and predicate.
      * 
@@ -212,12 +285,41 @@ public class Metabase implements PublicRDF {
         _SELECT_CONTEXTS.bind(1, subject);
         _SELECT_CONTEXTS.bind(2, predicate);
         if (_SELECT_CONTEXTS.step()) {
-            while (_SELECT_CONTEXTS.step()) {
+            do {
                 objects.put(
                     _SELECT_CONTEXTS.column_string(0), 
                     _SELECT_CONTEXTS.column_string(1)
                     );
+            } while (_SELECT_CONTEXTS.step());
+        }
+    }
+    /**
+     * Fill a <code>StringBuilder</code> with one or more statements' object, 
+     * keyed by context, for a given subject and predicate.
+     * 
+     * @param subject
+     * @param predicate
+     * @param objects
+     * @throws Exception
+     */
+    public final void map (
+        String subject, String predicate, StringBuilder sb
+        ) throws Exception {
+        _SELECT_CONTEXTS.reset();
+        _SELECT_CONTEXTS.bind(1, subject);
+        _SELECT_CONTEXTS.bind(2, predicate);
+        if (_SELECT_CONTEXTS.step()) {
+        	sb.append('{');
+        	JSON.strb(sb, _SELECT_CONTEXTS.column_string(0));
+        	sb.append(':');
+        	sb.append(_SELECT_CONTEXTS.column_string(1));
+            while (_SELECT_CONTEXTS.step()) {
+            	sb.append(',');
+            	JSON.strb(sb, _SELECT_CONTEXTS.column_string(0));
+            	sb.append(':');
+            	sb.append(_SELECT_CONTEXTS.column_string(1));
             }
+        	sb.append('}');
         }
     }
     /**
