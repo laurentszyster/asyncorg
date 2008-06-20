@@ -19,9 +19,9 @@ public abstract class DNSRequest {
     public byte[] response;
     public ArrayList resources;
     public ArrayList defered;
-    protected String[] _question;
+    public String[] question;
     protected DNSRequest(String[] question) {
-        _question = question;
+        this.question = question;
     }
     protected final boolean unpack (byte[] datagram) {
         response = datagram;
@@ -51,7 +51,7 @@ public abstract class DNSRequest {
         sb.append((char) (uid & 0xff));
         sb.append(t[0]);
         String part;
-        Iterator<String> parts = Strings.split(_question[0], '.');
+        Iterator<String> parts = Strings.split(question[0], '.');
         while (parts.hasNext()) {
             part = parts.next();
             sb.append((char) part.length());
