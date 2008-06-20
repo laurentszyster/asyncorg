@@ -125,7 +125,7 @@ public class PublicNames {
      * @return
      */
     public static final String validate (
-        ArrayList articulated, HashSet field, int horizon
+        Iterable articulated, HashSet field, int horizon
         ) {
         Iterator names = articulated.iterator();
         if (!names.hasNext()) {
@@ -145,8 +145,8 @@ public class PublicNames {
                             break; 
                         }
                     }
-                } else if (item instanceof ArrayList) {
-                    name = validate((ArrayList)item, field, horizon);
+                } else if (item instanceof Iterable) {
+                    name = validate((Iterable)item, field, horizon);
                     if (name != null) {
                         valid.add(name);
                     }
