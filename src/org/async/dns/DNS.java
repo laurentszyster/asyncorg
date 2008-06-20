@@ -28,7 +28,7 @@ public class DNS {
         return pos;
     }
 
-    protected static final Iterable<String> _unpackText (byte[] datagram, int pos) {
+    protected static final ArrayList _unpackText (byte[] datagram, int pos) {
         ArrayList t = new ArrayList();
         int ll;
         while (pos < datagram.length) {

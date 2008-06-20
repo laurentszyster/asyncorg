@@ -165,7 +165,7 @@ public class DNSClient extends Dispatcher {
         public final boolean collect(byte[] datagram, int pos) {
             if (datagram[pos+1] == '\020' && datagram[pos+3] == '\001') {
                 ttl = DNS._unpackTTL(datagram, pos+4);
-                resources.add(DNS._unpackText(datagram, pos+10));
+                resources = DNS._unpackText(datagram, pos+10);
                 return true;
             }
             return false;
