@@ -32,9 +32,17 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
+/**
+ * An asynchronous DNS client, to resolve A, MX, NS, PTR and TEXT records.
+ * 
+ * @h3 Synopsis
+ * 
+ * @p The purpose of this implementation is to break free from the synchronous
+ * resolver API and develop fully non-blocking peers.
+ */
 public class DNSClient extends Dispatcher {
 
-    public static final class RequestA extends DNSRequest {
+    protected static final class RequestA extends DNSRequest {
         protected RequestA(String[] question) {
             super(question);
         }
@@ -107,11 +115,7 @@ public class DNSClient extends Dispatcher {
         _timeouts = new DNSTimeouts(timeout, precision);
     }
     
-    public final SocketAddress[] servers() {
-    	return _servers;
-    }
-    
-    public void resolve(String[] question, Fun resolved) throws Throwable {
+    public final void resolve(String[] question, Fun resolved) throws Throwable {
         DNSRequest request = _cache.get(question);
         if (request != null) {
             if (request.defered == null) {
@@ -138,54 +142,56 @@ public class DNSClient extends Dispatcher {
         dnsSend(request, _loop.now());
     }
     
-    public boolean writable() {
+    public final boolean writable() {
         return false;
     }
 
-    public boolean readable() {
+    public final boolean readable() {
         return !_pending.isEmpty();
     }
 
-    public void handleAccept() throws Throwable {
+    public final void handleAccept() throws Throwable {
         throw new Error("unexpected accept event");
     }
 
-    public void handleConnect() throws Throwable {
+    public final void handleConnect() throws Throwable {
     }
 
-    public void handleWrite() throws Throwable {
+    public final void handleWrite() throws Throwable {
         throw new Error("unexpected write event");
     }
 
-    public void handleRead() throws Throwable {
+    public final void handleRead() throws Throwable {
     	byte[] datagram = new byte[512];
-    	SocketAddress peer = recvfrom(ByteBuffer.wrap(datagram));
-    	if (peer == null) {
-    		return;
-    	} 
-    	Integer uid = ((datagram[0] & 0xff) * 256 + (datagram[1] & 0xff));
-    	if (!_pending.containsKey(uid)) {
-    		log("redundant " + peer.toString());
-    		return;
+    	while (true) {
+	    	SocketAddress peer = recvfrom(ByteBuffer.wrap(datagram));
+	    	if (peer == null) {
+	    		return;
+	    	} 
+	    	Integer uid = ((datagram[0] & 0xff) * 256 + (datagram[1] & 0xff));
+	    	if (!_pending.containsKey(uid)) {
+	    		log("redundant DNS response from " + peer.toString());
+	    		return;
+	    	}
+			DNSRequest request = _pending.remove(uid);
+			if (!request.peer.equals(peer)) {
+	    		log("impersonated DNS response from " + peer.toString());
+				return;
+			}
+			request.unpack(datagram);
+			dnsContinue(request);
     	}
-		DNSRequest request = _pending.remove(uid);
-		if (!request.peer.equals(peer)) {
-    		log("impersonate " + peer.toString());
-			return;
-		}
-		request.unpack(datagram);
-		dnsContinue(request);
     }
 
-    public void handleClose() throws Throwable {
+    public final void handleClose() throws Throwable {
     }
 
-    public Object apply(Object input) throws Throwable {
+    public final Object apply(Object input) throws Throwable {
     	_timeouts = null;
         return Boolean.TRUE;
     }
 
-    public boolean dnsConnect() {
+    protected final boolean dnsConnect() {
     	try {
         	String ip = InetAddress.getLocalHost().getHostAddress();
         	int port = 1024 + (new Random()).nextInt(64507);
@@ -197,7 +203,7 @@ public class DNSClient extends Dispatcher {
     	return true;
     }
     
-    public void dnsSend (DNSRequest request, long when) throws Throwable {
+    protected final void dnsSend (DNSRequest request, long when) throws Throwable {
     	if (_channel == null && !dnsConnect()) {
 			dnsContinue(request);
 			return;
@@ -208,10 +214,9 @@ public class DNSClient extends Dispatcher {
     	sendto(ByteBuffer.wrap(request.datagram()), request.peer);
     	_sent++;
     	_timeouts.push(when, uid);
-    	log("sent " + uid);
     }
     
-    public void dnsContinue (DNSRequest request) {
+    protected final void dnsContinue (DNSRequest request) {
     	if (request.response != null) {
     		request.response = null;
     		_cache.put(request._question, request);
