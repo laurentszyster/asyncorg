@@ -1,1 +1,1 @@
-java -cp lib/js.jar;lib/sqlite.jar;asyncorg.jar  -Djava.library.path=lib org.async.prototypes.Stateful %1 1> log\http.out
+java -cp lib/js.jar;lib/sqlite.jar;asyncorg.jar  -Djava.library.path=lib org.async.prototypes.Stateful %1
