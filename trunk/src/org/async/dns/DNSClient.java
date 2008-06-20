@@ -23,6 +23,7 @@ import org.async.simple.Fun;
 import org.async.core.Timeouts;
 import org.async.core.Dispatcher;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Iterator;
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * An asynchronous DNS client, to resolve A, MX, NS, PTR and TEXT records.
+ * An asynchronous DNS client, to resolve A, NS, MX, TXT and PTR records.
  * 
  * @h3 Synopsis
  * 
@@ -76,6 +77,185 @@ public class DNSClient extends Dispatcher {
         }
     }
     
+    protected static final class RequestNS extends DNSRequest {
+    	protected static final class RecordNS implements Comparable {
+    		public String name;
+    		public int ttl;
+    		public RecordNS (String name, int ttl) {
+    			this.name = name;
+    			this.ttl = ttl;
+    		}
+    		public final int compareTo (Object object) {
+    	        RecordNS compared = (RecordNS) object;
+    	        if (ttl < compared.ttl) {
+    	            return -1;
+    	        } else if (ttl > compared.ttl) {
+    	            return 1;
+    	        } else {
+    	            return 0;
+    	        }
+    	    };
+    	}
+    	private ArrayList<RecordNS> _records = new ArrayList<RecordNS>();
+        protected RequestNS(String[] question) {
+            super(question);
+        }
+        private static final String[] _template = new String[]{
+            "\001\000\000\001\000\000\000\000\000\000",
+            "\000\000\002\000\001"
+            };
+        public String[] template() {
+            return _template;
+        }
+        public final boolean collect(byte[] datagram, int pos) {
+            if (
+                datagram[pos] == '\000' && 
+                datagram[pos+1] == '\002' && 
+                datagram[pos+2] == '\000' && 
+                datagram[pos+3] == '\001' 
+                ) {
+                _records.add(new RecordNS(
+                	DNS._unpackName(datagram, pos+10),
+                	DNS._unpackTTL(datagram, pos+4)
+                	));
+            }
+            return false;
+        }
+        public final boolean collected(byte[] datagram, int pos) {
+        	if (_records.isEmpty()) {
+        		return false;
+        	}
+        	RecordNS[] records = new RecordNS[_records.size()];
+        	_records.toArray(records);
+        	Arrays.sort(records);
+            ttl = records[0].ttl;
+            for (int i=0; i<records.length; i++) {
+            	resources.add(records[i].name);
+            }
+            return true;
+        }
+    }
+    
+    protected static final class RequestPTR extends DNSRequest {
+        protected RequestPTR(String[] question) {
+            super(question);
+        }
+        private static final String[] _template = new String[]{
+            "\001\000\000\001\000\000\000\000\000\000",
+            "\000\000\014\000\001"
+            };
+        public String[] template() {
+            return _template;
+        }
+        public final boolean collect(byte[] datagram, int pos) {
+            if (
+                datagram[pos] == '\000' && 
+                datagram[pos+1] == '\014' && 
+                datagram[pos+2] == '\000' && 
+                datagram[pos+3] == '\001' 
+                ) {
+                ttl = DNS._unpackTTL(datagram, pos+4);
+                resources.add(DNS._unpackName(datagram, pos+10));
+                return true;
+            }
+            return false;
+        }
+        public final boolean collected(byte[] datagram, int pos) {
+            return true;
+        }
+    }
+    
+    protected static final class RequestTXT extends DNSRequest {
+        protected RequestTXT(String[] question) {
+            super(question);
+        }
+        private static final String[] _template = new String[]{
+            "\001\000\000\001\000\000\000\000\000\000",
+            "\000\000\016\000\001"
+            };
+        public String[] template() {
+            return _template;
+        }
+        public final boolean collect(byte[] datagram, int pos) {
+            if (
+                datagram[pos] == '\000' && 
+                datagram[pos+1] == '\016' && 
+                datagram[pos+2] == '\000' && 
+                datagram[pos+3] == '\001' 
+                ) {
+                ttl = DNS._unpackTTL(datagram, pos+4);
+                resources.add(DNS._unpackName(datagram, pos+10));
+                return true;
+            }
+            return false;
+        }
+        public final boolean collected(byte[] datagram, int pos) {
+            return true;
+        }
+    }
+    
+    protected static final class RequestMX extends DNSRequest {
+    	protected static final class RecordMX implements Comparable {
+    		public int preference;
+    		public String name;
+    		public int ttl;
+    		public RecordMX (int preference, String name, int ttl) {
+    			this.preference = preference;
+    			this.name = name;
+    			this.ttl = ttl;
+    		}
+    		public final int compareTo (Object object) {
+    	        RecordMX compared = (RecordMX) object;
+    	        if (preference < compared.preference) {
+    	            return -1;
+    	        } else if (preference > compared.preference) {
+    	            return 1;
+    	        } else {
+    	            return 0;
+    	        }
+    	    };
+    	}
+    	private ArrayList<RecordMX> _records = new ArrayList<RecordMX>();
+        protected RequestMX(String[] question) {
+            super(question);
+        }
+        private static final String[] _template = new String[]{
+            "\001\000\000\001\000\000\000\000\000\000",
+            "\000\000\017\000\001"
+            };
+        public String[] template() {
+            return _template;
+        }
+        public final boolean collect(byte[] datagram, int pos) {
+            if (
+                datagram[pos] == '\000' && 
+                datagram[pos+1] == '\017' && 
+                datagram[pos+2] == '\000' && 
+                datagram[pos+3] == '\001' 
+                ) {
+                _records.add(new RecordMX(
+                	DNS._unpackPreference(datagram, pos+10),
+                	DNS._unpackName(datagram, pos+12),
+                	DNS._unpackTTL(datagram, pos+4)
+                	));
+            }
+            return false;
+        }
+        public final boolean collected(byte[] datagram, int pos) {
+        	if (_records.isEmpty()) {
+        		return false;
+        	}
+        	RecordMX[] records = new RecordMX[_records.size()];
+        	_records.toArray(records);
+        	Arrays.sort(records);
+            ttl = records[0].ttl;
+            for (int i=0; i<records.length; i++) {
+            	resources.add(records[i].name);
+            }
+            return true;
+        }
+    }
+    
 	protected final class DNSTimeouts extends Timeouts {
 		public DNSTimeouts (int period, int precision) {
 			super(period, precision);
@@ -104,7 +284,7 @@ public class DNSClient extends Dispatcher {
 	
     protected DNSTimeouts _timeouts;
     protected long _sent = 0;
-    protected int _failover = 1;
+    protected int _failover = 3;
     protected HashMap<String[], DNSRequest> _cache = new HashMap();
     protected HashMap<Integer, DNSRequest> _pending = new HashMap();
     protected SocketAddress[] _servers;
@@ -119,7 +299,7 @@ public class DNSClient extends Dispatcher {
         DNSRequest request = _cache.get(question);
         if (request != null) {
             if (request.defered == null) {
-                if (request.when + request.ttl > _loop.now()) {
+                if (request.when + request.ttl * 1000 > _loop.now()) {
                     resolved.apply(request);
                     return;
                 }
@@ -130,8 +310,16 @@ public class DNSClient extends Dispatcher {
         }
         if (question == null || question.length != 2) {
             throw new Error("parameter must be an array of two strings");
-        } else if (question[1] == "A") {
+        } else if (question[1].equals("A")) {
         	request = new RequestA(question);
+        } else if (question[1].equals("PTR")) {
+        	request = new RequestPTR(question);
+        } else if (question[1].equals("MX")) {
+        	request = new RequestMX(question);
+        } else if (question[1].equals("NS")) {
+        	request = new RequestNS(question);
+        } else if (question[1].equals("TXT")) {
+        	request = new RequestTXT(question);
         } else {
             throw new Error("unsupported DNS request type " + question[0]);
         }
@@ -219,7 +407,7 @@ public class DNSClient extends Dispatcher {
     protected final void dnsContinue (DNSRequest request) {
     	if (request.response != null) {
     		request.response = null;
-    		_cache.put(request._question, request);
+    		_cache.put(request.question, request);
     	}
     	Iterator<Fun> defered = request.defered.iterator();
     	request.defered = null;
