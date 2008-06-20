@@ -30,7 +30,6 @@ import java.util.Iterator;
  * 
  */
 public class StringsProducer implements Producer {
-    // TODO: replace by a less naive encoder ...
     protected Iterator _strings;
     protected String _encoding;
     public StringsProducer(Iterator strings, String encoding) {
