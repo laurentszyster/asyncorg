@@ -296,6 +296,7 @@ public final class Loop {
     	_defered.add(function);
     }
     private static final void _sleep (int milliseconds) throws Exit {
+        System.gc();
         try {
             Thread.sleep(milliseconds);
             return;
@@ -397,11 +398,11 @@ public final class Loop {
         if (!_dispatched.isEmpty()) {
             return true;
         } else if (_scheduled.isEmpty()) {
-            System.gc();
+        	System.gc();
             System.runFinalization();
             return !(_defered.isEmpty());
         } else if (_scheduled.first().when > _now) {
-            System.gc();
+        	System.gc();
             System.runFinalization();
         }
         return true;
