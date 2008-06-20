@@ -375,6 +375,11 @@ public class AnSQLite {
         }
         return true;
     }
+    public final boolean map (
+		String statement, Iterable parameters, StringBuilder response
+		) {
+    	return map(statement, parameters.iterator(), response);
+    }
     /**
      * 
      * @param statement
@@ -416,6 +421,13 @@ public class AnSQLite {
         }
         response.append(']');
         return true;
+    }
+    public final boolean batch (
+        String statement, 
+        Iterable<Iterable> parameters, 
+        StringBuilder response
+        ) {
+    	return batch(statement, parameters.iterator(), response);
     }
     /**
      * 
@@ -464,6 +476,13 @@ public class AnSQLite {
             return (commit() == null);
         }
         return false;
+    }
+    public final boolean transaction (
+        Iterable<String> statements, 
+        Iterable<JSON.Array> parameters, 
+        StringBuilder response
+        ) {
+    	return transaction(statements.iterator(), parameters.iterator(), response);
     }
     /**
      * Decode and evaluate a byte array as AnSQL statement, try to execute it
@@ -617,6 +636,10 @@ public class AnSQLite {
         }
         return rs;
     }
+    public final JSON.Array prepare (Iterable<String> statements) 
+    throws Exception {
+    	return prepare(statements.iterator());
+    }
     /**
      * 
      * @param statement
@@ -638,6 +661,12 @@ public class AnSQLite {
     throws Exception {
         Stmt st = prepared(statement);
         bind(st, parameters);
+        return resultset(st);
+    }
+    public final JSON.Array execute (String statement, Iterable parameters) 
+    throws Exception {
+        Stmt st = prepared(statement);
+        bind(st, parameters.iterator());
         return resultset(st);
     }
     /**
@@ -663,6 +692,12 @@ public class AnSQLite {
         bind(st, parameters);
         return resultmap(st);
     }
+    public final JSON.Object map (String statement, Iterable parameters) 
+    throws Exception {
+        Stmt st = prepared(statement);
+        bind(st, parameters.iterator());
+        return resultmap(st);
+    }
     /**
      * 
      * @param statement
@@ -683,6 +718,11 @@ public class AnSQLite {
             result.add(resultset(st));
         }
         return result;
+    }
+    public final JSON.Array batch (
+        String statement, Iterable<Iterable> parameters
+        ) throws Exception {
+    	return batch (statement, parameters.iterator());
     }
     /**
      * 
@@ -729,5 +769,11 @@ public class AnSQLite {
         } else {
             throw e;
         }
+    }
+    public final JSON.Array transaction (
+        Iterable<String> statements, 
+        Iterable<JSON.Array> parameters
+        ) throws Exception {
+    	return transaction(statements.iterator(), parameters.iterator());
     }
 }
