@@ -90,8 +90,8 @@ public class Netunicode {
                 s = (String) item;
             else if (item instanceof String[])
                 s = encode((String[])item);
-            else if (item instanceof Iterator)
-                s = encode((Iterator)item);
+            else if (item instanceof Iterable)
+                s = encode((Iterable)item);
             else
                 s = item.toString();
             sb.append(s.length());
@@ -106,9 +106,9 @@ public class Netunicode {
      * @param iter
      * @return
      */
-    public static final String encode (Iterator iter) {
+    public static final String encode (Iterable list) {
         StringBuffer sb = new StringBuffer();
-        encode(iter, sb);
+        encode(list.iterator(), sb);
         return sb.toString();
     }
 

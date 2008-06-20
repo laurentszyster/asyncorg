@@ -60,7 +60,7 @@ public class PublicNames {
             } while (names.hasNext());
             if (valid.size() > 1) {
                 Collections.sort(valid);
-                return Netunicode.encode(valid.iterator());
+                return Netunicode.encode(valid);
             }
             if (valid.size() > 0) {
                 return (String)valid.get(0);
@@ -102,7 +102,7 @@ public class PublicNames {
             } while (names.hasNext());
             if (valid.size() > 1) {
                 Collections.sort(valid);
-                return Netunicode.encode(valid.iterator());
+                return Netunicode.encode(valid);
             }
             if (valid.size() > 0) {
                 return (String)valid.get(0);
@@ -154,7 +154,7 @@ public class PublicNames {
             } while (names.hasNext());
             if (valid.size() > 1) {
                 Collections.sort(valid);
-                return Netunicode.encode(valid.iterator());
+                return Netunicode.encode(valid);
             }
             if (valid.size() > 0) {
                 return (String)valid.get(0);
