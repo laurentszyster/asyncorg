@@ -27,10 +27,12 @@ import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 import java.io.OutputStream;
 import java.io.IOException;
+import java.net.URLDecoder;
 
 import org.async.simple.Bytes;
 import org.async.simple.SIO;
 import org.async.simple.Objects;
+import org.async.simple.Strings;
 
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.NativeArray;
@@ -1240,7 +1242,39 @@ public class JSON {
     throws Error {
         return (new JSON()).eval(encoded);
     };
-    
+    /**
+     * 
+     * @param query
+     * @param json
+     * @throws Throwable
+     */
+    public static final 
+    void parseURLencoded (String query, Object json) throws Throwable {
+        String arg, name, value;
+        int equalAt;
+        Iterator<String> args = Strings.split(query, '&');
+        while (args.hasNext()) {
+            arg = args.next();
+            equalAt = arg.indexOf('=');
+            if (equalAt < 0) {
+                name = URLDecoder.decode(arg, "UTF-8");
+                value = null;
+            } else {
+                name = URLDecoder.decode(arg.substring(0, equalAt), "UTF-8");
+                value = URLDecoder.decode(arg.substring(equalAt+1), "UTF-8");
+            }
+            if (json.containsKey(name)) {
+                java.lang.Object curr = json.get(name);
+                if (curr instanceof Array) {
+                    ((Array) curr).add(value);
+                } else {
+                    json.put(name, list(curr, value));
+                }
+            } else {
+                json.put(name, value);
+            }
+        }
+    }
     /**
      * Try to reflect all public fields of <code>value</code> as a 
      * <code>JSON.Object</code>.
