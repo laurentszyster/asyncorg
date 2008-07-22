@@ -1,7 +1,9 @@
 package org.async.dns;
 
+import org.async.simple.Fun;
 import org.async.simple.SIO;
 import org.async.simple.Strings;
+import org.async.core.Dispatcher;
 
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -71,11 +73,7 @@ public class DNS {
     }
 
     protected static final int _unpackPreference (byte[] datagram, int pos) {
-        int pref = 0;
-        for (int i=0; i<2; i++) {
-            pref = (pref * 256) + (datagram[pos+i] & 0xff);
-        }
-        return pref;
+        return (datagram[pos+1] & 0xff) * 256 + (datagram[pos+1] & 0xff);
     }
 
     private static final Pattern _NT = Pattern.compile (
@@ -136,8 +134,42 @@ public class DNS {
     	return servers;
     }
     
-    public static final DNSClient client () throws IOException {
-    	return new DNSClient(servers(), 2000, 1000);
+    public static final DNSClient client () {
+    	try {
+    		return new DNSClient(servers(), 2000, 1000);
+    	} catch (IOException e) {
+    		return null;
+    	}
+    }
+    
+    public static final DNSClient resolver = client();
+    
+    public static final void resolve (String[] question, Fun callback) 
+    throws Throwable {
+    	resolver.resolve(question, callback);
+    }
+    
+    protected static final class _Connect implements Fun {
+    	private Dispatcher _dispatcher;
+    	private int _port;
+    	public _Connect(Dispatcher dispatcher, int port) {
+    		_dispatcher = dispatcher;
+    		_port = port;
+    	}
+    	public final Object apply (Object arg0) throws Throwable {
+    		DNSRequest request = (DNSRequest) arg0;
+    		if (request.resources != null && request.resources.size() > 0) {
+    			_dispatcher.connect((String) request.resources.get(0), _port);
+    		}
+    		return null;
+    	}
+    }
+    public static final void 
+    connect (Dispatcher dispatcher, String host, int port) 
+    throws Throwable {
+    	resolver.resolve(
+			new String[]{host, "A"}, new _Connect(dispatcher, port)
+			);
     }
     
 }

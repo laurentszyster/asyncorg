@@ -23,8 +23,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.InputStreamReader;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -228,6 +230,36 @@ public class SIO {
 		InputStream input, int chunk, String encoding
     	) throws IOException {
     	return null;
+    }
+    /**
+     * ...
+     * 
+     * @param filename
+     * @param text
+     * @throws Exception
+     */
+    public static final void write (String filename, String text) 
+    throws Exception {
+    	write(filename, text, "UTF-8");
+    }
+    /**
+     * Write a text string to a file in a 
+     * 
+     * @param filename
+     * @param text
+     * @param encoding
+     * @throws Exception
+     */
+    public static final void write (String filename, String text, String encoding) 
+    throws Exception {
+    	OutputStreamWriter osw = new OutputStreamWriter(
+			new FileOutputStream(new File(filename)), encoding
+			);
+    	try {
+    		osw.write(text);
+    	} finally {
+    		osw.close();
+    	}
     }
     /**
      * Send to an output stream the content of a byte buffer by chunks of

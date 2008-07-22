@@ -1,1 +1,1 @@
-java -cp lib/js.jar;lib/sqlite.jar;asyncorg.jar  -Djava.library.path=lib org.async.prototypes.Stateful %1
+java -Xmx64M -XX:MaxHeapFreeRatio=20 -XX:MinHeapFreeRatio=10 -cp lib/js.jar;lib/sqlite.jar;asyncorg.jar  -Djava.library.path=lib org.async.prototypes.Stateful %1
