@@ -44,27 +44,27 @@ public class Metabase implements PublicRDF {
     public Metabase (AnSQLite sql, int horizon) throws Exception {
     	sql.execute("PRAGMA encoding = \"UTF-8\"");
         sql.execute(
-            "CREATE TABLE IF NOT EXISTS m4topics ("
-            + "subject, context, digest " 
+            "CREATE TABLE IF NOT EXISTS m4topics ( "
+            + "subject, context, digest, " 
             + "PRIMARY KEY (subject, context)"
             + ")"
             );
         sql.execute(
-            "CREATE TABLE IF NOT EXISTS m4statements ("
-            + "topic, predicate, object " 
-            + "PRIMARY KEY (topic, predicate)"
+            "CREATE TABLE IF NOT EXISTS m4statements ( "
+            + "topic, predicate, object, " 
+            + "PRIMARY KEY (topic, predicate) "
             + ")"
             );
         sql.execute(
-            "CREATE TABLE IF NOT EXISTS m4routes ("
+            "CREATE TABLE IF NOT EXISTS m4routes ( "
             + "name, context, " 
-            + "PRIMARY KEY (name, context)"
+            + "PRIMARY KEY (name, context) "
             + ")"
             );
         sql.execute(
-            "CREATE TABLE IF NOT EXISTS m4indexes ("
+            "CREATE TABLE IF NOT EXISTS m4indexes ( "
             + "name, names, "
-            + "PRIMARY KEY (name)"
+            + "PRIMARY KEY (name) "
             + ")"
             );
         _INSERT_TOPIC = sql.prepared(
