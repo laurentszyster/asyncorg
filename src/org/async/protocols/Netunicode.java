@@ -20,6 +20,7 @@
 package org.async.protocols;
 
 import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
 /**
@@ -185,4 +186,18 @@ public class Netunicode {
         return new Netiterator(encoded, true);
     }
     
+    public static final void extend(String encoded, ArrayList list) {
+    	Netiterator strings = new Netiterator(encoded, true);
+    	if (strings.hasNext()) {
+    		do {
+    			list.add(strings.next());
+    		} while (strings.hasNext());
+    	} 
+    }
+    
+    public static final ArrayList list (String encoded) {
+    	ArrayList list = new ArrayList();
+    	extend(encoded, list);
+    	return list;
+    }
 }
