@@ -45,6 +45,15 @@ import java.io.IOException;
  * 
  */
 public abstract class Dispatcher extends Call {
+	protected static final String _get_ip_from_address(SocketAddress address) {
+		String name = address.toString();
+        int i = name.indexOf('/');
+        if (i < 0) {
+        	return name;
+        } else {
+        	return name.substring(i+1);
+        }
+	}
     //
     // protected interfaces between AsyncLoop._io and AsynCore, may
     // vary to support something else than <code>java.nio.channels</code>
@@ -182,7 +191,7 @@ public abstract class Dispatcher extends Call {
      */
     public final void listen (SocketAddress address, int backlog) 
     throws Throwable {
-        _name = address.toString();
+        _name = _get_ip_from_address(address);
         _addr = address;
         listen(backlog);
     }
@@ -222,7 +231,7 @@ public abstract class Dispatcher extends Call {
         _channel = channel;
         _channel.configureBlocking(false);
         _addr = channel.socket().getRemoteSocketAddress();;
-        _name = _addr.toString();
+        _name = _get_ip_from_address(_addr);
         _writable = 0;
         _add();
     }
@@ -255,7 +264,7 @@ public abstract class Dispatcher extends Call {
      * @throws Throwable
      */
     public final void connect (SocketAddress address) throws Throwable {
-        _name = address.toString();
+        _name = _get_ip_from_address(address);
         _addr = address;
         connect();
     }
@@ -331,7 +340,7 @@ public abstract class Dispatcher extends Call {
      * @throws Throwable
      */
     public final void bind (SocketAddress address) throws Throwable {
-        _name = address.toString();
+        _name = _get_ip_from_address(address);
         _addr = address;
         bind();
     }
