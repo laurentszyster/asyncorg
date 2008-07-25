@@ -91,29 +91,32 @@ implements Channel, Collector  {
     public final boolean produce () throws Throwable {
         Object first;
         while (!_fifoOut.isEmpty()) {
-            first = _fifoOut.removeFirst();
+            first = _fifoOut.getFirst();
             if (first == null) {
                 if (_bufferOut.position() == 0) {
                     _bufferOut.limit(0);
                     return false;
                 } else {
-                    _fifoOut.addFirst(null); // we'll be done soon ...
-                    break;
+                    return true;
                 }
             } else if (first instanceof Producer){
                 Producer producer = (Producer) first;
-                if (producer.stalled()) {
-                    break;
+                byte[] data;
+                while (!producer.stalled()) {
+                	data = producer.more();
+                	if (data == null) {
+                		_fifoOut.removeFirst();
+                        return true;
+                	} else if (_fillOut(data)) {
+                        return true;
+                	}
                 }
-                byte[] data = producer.more();
-                if (data != null) {
-                    _fifoOut.addFirst(producer);
-                    if (_fillOut(data)) {
-                        break;
-                    }
-                }
-            } else if (_fillOut(((ByteBuffer) first).array())) {
-                break; 
+                return true;
+            } else {
+                _fifoOut.removeFirst();
+            	if (_fillOut(((ByteBuffer) first).array())) {
+                    return true;
+            	}
             }
         }
         return true;

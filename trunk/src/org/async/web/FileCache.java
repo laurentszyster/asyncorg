@@ -37,12 +37,6 @@ public class FileCache implements HttpServer.Handler {
         return true;
     }
     public final void configure(String route) throws Throwable {
-        int slashAt = route.indexOf('/');
-        if (slashAt < 0) {
-            throw new Error("invalid HTTP route identifier");
-        } else {
-            _path = route.substring(0, slashAt);
-        }
         _cache = new HashMap<String, HTTP.Entity>();
         HTTP.FileEntity entity;
         String key;

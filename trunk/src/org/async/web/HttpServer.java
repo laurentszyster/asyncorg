@@ -39,19 +39,17 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 
 /**
- * An extensible HTTP/1.1 server for high-performance statefull applications.
+ * An extensible HTTP/1.1 server for high-performance state-full applications.
  * 
  * @h3 Synopsis
  * 
  * @p This HTTP server is made for Web 2.0 applications, with support for:
- * IRTD2 strong identification; authorization of urlformencoded and JSON 
- * state transitions; statefull transaction handlers.
+ * IRTD2 strong identification; authorization of URL-form-encoded and JSON 
+ * state transitions; state-full transaction handlers.
  * 
  * @pre HttpServer server = new HttpServer("/var/www");
  *server.httpListen("127.0.0.2:8765");
- *server.httpRoute(
- *    "/", "GET 127.0.0.2:8765/", new HttpFileCache("/var/www")
- *    );
+ *server.httpRoute("GET 127.0.0.2:8765/", new HttpFileCache("/var/www"));
  *server.loop().dispatch();
  *    
  */
@@ -63,7 +61,7 @@ public class HttpServer extends Server {
      * 
      * @h3 Synopsis
      * 
-     * @p The <code>HttpServer</code> instanciate <code>Actor</code> instances
+     * @p The <code>HttpServer</code> instantiate <code>Actor</code> instances
      * and pass them to the <code>Handler</code>'s <code>handleRequest</code>
      * and (maybe) the <code>handleCollected</code> instance method.
      * 
@@ -88,6 +86,21 @@ public class HttpServer extends Server {
         protected Producer _responseBody = null;
         protected HashMap<String, String> _responseCookies = null;
         private Producer _producer = null;
+        protected long _objectSize = 0;
+        /**
+         * An articulated description of the HTTP method, host name and URL path
+         * requested, split in two between an origin and a destination.
+         * 
+         * <p>For instance,</p>
+         * 
+         * <pre>["GET example.com:8765\/public", "\/index.html"]</pre>
+         *  
+         * <p>could be the route for:</pre>
+         * 
+         * <pre>GET example.com:8765/public/index.html</pre>
+         * 
+         */
+        public String[] about;
         /**
          * The identity of this resource state transition user agent.
          */
@@ -138,18 +151,12 @@ public class HttpServer extends Server {
         }
         public String toString() {
             return (
-                _channel.toString()  
+                _channel.toString()
                 + " " + _method 
-                + " " + _uri 
+                + " " + _uri
                 + " " + _protocol 
                 + " " + _status
                 );
-        }
-        public final boolean handleRequest (String route) throws Throwable {
-            return _channel._server._handlers.get(route).request(this);
-        }
-        public final void handleCollected (String route) throws Throwable {
-            _channel._server._handlers.get(route).collected(this);
         }
         public final long when () {
             return _when;
@@ -315,6 +322,8 @@ public class HttpServer extends Server {
                 byte[] data = _producer.more();
                 if (data == null) {
                     _channel._server.httpLog(this);
+                } else {
+                	_objectSize += data.length;
                 }
                 return data;
             }
@@ -377,7 +386,6 @@ public class HttpServer extends Server {
                     return false;
                 }
                 _http = new Actor(this, request, buffer, crlfAt + 2);
-                push(_http);
                 if (_server.httpContinue(_http)) {
                     return true;
                 }
@@ -397,7 +405,8 @@ public class HttpServer extends Server {
             }
             return false;
         }
-        public void httpContinue() {
+        public final void httpContinue() {
+            push(_http);
             if (_http._requestBody == null) {
                 String method = _http._method;
                 if ((
@@ -405,6 +414,7 @@ public class HttpServer extends Server {
                     method.equals("HEAD") || 
                     method.equals("DELETE")
                     )) {
+                    _http = null;
                     return;
                 } 
                 _body = Collector.DEVNULL;
@@ -424,23 +434,21 @@ public class HttpServer extends Server {
             }
         }
         public final void handleClose() throws Throwable {
-            // TODO: find out what to do when an HTTP server channel
-            //       is closed by the peer (and that should not be done
-            //       if it is closed by the server itself ...)
+        	log("handleClose");
+            while (!_fifoOut.isEmpty()) {
+                Object head = _fifoOut.removeFirst();
+                if (head instanceof Actor) {
+                    _loop.log("dropped", ((Actor) head).toString());
+                }
+            }
         }
         public final void close () {
             super.close();
             _server.serverClose(this);
-            while (!_fifoOut.isEmpty()) {
-                Object head = _fifoOut.removeFirst();
-                if (head instanceof Actor) {
-                    _server.httpContinue((Actor) head);
-                }
-            }
         }
     }
     public interface Handler {
-        public void configure(String route) throws Throwable;
+        public void configure(String predicate) throws Throwable;
         public boolean identify (Actor http) throws Throwable;
         public boolean request(Actor http) throws Throwable;
         public void collected(Actor http) throws Throwable;
@@ -495,11 +503,14 @@ public class HttpServer extends Server {
             log(e);
         }
     }
+    public final Iterator<String> httpRoutes () {
+        return _handlers.keySet().iterator();
+    }
     public final Handler httpHandler (String route) {
         return _handlers.get(route);
     }
-    public final Iterator<String> httpRoutes () {
-        return _handlers.keySet().iterator();
+    public final HashMap<String,Handler> httpHandlers () {
+        return _handlers;
     }
     public final void httpListen(String address) throws Throwable {
         _host = address;
@@ -517,25 +528,30 @@ public class HttpServer extends Server {
     protected boolean httpContinue(Actor http) {
         try { // to route to a handler, maybe continue ...
             String base = http._method + ' ' + http._host;
-            String path = http._uri.getPath();
+            String path = http._uri.getRawPath();
             String route = base + path;
             Handler handler = _handlers.get(route); 
-            if (handler!=null) { // -> context/subject/predicate
+            if (handler!=null) { 
+            	// ["GET example.com/context/predicate/subject"]
+            	http.about = new String[]{route};
                 http._handler = handler;
                 return handler.request(http);
             } 
             int slashAt = path.indexOf('/', 1);
             if (slashAt > 0) {
-                route = base + path.substring(0, slashAt);
+            	route = base + path.substring(0, slashAt);
                 handler = _handlers.get(route);
-                if (handler!=null) { // -> context/subject
+                if (handler!=null) {
+                	// ["POST example.com/context", "/predicate/subject"]
+                	http.about = new String[]{route, path.substring(slashAt)};
                     http._handler = handler;
                     return handler.request(http);
                 }
             }
-            route = base + '/';
-            handler = _handlers.get(route);
-            if (handler!=null) { // -> context/
+            handler = _handlers.get(base);
+            if (handler!=null) { 
+            	// ["GET example.com", "/context/predicate/subject"]
+            	http.about = new String[]{base, path};
                 http._handler = handler;
                 return handler.request(http);
             }
@@ -547,7 +563,18 @@ public class HttpServer extends Server {
         return false;
     };
     public void httpLog(Actor http) {
-        _loop.log(http.toString());
+        _loop.log((
+            http._channel.toString()
+            + " - " + ((http.identity == null) ? "-" : http.identity)
+            + " [" + _date 
+            + "] \"" + http._method 
+            + " " + http._uri
+            + " " + http._protocol 
+            + "\" " + http._status
+            + " " + http._objectSize
+            + " " + ((http.digest == null) ? "-" : http.digest)
+            + " " + ((http.digested == null) ? "-" : http.digested)
+            ));
     };
 }
 
