@@ -434,7 +434,6 @@ public class HttpServer extends Server {
             }
         }
         public final void handleClose() throws Throwable {
-        	log("handleClose");
             while (!_fifoOut.isEmpty()) {
                 Object head = _fifoOut.removeFirst();
                 if (head instanceof Actor) {
