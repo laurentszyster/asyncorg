@@ -5,7 +5,6 @@ import org.async.protocols.HTTP;
 import java.io.File;
 
 public class FileSystem implements HttpServer.Handler {
-    protected int _pathLength;
     protected String _root;
     protected String _cacheControl;
     public FileSystem() {
@@ -25,15 +24,6 @@ public class FileSystem implements HttpServer.Handler {
         return true;
     }
     public final void configure(String route) throws Throwable {
-        int slashAt = route.indexOf('/');
-        if (slashAt < 0) {
-            throw new Error("invalid HTTP route identifier");
-        } else {
-            _pathLength = route.length() - slashAt;
-            if (_pathLength == 1) {
-                _pathLength = 0;
-            } 
-        }
     }
     public final boolean request(HttpServer.Actor http) 
     throws Throwable {
@@ -42,8 +32,8 @@ public class FileSystem implements HttpServer.Handler {
         if (path.indexOf("../") > -1) {
             http.response(400); // Bad request
         } else {
-            // http.channel().log(_root + path.substring(_pathLength));
-            File file = new File(_root + path.substring(_pathLength));
+            // File file = new File(_root + path.substring(_pathLength));
+        	File file = new File(_root + http.about[1]);
             if (file.exists() && file.isFile() && !file.isHidden()) {
                 HTTP.Entity entity = new HTTP.FileEntity(file);
                 String method = http.method();
