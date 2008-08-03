@@ -1,10 +1,13 @@
 package org.async.sql;
 
+import org.async.chat.Producer;
+import org.async.produce.BytesProducer;
 import org.async.protocols.Netunicode;
 import org.async.protocols.PublicNames;
 import org.async.protocols.PublicRDF;
 import org.async.protocols.JSON;
 import org.async.protocols.SHA1;
+import org.async.simple.Bytes;
 
 import SQLite.Stmt;
 import SQLite.Exception;
@@ -16,7 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
- * An SQL metabase, the implementation of a PubliRDF subset backed by AnSQLite.
+ * An SQL metabase, the implementation of a Public RDF subset backed by AnSQLite.
  */
 public class Metabase implements PublicRDF {
 	private Stmt _INSERT_TOPIC;
@@ -377,6 +380,28 @@ public class Metabase implements PublicRDF {
 	        return null;
 	    }
 	}
+	/**
+	 * ...
+	 * 
+	 * @param subject
+	 * @param predicate
+	 * @param context
+	 * @return
+	 * @throws Exception
+	 */
+	public final byte[] bytes (
+	    String subject, String predicate, String context
+	    ) throws Exception {
+	    _SELECT_STATEMENT.reset();
+	    _SELECT_STATEMENT.bind(1, subject);
+	    _SELECT_STATEMENT.bind(2, predicate);
+	    _SELECT_STATEMENT.bind(3, context);
+	    if (_SELECT_STATEMENT.step()) {
+	        return _SELECT_STATEMENT.column_bytes(0);
+	    } else {
+	        return null;
+	    }
+	}
     public final void map (
 	    String subject, String predicate, HashMap<String, Object> objects
 	    ) throws Exception {
@@ -453,5 +478,46 @@ public class Metabase implements PublicRDF {
         } else {
         	sb.append("null");
         }
+    }
+    /**
+     * Fill a <code>StringBuilder</code> with one or more statements' object, 
+     * keyed by context, for a given subject and predicate.
+     * 
+     * @param subject
+     * @param predicate
+     * @param sb
+     * @throws Exception
+     */
+    private byte[] _OPEN_OBJECT = new byte[]{'{'};
+    private byte[] _CLOSE_OBJECT = new byte[]{'}'};
+    private byte[] _COMMA = new byte[]{':'};
+    private byte[] _COLON = new byte[]{','};
+    private byte[] _NULL = new byte[]{'n', 'u', 'l', 'l'};
+    public final Producer produce (String subject, String predicate) 
+    throws Exception {
+    	ArrayList<byte[]> bytes = new ArrayList<byte[]>();
+        _SELECT_STATEMENTS.reset();
+        _SELECT_STATEMENTS.bind(1, subject);
+        _SELECT_STATEMENTS.bind(2, predicate);
+        if (_SELECT_STATEMENTS.step()) {
+        	bytes.add(_OPEN_OBJECT);
+        	bytes.add(Bytes.encode(JSON.encode(
+    			_SELECT_STATEMENTS.column_string(0)
+    			), "UTF-8"));
+        	bytes.add(_COLON);
+        	bytes.add(_SELECT_STATEMENTS.column_bytes(1));
+            while (_SELECT_STATEMENTS.step()) {
+            	bytes.add(_COMMA);
+            	bytes.add(Bytes.encode(JSON.encode(
+        			_SELECT_STATEMENTS.column_string(0)
+	    			), "UTF-8"));
+            	bytes.add(_COLON);
+            	bytes.add(_SELECT_STATEMENTS.column_bytes(1));
+            }
+            bytes.add(_CLOSE_OBJECT);
+        } else {
+        	bytes.add(_NULL);
+        }
+        return new BytesProducer(bytes.iterator());
     }
 }
