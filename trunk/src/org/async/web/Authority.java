@@ -92,14 +92,13 @@ public class Authority {
                 }
             }
             if (_wrapped.identify(http)) {
+            	http.handler = _wrapped;
                 return _wrapped.request(http);
             }
             return false;
         }
         public final void collected(Actor http) throws Throwable {
-            if (http.identity != null) {
-                _wrapped.collected(http);
-            }
+        	;
         }
     }
     public final Handler identified(Handler handler) { 
@@ -123,13 +122,12 @@ public class Authority {
             if (http.rights == null || http.rights.indexOf(_right) < 0) {
                 return false;
             } else {
+            	http.handler = _wrapped;
                 return _wrapped.request(http);
             }
         }
         public final void collected(Actor http) throws Throwable {
-            if (http.rights != null && http.rights.indexOf(_right) > -1) {
-                _wrapped.collected(http);
-            }
+        	;
         }
     }
     public static final Handler authorized (Handler handler, String right) {

@@ -46,11 +46,6 @@ import java.net.URI;
  * @p This HTTP server is made for Web 2.0 applications, with support for:
  * IRTD2 strong identification; authorization of URL-form-encoded and JSON 
  * state transitions; state-full transaction handlers.
- * 
- * @pre HttpServer server = new HttpServer("/var/www");
- *server.httpListen("127.0.0.2:8765");
- *server.httpRoute("GET 127.0.0.2:8765/", new HttpFileCache("/var/www"));
- *server.loop().dispatch();
  *    
  */
 public class HttpServer extends Server {
@@ -71,9 +66,9 @@ public class HttpServer extends Server {
      * therefore be 
      */
     public static class Actor implements Producer {
+        private Producer _producer = null;
         protected Channel _channel;
         protected long _when;
-        protected Handler _handler;
         protected String _status = null;
         protected String _method = "GET";
         protected URI _uri = null;
@@ -85,8 +80,8 @@ public class HttpServer extends Server {
         protected HashMap<String,String> _responseHeaders = new HashMap();
         protected Producer _responseBody = null;
         protected HashMap<String, String> _responseCookies = null;
-        private Producer _producer = null;
         protected long _objectSize = 0;
+        public Handler handler;
         /**
          * An articulated description of the HTTP method, host name and URL path
          * requested, split in two between an origin and a destination.
@@ -393,9 +388,9 @@ public class HttpServer extends Server {
             } else if (_body.handleTerminator()) {
                 setTerminator(Bytes.CRLFCRLF);
                 _body = null;
-                if (_http._handler != null && _http._requestBody != null) {
+                if (_http.handler != null && _http._requestBody != null) {
                     try {
-                        _http._handler.collected(_http);
+                        _http.handler.collected(_http);
                     } catch (Throwable e) {
                         log(e);
                         _http.response(500); // Server error
@@ -526,32 +521,31 @@ public class HttpServer extends Server {
     }
     protected boolean httpContinue(Actor http) {
         try { // to route to a handler, maybe continue ...
-            String base = http._method + ' ' + http._host;
             String path = http._uri.getRawPath();
-            String route = base + path;
+            String route = http._host + path;
             Handler handler = _handlers.get(route); 
-            if (handler!=null) { 
-            	// ["GET example.com/context/predicate/subject"]
+            if (handler != null) { 
+            	// ["example.com/context/predicate/subject"]
             	http.about = new String[]{route};
-                http._handler = handler;
+                http.handler = handler;
                 return handler.request(http);
             } 
             int slashAt = path.indexOf('/', 1);
             if (slashAt > 0) {
-            	route = base + path.substring(0, slashAt);
+            	route = http._host + path.substring(0, slashAt);
                 handler = _handlers.get(route);
-                if (handler!=null) {
-                	// ["POST example.com/context", "/predicate/subject"]
+                if (handler != null) {
+                	// ["example.com/context", "/predicate/subject"]
                 	http.about = new String[]{route, path.substring(slashAt)};
-                    http._handler = handler;
+                    http.handler = handler;
                     return handler.request(http);
                 }
             }
-            handler = _handlers.get(base);
-            if (handler!=null) { 
-            	// ["GET example.com", "/context/predicate/subject"]
-            	http.about = new String[]{base, path};
-                http._handler = handler;
+            handler = _handlers.get(http._host);
+            if (handler != null) { 
+            	// ["example.com", "/context/predicate/subject"]
+            	http.about = new String[]{http._host, path};
+                http.handler = handler;
                 return handler.request(http);
             }
             http.response(404); // Not Found
