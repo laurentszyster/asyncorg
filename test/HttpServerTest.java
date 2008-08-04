@@ -38,11 +38,10 @@ public class HttpServerTest {
             HttpServer server = new HttpServer(".");
             server.httpListen((args.length > 0) ? args[0]: "127.0.0.2:8765");
             String host = server.httpHost();
-            server.httpRoute("GET " + host + "/", new FileSystem("www"));
-            server.httpRoute("GET " + host + "/db", db);
-            server.httpRoute("POST " + host + "/db", db);
-            server.httpRoute("GET " + host + "/doc", new FileSystem("doc"));
-            server.httpRoute("GET " + host + "/except", new Except());
+            server.httpRoute(host + "/", new FileSystem("www"));
+            server.httpRoute(host + "/db", db);
+            server.httpRoute(host + "/doc", new FileSystem("doc"));
+            server.httpRoute(host + "/except", new Except());
             Static.loop.exits.add(server);
             server = null;
         } catch (Throwable e) {

@@ -27,6 +27,7 @@ importClass(asyncorg.core.Static);
 importClass(asyncorg.collect.StringCollector);
 importClass(asyncorg.protocols.JSON);
 importClass(asyncorg.protocols.JSONR);
+importClass(asyncorg.protocols.Netunicode);
 importClass(asyncorg.sql.AnSQLite);
 importClass(asyncorg.sql.Metabase);
 importClass(asyncorg.web.HttpServer);
@@ -51,9 +52,19 @@ function _500_JSON_UTF8 (http, body) {
     return false;
 }
 
+
 function _GET (service, model) {
 	if (typeof model == 'undefined') {
-		return Stateful.web({'request': service});
+		return Stateful.web({
+			'request': function (http) {
+                if (http.method().equals("GET")) {
+                	return service(http);
+                } else {
+	                http.response(501); // Not implemented
+	                return false;
+                }
+			}
+		});
 	}
 	var resource = 'null', type = null;
 	if (model != null) {
@@ -62,19 +73,24 @@ function _GET (service, model) {
 	}
     return Stateful.web({
         'request': function (http) {
-            var query = http.uri().getRawQuery();
-            if (query != null) {
-                JSON.parseURLencoded(query, http.state);
-                if (type != null) {
-                    JSONR.validate(http.state, type);
-                }
-                return service(http);
-            } else {
-            	return _200_JSON_UTF8(http, resource);
-            }
+        	if (http.method().equals("GET")) {
+	            var query = http.uri().getRawQuery();
+	            if (query != null) {
+	                JSON.parseURLencoded(query, http.state);
+	                if (type != null) {
+	                    JSONR.validate(http.state, type);
+	                }
+	                return service(http);
+	            } else {
+	            	return _200_JSON_UTF8(http, resource);
+	            }
+        	} else {
+        		http.response(501); // Not implemented
+        		return false;
+        	}
         }
     });
-}
+} 
 
 function _POST (service, model) {
     var type = null;
@@ -83,8 +99,13 @@ function _POST (service, model) {
     }
     return Stateful.web({
         'request': function (http) {
-            http.collect(new StringCollector("UTF-8"));
-            return false;
+            if (http.method().equals("POST")) {
+	            http.collect(new StringCollector("UTF-8"));
+	            return false;
+            } else {
+                http.response(501); // Not implemented
+                return false;
+            }
         },
         'collected': function (http) {
             var input = (
@@ -102,10 +123,6 @@ function _POST (service, model) {
 }
 
 var server = new HttpServer(".");
-
-var data = function (http) {
-    return _200_JSON_UTF8(http, ansql.handle(http.state.getArray("arg0")));
-}
 
 var inspect = function (http) {
     return _200_JSON_UTF8(http, JSON.pprint(eval(
@@ -172,6 +189,10 @@ var ansql = new AnSQLite("met4.db");
 
 ansql.open();
 
+var data = function (http) {
+    return _200_JSON_UTF8(http, ansql.handle(http.state.getArray("arg0")));
+}
+
 // var metabase = new Metabase(ansql, 126);
 
 function Open(filename, address) {
@@ -180,19 +201,18 @@ function Open(filename, address) {
         );
     this.hookShutdown([server]);
     var host = server.httpHost();
-    var route = function (method, path, handler) {
-	    server.httpRoute(method + " " + host + path, handler);
+    var route = function (path, handler) {
+	    server.httpRoute(host + path, handler);
     }
-    route("GET", "/", new FileSystem("www"));
-    route("GET", "/state", Stateful.web({"request": state}));
-    route("GET", "/login", _GET(login, {
-        "user": "^[^/s]{4,40}$",
-        "pass": "^[^/s]{4,40}$"
-        }));
-    route("GET", "/logoff", authority.identified(_GET(logoff, null)));
-    route("POST", "/data", _POST(data, [null, null]));
-    route("GET", "/eval", _GET(inspect, {"arg0": ""}));
-    route("POST", "/execute", _POST(execute, ""));
+    route("", new FileCache("www"));
+    route("/state", _GET(state));
+    route("/login", _GET(
+        login, {"user": "^[^/s]{4,40}$", "pass": "^[^/s]{4,40}$"})
+        );
+    route("/logoff", authority.identified(_POST(logoff, null)));
+    route("/data", _POST(data, [null, null]));
+    route("/eval", _GET(inspect, {"arg0": ""}));
+    route("/execute", _POST(execute, ""));
 }
 
 // ... asynchronous loop ...

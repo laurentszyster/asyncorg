@@ -50,7 +50,6 @@ public class FileCache implements HttpServer.Handler {
     }
     public final boolean request(HttpServer.Actor http) 
     throws Throwable {
-        http.responseHeader("Cache-control", _cacheControl);
         String key = http.uri().getPath();
         HTTP.Entity entity = _cache.get(key);
         if (entity == null) {
@@ -58,8 +57,10 @@ public class FileCache implements HttpServer.Handler {
         } else {
             String method = http.method();
             if (method.equals("GET")) {
+                http.responseHeader("Cache-control", _cacheControl);
                 http.response(200, entity.headers, entity.body()); 
             } else if (method.equals("HEAD")) {
+                http.responseHeader("Cache-control", _cacheControl);
                 http.response(200, entity.headers);
             } else {
                 http.response(501); // Not implemented

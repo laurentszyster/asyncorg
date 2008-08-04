@@ -27,19 +27,19 @@ public class FileSystem implements HttpServer.Handler {
     }
     public final boolean request(HttpServer.Actor http) 
     throws Throwable {
-        http.responseHeader("Cache-control", _cacheControl);
         String path = http.uri().getPath();
         if (path.indexOf("../") > -1) {
             http.response(400); // Bad request
         } else {
-            // File file = new File(_root + path.substring(_pathLength));
         	File file = new File(_root + http.about[1]);
             if (file.exists() && file.isFile() && !file.isHidden()) {
                 HTTP.Entity entity = new HTTP.FileEntity(file);
                 String method = http.method();
                 if (method.equals("GET")) {
+                    http.responseHeader("Cache-control", _cacheControl);
                     http.response(200, entity.headers, entity.body()); 
                 } else if (method.equals("HEAD")) {
+                    http.responseHeader("Cache-control", _cacheControl);
                     http.response(200, entity.headers);
                 } else {
                     http.response(501); // Not implemented

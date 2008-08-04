@@ -5,6 +5,7 @@ import org.async.web.HttpServer.Handler;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.net.URLDecoder;
 
 /**
  * An asynchronous HTTP <code>Handler</code> wrapper to match URI paths
@@ -21,21 +22,41 @@ import java.util.regex.Matcher;
  * 
  * @h3 Synopsis
  * 
- * @pre new RegularRoutes(new HelloWorld(), "/test/(.*?)/hello-world")
+ * @p ...
  * 
- * @pre new RegularRoutes(new HelloWorld(), "/test/(.+?)/hello-world", "arg0")
+ * @pre server.httpRoute(
+ *    'GET example.com/test', 
+ *    new Routes(handler, "^/(.+?)/hello-world$", 
+ *    new String[]{"arg0"}
+ *    );
  * 
- * @pre GET /test/serge/hello-world HTTP/1.0
+ * @p ...
+ * 
+ * @pre GET /test/serge/hello-world HTTP/1.1
+ *Host: example.com
+ * 
+ * @p ...
  * 
  * @pre {"arg0": "serge"}
  * 
- * @pre new RegularRoutes(
- *    new HelloWorld(), 
- *    "/test/([0-9]{4}).([0-9]{2}).([0-9]{2})/day_of_week", 
- *    "year", "month", "day",
+ * @p ...
+ * 
+ * @pre new Routes(
+ *    handler, 
+ *    "^([0-9]{4}).([0-9]{2}).([0-9]{2})$", 
+ *    new String[]{"year", "month", "day"}
  *    )
  * 
+ * @p ...
+ * 
+ * @pre GET /2008.04.22 HTTP/1.1
+ *Host: example.com
+ * 
+ * @p ...
+ * 
  * @pre {"year": "2008", "month": "04", "day": "22"}
+ * 
+ * @p ...
  * 
  * @author Laurent Szyster
  *
@@ -44,7 +65,7 @@ public class Routes implements Handler {
     private Handler _routed;
     private Pattern _re; 
     private String[] _names;
-    public Routes (Handler routed, Pattern regular, String ... names) {
+    public Routes (Handler routed, Pattern regular, String[] names) {
         _re = regular;
         _names = names;
         _routed = routed;
@@ -56,10 +77,15 @@ public class Routes implements Handler {
         return _routed.identify(http);
     }
     public final boolean request (Actor http) throws Throwable {
-        Matcher re = _re.matcher(http.uri().getPath());
+		String value;
+        Matcher re = _re.matcher(http.about[1]);
         if (re.matches()) {
-            for (int i=0, n=re.groupCount()-1; i<n; i++) {
-                http.state.put(_names, re.group(i+1));
+    		int n = re.groupCount();
+            for (int i=1; i<n; i++) {
+            	value = re.group(i);
+            	if (value != null)  {
+            		http.state.put(_names, URLDecoder.decode(value, "UTF-8"));
+            	}
             } 
             return _routed.request(http);
         }
