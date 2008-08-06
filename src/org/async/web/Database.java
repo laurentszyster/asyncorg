@@ -129,32 +129,17 @@ public class Database extends Service {
     protected static final JSON.Object _model = JSON.dict(new Object[]{
         "arg0", JSON.list(new Object[]{null})
     });
-    String _resource = _model.toString();
+    protected static final JSONR.Type _type = JSONR.compile(_model, JSONR.TYPES); 
+    protected static final String _resource = _model.toString();
     protected AnSQLite _sql = null; 
-    protected JSONR.Type _type = null; 
     public Database (String name) {
         _sql = new AnSQLite(name, 0);
     }
     public Database (AnSQLite sql) {
         _sql = sql;
     }
-    public void configure (String route) {
-        _type = JSONR.compile(_model, JSONR.TYPES);
-    }
-    public boolean identify (Actor http) {
-        if (http.identity == null) {
-            http.response(401); // Unauthorized
-            return false;
-        }
-        return true;
-    }
     public JSONR.Type type(Actor http) {
         return _type;
-    }
-    public void resource(Actor http) {
-        http.responseHeader("Cache-control", "max-age=3600;");
-        http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
-        http.response(200, Bytes.encode(_resource, Bytes.UTF8));
     }
     public void service(Actor http) {
         StringBuilder response = new StringBuilder();

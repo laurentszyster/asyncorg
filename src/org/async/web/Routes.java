@@ -70,12 +70,6 @@ public class Routes implements Handler {
         _names = names;
         _routed = routed;
     }
-    public final void configure (String route) throws Throwable {
-        _routed.configure(route);
-    }
-    public boolean identify(HttpServer.Actor http) throws Throwable {
-        return _routed.identify(http);
-    }
     public final boolean request (Actor http) throws Throwable {
 		String value;
         Matcher re = _re.matcher(http.about[1]);

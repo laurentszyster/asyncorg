@@ -66,13 +66,6 @@ public class Authority {
             _wrapped = handler;
             _authority = authority;
         }
-        public final void configure(String route) throws Throwable {
-            _wrapped.configure(route);
-        }
-        public final boolean identify (Actor http) throws Throwable {
-            http.response(401); // Unauthorized
-            return false;
-        }
         public final boolean request(Actor http) throws Throwable {
             String irtd2 = http.requestCookie("IRTD2");
             if (irtd2 != null) {
@@ -91,10 +84,7 @@ public class Authority {
                     http.channel().log("IRTD2 error " + error);
                 }
             }
-            if (_wrapped.identify(http)) {
-            	http.handler = _wrapped;
-                return _wrapped.request(http);
-            }
+            http.response(401); // Unauthorized
             return false;
         }
         public final void collected(Actor http) throws Throwable {
@@ -103,34 +93,5 @@ public class Authority {
     }
     public final Handler identified(Handler handler) { 
         return new Identified(handler, this);
-    }
-    protected static class Authorized implements Handler {
-        private HttpServer.Handler _wrapped;
-        private String _right;
-        public Authorized (Handler handler, String right) {
-            _wrapped = handler;
-            _right = right;
-        }
-        public final void configure(String route) throws Throwable {
-            _wrapped.configure(route);
-        }
-        public final boolean identify (Actor http) throws Throwable {
-            http.response(401); // Unauthorized
-            return false;
-        }
-        public final boolean request(Actor http) throws Throwable {
-            if (http.rights == null || http.rights.indexOf(_right) < 0) {
-                return false;
-            } else {
-            	http.handler = _wrapped;
-                return _wrapped.request(http);
-            }
-        }
-        public final void collected(Actor http) throws Throwable {
-        	;
-        }
-    }
-    public static final Handler authorized (Handler handler, String right) {
-        return new Authorized(handler, right);
     }
 }

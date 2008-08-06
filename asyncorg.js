@@ -209,7 +209,7 @@ function Open(filename, address) {
     route("/login", _GET(
         login, {"user": "^[^/s]{4,40}$", "pass": "^[^/s]{4,40}$"})
         );
-    route("/logoff", authority.identified(_POST(logoff, null)));
+    route("/logoff", authority.identified(_GET(logoff, null)));
     route("/data", _POST(data, [null, null]));
     route("/eval", _GET(inspect, {"arg0": ""}));
     route("/execute", _POST(execute, ""));
