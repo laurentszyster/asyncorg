@@ -64,6 +64,6 @@ public class FileCache implements HttpServer.Handler {
         return false;
     }
     public final void collected(HttpServer.Actor http) {
-        // pass, there's nothing to do for an unexpected request body.
+		throw new Error("unexpected call");
     }
 }
