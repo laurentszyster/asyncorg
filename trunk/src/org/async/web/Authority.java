@@ -87,8 +87,8 @@ public class Authority {
             http.response(401); // Unauthorized
             return false;
         }
-        public final void collected(Actor http) throws Throwable {
-        	;
+        public final void collected(Actor http) {
+    		throw new Error("unexpected call");
         }
     }
     public final Handler identified(Handler handler) { 

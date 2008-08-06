@@ -81,12 +81,13 @@ public class Routes implements Handler {
             		http.state.put(_names, URLDecoder.decode(value, "UTF-8"));
             	}
             } 
+            http.handler = _routed;
             return _routed.request(http);
         }
         return false;
     }
     public final void collected (Actor http) throws Throwable {
-        _routed.collected(http);
+		throw new Error("unexpected call");
     }
 
 }
