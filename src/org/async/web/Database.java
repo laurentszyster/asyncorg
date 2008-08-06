@@ -179,6 +179,6 @@ public class Database extends Service {
         }
         http.responseHeader("Cache-control", "no-cache");
         http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
-        http.response(200, Bytes.encode(response.toString(), Bytes.UTF8));
+        http.response(200, response.toString(), Bytes.UTF8);
     }
 }

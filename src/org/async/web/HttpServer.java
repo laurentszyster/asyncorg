@@ -213,6 +213,14 @@ public class HttpServer extends Server {
                 "Content-Length", Integer.toString(body.length)
                 );
             _responseBody = new ByteProducer(body);
+        	handler = null;
+        }
+        public final void response (
+            int status, HashMap<String, String> headers
+            ) {
+            _status = Integer.toString(status);
+            _responseHeaders.putAll(headers);
+        	handler = null;
         }
         public final void response (
             int status, HashMap<String, String> headers, Producer body
@@ -220,12 +228,7 @@ public class HttpServer extends Server {
             _status = Integer.toString(status);
             _responseHeaders.putAll(headers);
             _responseBody = body;
-        }
-        public final void response (
-            int status, HashMap<String, String> headers
-            ) {
-            _status = Integer.toString(status);
-            _responseHeaders.putAll(headers);
+        	handler = null;
         }
         public final void response (int status, byte[] body) {
             _status = Integer.toString(status);
@@ -235,6 +238,7 @@ public class HttpServer extends Server {
                     );
             }
             _responseBody = new ByteProducer(body);
+        	handler = null;
         }
         public final void response (int status, String body, String encoding) {
             response(status, Bytes.encode(body, encoding));
