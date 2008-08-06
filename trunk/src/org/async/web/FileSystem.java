@@ -20,11 +20,6 @@ public class FileSystem implements HttpServer.Handler {
         _root = (new File(path)).getAbsolutePath().replace('\\', '/');
         _cacheControl = cacheControl;
     }
-    public boolean identify(HttpServer.Actor http) throws Throwable {
-        return true;
-    }
-    public final void configure(String route) throws Throwable {
-    }
     public final boolean request(HttpServer.Actor http) 
     throws Throwable {
         String path = http.uri().getPath();

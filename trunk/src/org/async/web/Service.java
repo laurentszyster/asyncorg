@@ -22,10 +22,8 @@ public abstract class Service implements Handler {
                 if (type != null) {
                     JSONR.validate(http.state, type);
                 }
-                service(http);
-            } else {
-                resource(http);
             }
+            service(http);
         } else if (method.equals("POST")) {
             http.collect(new StringCollector(new StringBuilder(), "UTF-8"));
         } else {
@@ -53,5 +51,4 @@ public abstract class Service implements Handler {
     }
     public abstract JSONR.Type type (Actor http) throws Throwable;
     public abstract void service (Actor http) throws Throwable;
-    public abstract void resource (Actor http) throws Throwable;
 }

@@ -442,8 +442,6 @@ public class HttpServer extends Server {
         }
     }
     public interface Handler {
-        public void configure(String predicate) throws Throwable;
-        public boolean identify (Actor http) throws Throwable;
         public boolean request(Actor http) throws Throwable;
         public void collected(Actor http) throws Throwable;
     }
@@ -490,21 +488,13 @@ public class HttpServer extends Server {
      * @param handler of requests starting with this path
      */
     public final void httpRoute (String path, Handler handler) {
-        try {
-            handler.configure(path);
-            _handlers.put(path, handler);
-        } catch (Throwable e) {
-            log(e);
-        }
+        _handlers.put(path, handler);
     }
     public final Iterator<String> httpRoutes () {
         return _handlers.keySet().iterator();
     }
     public final Handler httpHandler (String route) {
         return _handlers.get(route);
-    }
-    public final HashMap<String,Handler> httpHandlers () {
-        return _handlers;
     }
     public final void httpListen(String address) throws Throwable {
         _host = address;

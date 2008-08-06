@@ -32,11 +32,6 @@ public class FileCache implements HttpServer.Handler {
         // load entities in the cache, set content-type, Etag and last-modified
         _root = (new File(path)).getAbsolutePath();
         _cacheControl = cacheControl;
-    }
-    public boolean identify(HttpServer.Actor http) throws Throwable {
-        return true;
-    }
-    public final void configure(String route) throws Throwable {
         _cache = new HashMap<String, HTTP.Entity>();
         HTTP.FileEntity entity;
         String key;
