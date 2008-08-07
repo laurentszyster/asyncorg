@@ -1,24 +1,18 @@
 package org.async.web;
 
-import org.async.protocols.JSON;
-import org.async.protocols.JSONR;
-import org.async.simple.Bytes;
-import org.async.simple.Strings;
 import org.async.sql.AnSQLite;
-import org.async.web.HttpServer.Actor;
+import org.async.protocols.JSON;
+import org.async.simple.Bytes;
+import org.async.simple.Fun;
 
 import SQLite.Authorizer;
 import SQLite.Constants;
 
-import java.util.Iterator;
-
 /**
- * A secured HTTP interface for AnSQLite database.
+ * A web service function that enforces role-based access to an SQLite database
  * 
- * Authorizations are enforced accross the database by roles. To restrict
- * access rights by domains, partition your application's relations in
- * distinct authority realms (since SQLite does not enforce referential
- * integrity, you lose nothing but weight and complications).
+ * It is practical to develop application with a generic SQL service, then enforce
+ * validation with specific services
  * 
  * There are five roles:
  * 
@@ -36,8 +30,16 @@ import java.util.Iterator;
  * data structures or begin transactions (but not necessarily update, insert
  * and delete rows because its role may limits its access to temporary 
  * data too).
+ * 
+ * To prevent abuse, 
+ * 
+ * Authorizations are enforced across the database by roles. 
+ * 
+ * To restrict access rights by domains, partition your application's relations 
+ * in distinct authority realms. 
+ * 
  */
-public class Database extends Service {
+public class Database implements Fun {
     protected static final class Role implements Authorizer {
         protected static final int SELECT = 1;
         protected static final int UPDATE = 2;
@@ -126,11 +128,6 @@ public class Database extends Service {
         protected static final Role censor = new Role(CENSOR);
         protected static final Role root = new Role(ROOT);
     }
-    protected static final JSON.Object _model = JSON.dict(new Object[]{
-        "arg0", JSON.list(new Object[]{null})
-    });
-    protected static final JSONR.Type _type = JSONR.compile(_model, JSONR.TYPES); 
-    protected static final String _resource = _model.toString();
     protected AnSQLite _sql = null; 
     public Database (String name) {
         _sql = new AnSQLite(name, 0);
@@ -138,47 +135,39 @@ public class Database extends Service {
     public Database (AnSQLite sql) {
         _sql = sql;
     }
-    public JSONR.Type type(Actor http) {
-        return _type;
-    }
-    public void service(Actor http) {
-        StringBuilder response = new StringBuilder();
-        JSON.Array statement = http.state.getArray("arg0", null);
-        if (statement == null) {
-            JSON.strb(response, "missing payload");
-        } else {
-            Role role = null;
-            if (http.rights != null && http.rights.length() > 0) {
-                Iterator<String> rights = Strings.split(http.rights, ',');
-                String right;
-                while (rights.hasNext()) {
-                    right = rights.next();
-                    if (right.equals("reader")) {
-                        role = Role.reader;
-                    } else if (right.equals("writer")) {
-                        role = Role.writer;
-                    } else if (right.equals("editor")) {
-                        role = Role.editor;
-                    } else if (right.equals("censor")) {
-                        role = Role.censor;
-                    } else if (right.equals("root")) {
-                        role = Role.root;
-                    } else {
-                        continue;
-                    }
-                    break;
-                }
+    public Object apply(Object actor) {
+    	HttpServer.Actor http = (HttpServer.Actor) actor;
+    	String rights = http.rights;
+        Role role = null;
+        if (rights != null && rights.length() > 0) {
+            if (rights.equals("reader")) {
+                role = Role.reader;
+            } else if (rights.equals("writer")) {
+                role = Role.writer;
+            } else if (rights.equals("editor")) {
+                role = Role.editor;
+            } else if (rights.equals("censor")) {
+                role = Role.censor;
+            } else if (rights.equals("root")) {
+                role = Role.root;
             }
-            if (role != null) {
+        }
+        StringBuilder response = new StringBuilder();
+        if (role != null) {
+            JSON.Array statement = http.state.getArray("arg0", null);
+            if (statement == null) {
+                JSON.strb(response, "missing payload");
+            } else {
                 _sql.db().set_authorizer(role);
                 _sql.handle(statement, response);
                 _sql.db().set_authorizer(null);
-            } else {
-                JSON.strb(response, "unauthorized");
             }
+        } else {
+            JSON.strb(response, "unauthorized");
         }
         http.responseHeader("Cache-control", "no-cache");
         http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
         http.response(200, response.toString(), Bytes.UTF8);
+        return null;
     }
 }
