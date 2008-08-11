@@ -1542,7 +1542,7 @@ public class JSON {
             case '.':
                 return untrimmed.substring(0, last);
             default: 
-                return untrimmed.substring(0, last + 1);
+                return untrimmed;
             }
         }
         return "0";
