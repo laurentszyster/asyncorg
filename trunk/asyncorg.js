@@ -27,13 +27,14 @@ importClass(asyncorg.core.Static);
 importClass(asyncorg.collect.StringCollector);
 importClass(asyncorg.protocols.JSON);
 importClass(asyncorg.protocols.JSONR);
-importClass(asyncorg.protocols.Netunicode);
 importClass(asyncorg.sql.AnSQLite);
 importClass(asyncorg.sql.Metabase);
 importClass(asyncorg.web.HttpServer);
 importClass(asyncorg.web.Authority);
 importClass(asyncorg.web.FileCache);
 importClass(asyncorg.web.FileSystem);
+importClass(asyncorg.web.Meta);
+importClass(asyncorg.web.Service);
 importClass(asyncorg.prototypes.Stateful);
 
 importClass(java.lang.Runtime);
@@ -193,13 +194,76 @@ var data = function (http) {
     return _200_JSON_UTF8(http, ansql.handle(http.state.getArray("arg0")));
 }
 
-// var metabase = new Metabase(ansql, 126);
+var metabase = new Metabase(ansql, 126);
+
+function met4_request (http) {
+    var method = http.method();
+    if (method == 'POST') {
+        if (http.about[3] == null) {
+            http.response(404);
+        } else {
+            http.collect(new StringCollector("UTF-8"));
+        }
+    } else if (method == 'GET') {
+        http.responseHeader("Cache-control", "no-cache");
+        http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
+        try {
+	        if (http.about[3] == null) {
+                http.response(200, metabase.produce(
+                    http.about[1], http.about[2]
+                    ));
+            } else {
+                http.response(200, metabase.bytes(
+                    http.about[1], http.about[2], http.about[3]
+                    ));
+            }
+        } catch (e) {
+            http.response(500, e.toString(), "UTF-8");
+        }
+    } else {
+        http.response(501); // Not implemented
+    }
+    return false;
+}
+
+function met4_collected (http) {
+    http.responseHeader("Cache-control", "no-cache");
+    http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
+    metabase.sql.begin();
+    try {
+        var previous = metabase.select(http.about[1], http.about[2], http.about[3]);
+        // http.json = JSON.decode(http.requestBody.toString());
+        if (previous == null) {
+            metabase.insert(
+                http.about[1], http.about[2], http.about[3], 
+                http.requestBody().toString()
+                );
+        } else {
+            metabase.update(
+                http.about[1], http.about[2], http.about[3], 
+                http.requestBody().toString()
+                );
+        }
+    } catch (e) {
+        metabase.sql.rollback();
+        http.response(500, e.toString(), "UTF-8");
+        return;
+    }
+    metabase.sql.commit();
+    http.response(200, "null", "UTF-8");
+}
+
+var met4 = new Meta (metabase);
+
+met4.predicates.put("predicate", Stateful.web({
+    "request": met4_request, 
+    "collected": met4_collected
+    }));
 
 function Open(filename, address) {
     server.httpListen(
         typeof(address) == "undefined" ? "127.0.0.2:8765": address
         );
-    this.hookShutdown([server]);
     var host = server.httpHost();
     var route = function (path, handler) {
 	    server.httpRoute(host + path, handler);
@@ -209,10 +273,12 @@ function Open(filename, address) {
     route("/login", _GET(
         login, {"user": "^[^/s]{4,40}$", "pass": "^[^/s]{4,40}$"})
         );
-    route("/logoff", authority.identified(_GET(logoff, null)));
-    route("/data", _POST(data, [null, null]));
     route("/eval", _GET(inspect, {"arg0": ""}));
     route("/execute", _POST(execute, ""));
+    route("/data", _POST(data, [null, null]));
+    route("/logoff", authority.identified(_GET(logoff, null)));
+    route("/meta", met4);
+    this.hookShutdown([server]);
 }
 
 // ... asynchronous loop ...

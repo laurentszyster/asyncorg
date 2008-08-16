@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
- * An SQL metabase, the implementation of a Public RDF subset backed by AnSQLite.
+ * An SQL meta-base, the implementation of a Public RDF subset backed by AnSQLite.
  */
 public class Metabase implements PublicRDF {
 	private Stmt _INSERT_TOPIC;
@@ -37,7 +37,7 @@ public class Metabase implements PublicRDF {
     public AnSQLite sql;
     public int horizon;
     /**
-     * Instanciates a Metabase: eventually creates the necessary tables
+     * Instantiates a meta-base: eventually creates the necessary tables
      * and indexes in an SQLite database and prepare statements objects.
      * 
      * @param ansql database
@@ -78,7 +78,7 @@ public class Metabase implements PublicRDF {
             );
         _UPDATE_STATEMENT = sql.prepared(
             "UPDATE m4statements SET object = ? "
-            + "WHERE topic = ? AND predicate = ?"
+            + "WHERE topic = ? AND predicate = ? "
             );
         _INSERT_STATEMENT = sql.prepared(
             "INSERT INTO m4statements (topic, predicate, object) VALUES (?, ?, ?)"
@@ -138,7 +138,7 @@ public class Metabase implements PublicRDF {
                     } while (_SELECT_STATEMENTS.step());
                 }
             } else {
-            	String previous = get(subject, predicate, context);
+            	String previous = select(subject, predicate, context);
             	if (previous == null) {
                     _statements.add(new String[]{
                 		subject, predicate, "", context, "."
@@ -152,14 +152,14 @@ public class Metabase implements PublicRDF {
         } else {
         	sql.begin();
         	try {
-        		String previous = get(subject, predicate, context);
+        		String previous = select(subject, predicate, context);
         		if (previous == null) {
-        			put(subject, predicate, context, object);
+        			insert(subject, predicate, context, object);
         			_statements.add(new String[]{
     					subject, predicate, object, context, "."
     					});
         		} else {
-        			post(subject, predicate, context, object);
+        			update(subject, predicate, context, object);
         			_statements.add(new String[]{
                 		subject, predicate, previous, context, "_"
     					});
@@ -299,9 +299,11 @@ public class Metabase implements PublicRDF {
         	} while (_SELECT_ROUTES.step());
         }
     }
-    public final void walk (String name, HashMap<String, ArrayList<String>> routes) 
+    public final HashMap<String, ArrayList<String>> walk (String name) 
     throws Exception {
-    	Iterator<String> names = Netunicode.iter(name);
+    	String index = indexed(name);
+    	HashMap<String, ArrayList<String>> routes = new HashMap();
+    	Iterator<String> names = Netunicode.iter((index == null) ? name: index);
     	ArrayList<String> singleton;
     	if (names.hasNext()) {
     		do {
@@ -316,6 +318,7 @@ public class Metabase implements PublicRDF {
         		routes.put(_SELECT_ROUTES.column_string(0), singleton);
 	        }
     	}
+    	return routes;
     }
     /**
      * Insert a statement's object in the metabase, eventually index the topic
@@ -327,7 +330,7 @@ public class Metabase implements PublicRDF {
      * @param object
      * @throws Exception
      */
-    public final void put (
+    public final void insert (
         String subject, String predicate, String context, String object
         ) throws Exception {
     	String digest = topic(subject, context);
@@ -347,14 +350,14 @@ public class Metabase implements PublicRDF {
      * @param object
      * @throws Exception
      */
-    public final void post (
+    public final void update (
         String subject, String predicate, String context, String object
         ) throws Exception {
+    	String topic = topic(subject, context);
         _UPDATE_STATEMENT.reset();
         _UPDATE_STATEMENT.bind(1, object);
-        _UPDATE_STATEMENT.bind(2, subject);
+        _UPDATE_STATEMENT.bind(2, topic);
         _UPDATE_STATEMENT.bind(3, predicate);
-        _UPDATE_STATEMENT.bind(4, context);
         _UPDATE_STATEMENT.step();
     }
     /**
@@ -367,7 +370,7 @@ public class Metabase implements PublicRDF {
 	 * @return the statement's object as bytes
 	 * @throws Exception if SQLite failed 
 	 */
-	public final String get (
+	public final String select (
 	    String subject, String predicate, String context
 	    ) throws Exception {
 	    _SELECT_STATEMENT.reset();
@@ -380,6 +383,7 @@ public class Metabase implements PublicRDF {
 	        return null;
 	    }
 	}
+	private static final byte[] _null = new byte[]{'n','u','l','l'};
 	/**
 	 * ...
 	 * 
@@ -399,10 +403,10 @@ public class Metabase implements PublicRDF {
 	    if (_SELECT_STATEMENT.step()) {
 	        return _SELECT_STATEMENT.column_bytes(0);
 	    } else {
-	        return null;
+	        return _null;
 	    }
 	}
-    public final void map (
+    public final void post (
 	    String subject, String predicate, HashMap<String, Object> objects
 	    ) throws Exception {
 		String context;
@@ -410,7 +414,7 @@ public class Metabase implements PublicRDF {
 		while (names.hasNext()) {
 			context = names.next();
 	    	String digest = topic(subject, context);
-	    	if (get(subject, predicate, context) == null) {
+	    	if (select(subject, predicate, context) == null) {
 	            _INSERT_STATEMENT.reset();
 	            _INSERT_STATEMENT.bind(1, digest);
 	            _INSERT_STATEMENT.bind(2, predicate);
@@ -435,7 +439,7 @@ public class Metabase implements PublicRDF {
      * @throws Exception
      */
     public final void 
-    update (String subject, String predicate, HashMap<String, Object> objects) 
+    get (String subject, String predicate, HashMap<String, Object> objects) 
     throws Exception, JSON.Error {
         _SELECT_STATEMENTS.reset();
         _SELECT_STATEMENTS.bind(1, subject);
@@ -479,6 +483,11 @@ public class Metabase implements PublicRDF {
         	sb.append("null");
         }
     }
+    public final String buffer (String subject, String predicate) throws Exception {
+    	StringBuilder sb = new StringBuilder();
+    	buffer(subject, predicate, sb);
+    	return sb.toString();
+    } 
     /**
      * Fill a <code>StringBuilder</code> with one or more statements' object, 
      * keyed by context, for a given subject and predicate.
