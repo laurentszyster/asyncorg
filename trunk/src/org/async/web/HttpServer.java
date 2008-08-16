@@ -215,6 +215,11 @@ public class HttpServer extends Server {
             _responseBody = new ByteProducer(body);
         	handler = null;
         }
+        public final void response (int status, Producer body) {
+            _status = Integer.toString(status);
+            _responseBody = body;
+        	handler = null;
+        }
         public final void response (
             int status, HashMap<String, String> headers
             ) {
