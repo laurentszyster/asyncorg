@@ -53,6 +53,12 @@ public abstract class Pipeline extends Dispatcher {
         _bufferOut = ByteBuffer.wrap(new byte[out]);
         return;
     }
+    public final int bufferInSize () {
+    	return _bufferIn.capacity();
+    }
+    public final int bufferOutSize () {
+    	return _bufferOut.capacity();
+    }
     public final void push (ByteBuffer data) {
         _fifoOut.add(data);
     }
