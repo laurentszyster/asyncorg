@@ -260,8 +260,9 @@ public class Metabase implements PublicRDF {
                 );
             if (field.size() >= horizon) {
                 _UPDATE_INDEX.reset();
-                _UPDATE_INDEX.bind(1, updated);
-                _UPDATE_INDEX.bind(2, "");
+                _UPDATE_INDEX.bind(1, "");
+                _UPDATE_INDEX.bind(2, subject);
+                _UPDATE_INDEX.step();
             } else if (!updated.equals(index)) {
                 _UPDATE_INDEX.reset();
                 _UPDATE_INDEX.bind(1, updated);
