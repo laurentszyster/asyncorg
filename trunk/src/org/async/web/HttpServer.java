@@ -554,7 +554,7 @@ public class HttpServer extends Server {
         }
         return false;
     };
-    public void httpLog(Actor http) {
+    public void httpLog(Actor http) { // TODO: replace with a Fun ?
         _loop.log((
             http._channel.toString()
             + " - " + ((http.identity == null) ? "-" : http.identity)
@@ -564,6 +564,7 @@ public class HttpServer extends Server {
             + " " + http._protocol 
             + "\" " + http._status
             + " " + http._objectSize
+            // TODO: add referrer URL here to comply with common log standards ?
             + " " + ((http.digest == null) ? "-" : http.digest)
             + " " + ((http.digested == null) ? "-" : http.digested)
             ));
