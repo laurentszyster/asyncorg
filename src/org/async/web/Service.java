@@ -1,7 +1,27 @@
+/*  Copyright(c) 2008 Laurent A.V. Szyster
+ *
+ *  This library is free software; you can redistribute it and/or modify
+ *  it under the terms of version 2 of the GNU General Public License as
+ *  published by the Free Software Foundation.
+ *  
+ *   http://www.gnu.org/copyleft/gpl.html
+ *  
+ *  This library is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  
+ *  You should have received a copy of the GNU General Public License
+ *  along with this library; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+ *  USA
+ *  
+ */
+
 package org.async.web;
 
 import org.async.web.HttpServer.Actor;
 import org.async.web.HttpServer.Handler;
+import org.async.collect.GuardCollector;
 import org.async.collect.StringCollector;
 import org.async.protocols.JSONR;
 import org.async.protocols.JSON;
@@ -9,18 +29,28 @@ import org.async.simple.Fun;
 
 /**
  * The redefinition of a web service, using JSON in place of SOAP and
- * JSONR instead of WSDL.
- *
+ * JSONR instead of WSDL, a simple RPC for the standard of object 
+ * notation set by JavaScript web browsers. 
  */
 public class Service implements Handler {
 	private Fun _function;
     private JSONR.Type _type = null;
+	private int _limit = 0;
     public Service (Fun function) {
     	_function = function;
+    }
+    public Service (Fun function, int limit) {
+    	_function = function;
+    	_limit = limit;
     }
     public Service (Fun function, JSONR.Type type) {
     	_function = function;
     	_type = type;
+    }
+    public Service (Fun function, JSONR.Type type, int limit) {
+    	_function = function;
+    	_type = type;
+    	_limit = limit;
     }
     public final boolean request(Actor http) throws Throwable {
         String method = http.method();
@@ -34,7 +64,10 @@ public class Service implements Handler {
             }
             _function.apply(http);
         } else if (method.equals("POST")) {
-            http.collect(new StringCollector(new StringBuilder(), "UTF-8"));
+    		http.collect(new GuardCollector(
+    				new StringCollector("UTF-8"), 
+					(_limit == 0) ? http.channel().bufferInSize(): _limit					
+					));
         } else {
             http.response(501); // Not implemented
         }
