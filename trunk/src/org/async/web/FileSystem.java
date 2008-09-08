@@ -4,7 +4,7 @@ import org.async.web.HttpServer;
 import org.async.protocols.HTTP;
 import java.io.File;
 
-public class FileSystem implements HttpServer.Handler {
+public class FileSystem implements HttpServer.Controller {
     protected String _root;
     protected String _cacheControl;
     public FileSystem() {
@@ -20,32 +20,32 @@ public class FileSystem implements HttpServer.Handler {
         _root = (new File(path)).getAbsolutePath().replace('\\', '/');
         _cacheControl = cacheControl;
     }
-    public final boolean request(HttpServer.Actor http) 
+    public final boolean handleRequest(HttpServer.Actor http) 
     throws Throwable {
         String path = http.uri().getPath();
         if (path.indexOf("../") > -1) {
-            http.response(400); // Bad request
+            http.error(400); // Bad request
         } else {
         	File file = new File(_root + http.about[1]);
             if (file.exists() && file.isFile() && !file.isHidden()) {
                 HTTP.Entity entity = new HTTP.FileEntity(file);
                 String method = http.method();
                 if (method.equals("GET")) {
-                    http.responseHeader("Cache-control", _cacheControl);
-                    http.response(200, entity.headers, entity.body()); 
+                    http.set("Cache-control", _cacheControl);
+                    http.reply(200, entity.headers, entity.body()); 
                 } else if (method.equals("HEAD")) {
-                    http.responseHeader("Cache-control", _cacheControl);
-                    http.response(200, entity.headers);
+                    http.set("Cache-control", _cacheControl);
+                    http.reply(200, entity.headers);
                 } else {
-                    http.response(501); // Not implemented
+                    http.error(501); // Not implemented
                 }
             } else {
-                http.response(404); // Not Found
+                http.error(404); // Not Found
             }
         }
         return false;
     }
-    public final void collected(HttpServer.Actor http) {
+    public final void handleBody(HttpServer.Actor http) {
 		throw new Error("unexpected call");
     }
 }

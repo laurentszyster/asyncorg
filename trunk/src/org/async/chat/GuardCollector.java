@@ -1,4 +1,4 @@
-/*  Copyright (C) 2007 Laurent A.V. Szyster
+/*  Copyright(c) 2007-2008 Laurent A.V. Szyster
  *
  *  This library is free software; you can redistribute it and/or modify
  *  it under the terms of version 2 of the GNU General Public License as
@@ -17,25 +17,25 @@
  *  
  */
 
-package org.async.produce;
+package org.async.chat;
 
-import org.async.chat.Producer;
-import org.async.simple.Bytes;
 
-public class StringProducer implements Producer {
-    private byte[] _buffer;
-    public StringProducer (String buffer, String encoding) {
-        _buffer = Bytes.encode(buffer, encoding);
+
+public class GuardCollector implements Collector {
+    protected Collector _guarded;
+    protected int _limit;
+    public GuardCollector (Collector guarded, int limit) {
+        _guarded = guarded;
+        _limit = limit;
     }
-    public boolean stalled() {
-        return false;
-    }
-    public byte[] more() throws Throwable {
-        try {
-            return _buffer;
-        } finally {
-            _buffer = null;
+    public void handleData(byte[] data) throws Throwable {
+        _limit = _limit - data.length;
+        if (_limit < 0) {
+            return;
         }
+        _guarded.handleData(data);
     }
-
+    public boolean handleTerminator() throws Throwable {
+        return _guarded.handleTerminator();
+    }
 }

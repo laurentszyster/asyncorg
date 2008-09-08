@@ -10,7 +10,7 @@ import java.util.HashMap;
 /**
  * ...
  */
-public class FileCache implements HttpServer.Handler {
+public class FileCache implements HttpServer.Controller {
     protected String _path;
     protected String _root;
     protected HashMap<String,HTTP.Entity> _cache;
@@ -43,27 +43,27 @@ public class FileCache implements HttpServer.Handler {
             _cache.put(key, new HTTP.CacheEntity(entity));
         }
     }
-    public final boolean request(HttpServer.Actor http) 
+    public final boolean handleRequest(HttpServer.Actor http) 
     throws Throwable {
         String key = http.uri().getPath();
         HTTP.Entity entity = _cache.get(key);
         if (entity == null) {
-            http.response(404); // Not Found
+            http.error(404); // Not Found
         } else {
             String method = http.method();
             if (method.equals("GET")) {
-                http.responseHeader("Cache-control", _cacheControl);
-                http.response(200, entity.headers, entity.body()); 
+                http.set("Cache-control", _cacheControl);
+                http.reply(200, entity.headers, entity.body()); 
             } else if (method.equals("HEAD")) {
-                http.responseHeader("Cache-control", _cacheControl);
-                http.response(200, entity.headers);
+                http.set("Cache-control", _cacheControl);
+                http.reply(200, entity.headers);
             } else {
-                http.response(501); // Not implemented
+                http.error(501); // Not implemented
             }
         }
         return false;
     }
-    public final void collected(HttpServer.Actor http) {
+    public final void handleBody(HttpServer.Actor http) {
 		throw new Error("unexpected call");
     }
 }

@@ -1,7 +1,7 @@
 package org.async.sql;
 
+import org.async.chat.BytesProducer;
 import org.async.chat.Producer;
-import org.async.produce.BytesProducer;
 import org.async.protocols.Netunicode;
 import org.async.protocols.PublicNames;
 import org.async.protocols.PublicRDF;

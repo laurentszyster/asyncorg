@@ -1,5 +1,5 @@
 /**
- *  Copyright (C) 2007 Laurent A.V. Szyster
+ *  Copyright (C) 2007-2008 Laurent A.V. Szyster
  *
  *  This library is free software; you can redistribute it and/or modify
  *  it under the terms of version 2 of the GNU General Public License as
@@ -24,7 +24,7 @@
 var asyncorg = Packages.org.async;
  
 importClass(asyncorg.core.Static);
-importClass(asyncorg.collect.StringCollector);
+importClass(asyncorg.chat.StringCollector);
 importClass(asyncorg.protocols.JSON);
 importClass(asyncorg.protocols.JSONR);
 importClass(asyncorg.sql.AnSQLite);
@@ -41,15 +41,15 @@ importClass(java.lang.Runtime);
 
 
 function _200_JSON_UTF8 (http, body) {
-    http.responseHeader("Cache-control", "no-cache");
-    http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
-    http.response(200, body, "UTF-8");
+    http.set("Cache-control", "no-cache");
+    http.set("Content-Type", "text/javascript; charset=UTF-8");
+    http.reply(200, body, "UTF-8");
     return false;
 }
 
 function _500_JSON_UTF8 (http, body) {
-    http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
-    http.response(500, body, "UTF-8");
+    http.set("Content-Type", "text/javascript; charset=UTF-8");
+    http.reply(500, body, "UTF-8");
     return false;
 }
 
@@ -57,11 +57,11 @@ function _500_JSON_UTF8 (http, body) {
 function _GET (service, model) {
 	if (typeof model == 'undefined') {
 		return Stateful.web({
-			'request': function (http) {
+			'handleRequest': function (http) {
                 if (http.method().equals("GET")) {
                 	return service(http);
                 } else {
-	                http.response(501); // Not implemented
+	                http.error(501); // Not implemented
 	                return false;
                 }
 			}
@@ -73,7 +73,7 @@ function _GET (service, model) {
         type = JSONR.compile(resource);
 	}
     return Stateful.web({
-        'request': function (http) {
+        'handleRequest': function (http) {
         	if (http.method().equals("GET")) {
 	            var query = http.uri().getRawQuery();
 	            if (query != null) {
@@ -86,7 +86,7 @@ function _GET (service, model) {
 	            	return _200_JSON_UTF8(http, resource);
 	            }
         	} else {
-        		http.response(501); // Not implemented
+        		http.error(501); // Not implemented
         		return false;
         	}
         }
@@ -99,19 +99,19 @@ function _POST (service, model) {
         type = JSONR.compile(JSON.encode(model));
     }
     return Stateful.web({
-        'request': function (http) {
+        'handleRequest': function (http) {
             if (http.method().equals("POST")) {
 	            http.collect(new StringCollector("UTF-8"));
 	            return false;
             } else {
-                http.response(501); // Not implemented
+                http.error(501); // Not implemented
                 return false;
             }
         },
-        'collected': function (http) {
+        'handleBody': function (http) {
             var input = (
                 (type == null) ? new JSON(): new JSONR(type)
-                ).eval(http.requestBody().toString());
+                ).eval(http.body().toString());
             if (input != null && typeof input == "JSON.Object") {
                 input.putAll(http.state);
                 http.state = input;
@@ -200,64 +200,62 @@ function met4_request (http) {
     var method = http.method();
     if (method == 'POST') {
         if (http.about[3] == null) {
-            http.response(404);
+            http.error(404); // Not found
         } else {
             http.collect(new StringCollector("UTF-8"));
         }
     } else if (method == 'GET') {
-        http.responseHeader("Cache-control", "no-cache");
-        http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
+        http.set("Cache-control", "no-cache");
+        http.set("Content-Type", "text/javascript; charset=UTF-8");
         try {
 	        if (http.about[3] == null) {
-                http.response(200, metabase.produce(
+                http.reply(200, metabase.produce(
                     http.about[1], http.about[2]
                     ));
             } else {
-                http.response(200, metabase.bytes(
+                http.reply(200, metabase.bytes(
                     http.about[1], http.about[2], http.about[3]
                     ));
             }
         } catch (e) {
-            http.response(500, e.toString(), "UTF-8");
+            http.reply(500, e.toString(), "UTF-8");
         }
     } else {
-        http.response(501); // Not implemented
+        http.error(501); // Not implemented
     }
     return false;
 }
 
-function met4_collected (http) {
-    http.responseHeader("Cache-control", "no-cache");
-    http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
+function met4_body (http) {
+    http.set("Cache-control", "no-cache");
+    http.set("Content-Type", "text/javascript; charset=UTF-8");
     metabase.sql.begin();
     try {
         var previous = metabase.select(http.about[1], http.about[2], http.about[3]);
         // http.json = JSON.decode(http.requestBody.toString());
         if (previous == null) {
             metabase.insert(
-                http.about[1], http.about[2], http.about[3], 
-                http.requestBody().toString()
+                http.about[1], http.about[2], http.about[3], http.body().toString()
                 );
         } else {
             metabase.update(
-                http.about[1], http.about[2], http.about[3], 
-                http.requestBody().toString()
+                http.about[1], http.about[2], http.about[3], http.body().toString()
                 );
         }
     } catch (e) {
         metabase.sql.rollback();
-        http.response(500, e.toString(), "UTF-8");
+        http.reply(500, e.toString(), "UTF-8");
         return;
     }
     metabase.sql.commit();
-    http.response(200, "null", "UTF-8");
+    http.reply(200, "null", "UTF-8");
 }
 
 var met4 = new Meta (metabase);
 
 met4.predicates.put("predicate", Stateful.web({
-    "request": met4_request, 
-    "collected": met4_collected
+    "handleRequest": met4_request, 
+    "handleBody": met4_body
     }));
 
 function Open(filename, address) {

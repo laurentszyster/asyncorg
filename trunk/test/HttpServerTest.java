@@ -16,7 +16,7 @@ public class HttpServerTest {
 			} catch (Exception e) {
 				http.channel().log(e);
 			}
-			http.response(500); // Server Error
+			http.error(500); // Server Error
 			return null;
 		}
 	}

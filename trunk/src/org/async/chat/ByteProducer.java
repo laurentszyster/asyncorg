@@ -17,9 +17,8 @@
  *  
  */
 
-package org.async.produce;
+package org.async.chat;
 
-import org.async.chat.Producer;
 
 public class ByteProducer implements Producer {
     private byte[] _bytes;

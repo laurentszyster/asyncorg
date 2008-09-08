@@ -20,9 +20,9 @@
 package org.async.web;
 
 import org.async.web.HttpServer.Actor;
-import org.async.web.HttpServer.Handler;
-import org.async.collect.GuardCollector;
-import org.async.collect.StringCollector;
+import org.async.web.HttpServer.Controller;
+import org.async.chat.GuardCollector;
+import org.async.chat.StringCollector;
 import org.async.protocols.JSONR;
 import org.async.protocols.JSON;
 import org.async.simple.Fun;
@@ -32,7 +32,7 @@ import org.async.simple.Fun;
  * JSONR instead of WSDL, a simple RPC for the standard of object 
  * notation set by JavaScript web browsers. 
  */
-public class Service implements Handler {
+public class Service implements Controller {
 	private Fun _function;
     private JSONR.Type _type = null;
 	private int _limit = 0;
@@ -52,7 +52,7 @@ public class Service implements Handler {
     	_type = type;
     	_limit = limit;
     }
-    public final boolean request(Actor http) throws Throwable {
+    public final boolean handleRequest(Actor http) throws Throwable {
         String method = http.method();
         if (method.equals("GET")) {
             String query = http.uri().getRawQuery();
@@ -69,14 +69,14 @@ public class Service implements Handler {
 					(_limit == 0) ? http.channel().bufferInSize(): _limit					
 					));
         } else {
-            http.response(501); // Not implemented
+            http.error(501); // Not implemented
         }
         return false;
     }
 
-    public final void collected(Actor http) throws Throwable {
+    public final void handleBody(Actor http) throws Throwable {
         Object input = null;
-        String body = ((StringCollector) http.requestBody()).toString();
+        String body = ((StringCollector) http.body()).toString();
         if (_type == null) {
             input = (new JSON()).eval(body);
         } else {

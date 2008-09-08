@@ -25,22 +25,27 @@ import java.io.FileInputStream;
 
 /**
  * A really simple class file loader, for applications that need to reload
- * simple parts or restrict loadable classes to a filesystem path.
+ * simple parts or restrict classes to a file system path.
  * 
  * @h3 Note
  * 
- * @p Don't even think about glorifying this into some kind of mighty
- * be-all-do-all uberClassLoader. Production Java applications are not 
- * actually expected to reload their classes bytecodes, they are supposed 
- * to JIT that once for all. And when they do demand reloadable classes, 
- * a configurable filesystem restriction is all you will ever practically 
- * use. Loading classes from the network, from a signed and compressed
- * archive may sound cool but have little practical use in case of reload.
+ * @p To be used only when JavaScript is too slow, when generating Java is
+ * forced upon your application by speed constraints ... out of a long-running
+ * daemon that is also constrained by memory (when running out of RAM for new
+ * classes is not an option).
  * 
- * @p Reloading large JARs with many dependicies is a recipe for worse than 
+ * @p Don't even think to glorify this into some kind of mighty
+ * be-all-do-all uberClassLoader. Production Java applications are not 
+ * actually expected to reload their classes byte code, they are supposed 
+ * to JIT that once for all. And when they do demand classes, a configurable 
+ * file system restriction is all you will ever practically use. Loading classes 
+ * from the network, from a signed and compressed archive may sound cool but have 
+ * little practical use in case of reload.
+ * 
+ * @p Reloading large JARs with many dependencies is a recipe for worse than 
  * failure. Restart the JVM instead.
  * 
- * @p Loading bytecode from the network open the door for too many exploit.
+ * @p Loading byte code from the network open the door for too many exploit.
  * Instead, use SVN to update the application's components.
  * 
  */
