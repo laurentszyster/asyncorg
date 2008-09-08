@@ -8,18 +8,18 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.net.URLDecoder;
 
-public class Meta implements HttpServer.Handler {
+public class Meta implements HttpServer.Controller {
 	private Metabase _metabase;
 	public Meta (Metabase metabase) {
 		_metabase = metabase;
 	}
-	public HashMap<String,HttpServer.Handler> predicates = new HashMap();
+	public HashMap<String,HttpServer.Controller> predicates = new HashMap();
 	private static final Pattern _re = Pattern.compile(
 		"^/([^/]+)(?:/([^/]+)(?:/([^/]+?))?)?$"
 		);
-	public final boolean request (HttpServer.Actor http) throws Throwable {
+	public final boolean handleRequest (HttpServer.Actor http) throws Throwable {
         if (http.about.length < 2) {
-        	http.response(404); // Not Found
+        	http.error(404); // Not Found
             return false;
         }
         Matcher re = _re.matcher(http.about[1]);
@@ -38,31 +38,31 @@ public class Meta implements HttpServer.Handler {
 	        }
 	        http.about = about;
         } else {
-        	http.response(404); // Not Found
+        	http.error(404); // Not Found
             return false;
         }
         if (http.about[2] != null) { // has a predicate
-        	HttpServer.Handler predicate = predicates.get(http.about[2]);
+        	HttpServer.Controller predicate = predicates.get(http.about[2]);
         	if (predicate == null) {
-        		http.response(404); // Not found
+        		http.error(404); // Not found
         	} else {
 		        http.handler = predicate;
-		        return predicate.request(http);
+		        return predicate.handleRequest(http);
         	}
         } else {
         	if (http.method().equals("GET")) {
-	            http.responseHeader("Cache-control", "no-cache");
-	            http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
-	            http.response(
+	            http.set("Cache-control", "no-cache");
+	            http.set("Content-Type", "text/javascript; charset=UTF-8");
+	            http.reply(
             		200, JSON.encode(_metabase.walk(http.about[1])), "UTF-8"
             		);
         	} else {
-            	http.response(501); // Not implemented
+            	http.error(501); // Not implemented
         	}
         }
 		return false;
 	}
-	public final void collected (HttpServer.Actor http) {
+	public final void handleBody (HttpServer.Actor http) {
 		throw new Error("unexpected call");
 	}
 }

@@ -1,4 +1,4 @@
-/*  Copyright (C) 2007 Laurent A.V. Szyster
+/*  Copyright (C) 2007-2008 Laurent A.V. Szyster
  *
  *  This library is free software; you can redistribute it and/or modify
  *  it under the terms of version 2 of the GNU General Public License as
@@ -22,17 +22,19 @@ package org.async.web;
 import org.async.core.Loop;
 import org.async.core.Server;
 import org.async.core.Pipeline;
+import org.async.chat.ByteProducer;
 import org.async.chat.ChatDispatcher;
 import org.async.chat.Producer;
 import org.async.chat.Collector;
-import org.async.produce.ByteProducer;
 import org.async.protocols.HTTP;
 import org.async.protocols.JSON;
 import org.async.simple.Bytes;
 import org.async.simple.Strings;
+import org.async.simple.Objects;
 
 import java.util.Iterator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Calendar;
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -81,7 +83,7 @@ public class HttpServer extends Server {
         protected Producer _responseBody = null;
         protected HashMap<String, String> _responseCookies = null;
         protected long _objectSize = 0;
-        public Handler handler;
+        public Controller handler;
         /**
          * An articulated description of the HTTP method, host name and URL path
          * requested, split in two between an origin and a destination.
@@ -168,10 +170,10 @@ public class HttpServer extends Server {
         public final String protocol() {
             return _protocol;
         }
-        public final String requestHeader(String name) {
+        public final String get(String name) {
             return _requestHeaders.get(name);
         };
-        public final String requestHeader(String name, String defaultValue) {
+        public final String get(String name, String defaultValue) {
             String value = _requestHeaders.get(name);
             if (value == null) {
                 return defaultValue;
@@ -179,25 +181,30 @@ public class HttpServer extends Server {
                 return value;
             }
         };
-        public final String requestCookie(String name) {
+        public final String getCookie(String name) {
             if (_requestCookies == null) {
-                _requestCookies = HTTP.cookies(requestHeader("cookie", null));
+                _requestCookies = HTTP.cookies(get("cookie", null));
             }
             return _requestCookies.get(name);
         }
-        public final Collector requestBody() {
+        public final Collector body() {
             return _requestBody;
         };
-        public final HashMap responseHeaders() {
-            return _responseHeaders;
-        };
-        public final void responseHeader(String name, String value) {
+        public static final HashSet<String> HEADERS = Objects.set(
+    		"cache", 
+    		"content-type", 
+    		"location"
+    		
+    		// TODO: complete the set ...
+    		
+    		);
+        public final void set(String name, String value) {
+        	if (!HEADERS.contains(name.toLowerCase())) {
+        		throw new Error("Invalid HTTP header: " + name);
+        	}
             _responseHeaders.put(name, value);
         };
-        public final HashMap responseCookies() {
-            return _responseCookies;
-        };
-        public final void responseCookie(String name, String value) {
+        public final void setCookie(String name, String value) {
             if (_responseCookies == null) {
                 _responseCookies = new HashMap<String, String>();
             }
@@ -206,7 +213,7 @@ public class HttpServer extends Server {
         public final String status() {
             return _status;
         }
-        public final void response (int status) {
+        public final void error (int status) {
             _status = Integer.toString(status);
             byte[] body = HTTP.RESPONSES.get(_status).getBytes();
             _responseHeaders.put(
@@ -215,19 +222,19 @@ public class HttpServer extends Server {
             _responseBody = new ByteProducer(body);
         	handler = null;
         }
-        public final void response (int status, Producer body) {
+        public final void reply (int status, Producer body) {
             _status = Integer.toString(status);
             _responseBody = body;
         	handler = null;
         }
-        public final void response (
+        public final void reply (
             int status, HashMap<String, String> headers
             ) {
             _status = Integer.toString(status);
             _responseHeaders.putAll(headers);
         	handler = null;
         }
-        public final void response (
+        public final void reply (
             int status, HashMap<String, String> headers, Producer body
             ) {
             _status = Integer.toString(status);
@@ -235,7 +242,7 @@ public class HttpServer extends Server {
             _responseBody = body;
         	handler = null;
         }
-        public final void response (int status, byte[] body) {
+        public final void reply (int status, byte[] body) {
             _status = Integer.toString(status);
             if (_protocol != "HTTP/1.1") {
                 _responseHeaders.put(
@@ -245,8 +252,8 @@ public class HttpServer extends Server {
             _responseBody = new ByteProducer(body);
         	handler = null;
         }
-        public final void response (int status, String body, String encoding) {
-            response(status, Bytes.encode(body, encoding));
+        public final void reply (int status, String body, String encoding) {
+            reply(status, Bytes.encode(body, encoding));
         }
         private boolean _produced = false; 
         public final boolean produced () {
@@ -268,7 +275,7 @@ public class HttpServer extends Server {
                         if (_protocol.equals("HTTP/1.1")) {
                             _responseHeaders.put("Transfer-Encoding", "chunked");
                             _producer = new ChunkProducer(_responseBody);
-                            if (requestHeader("connection", "keep-alive")
+                            if (get("connection", "keep-alive")
                                     .toLowerCase().equals("keep-alive")) {
                                 _responseHeaders.put("Connection", "keep-alive");
                             } else {
@@ -278,7 +285,7 @@ public class HttpServer extends Server {
                         } else {
                             if (
                                 _responseHeaders.containsKey("Content-Length") &&
-                                requestHeader("connection", "")
+                                get("connection", "")
                                     .toLowerCase().equals("keep-alive")
                                 ) {
                                 _responseHeaders.put("Connection", "keep-alive");
@@ -399,10 +406,10 @@ public class HttpServer extends Server {
                 _body = null;
                 if (_http.handler != null && _http._requestBody != null) {
                     try {
-                        _http.handler.collected(_http);
+                        _http.handler.handleBody(_http);
                     } catch (Throwable e) {
                         log(e);
-                        _http.response(500); // Server error
+                        _http.error(500); // Server error
                     }
                 }
                 _http = null;
@@ -450,9 +457,9 @@ public class HttpServer extends Server {
             _server.serverClose(this);
         }
     }
-    public interface Handler {
-        public boolean request(Actor http) throws Throwable;
-        public void collected(Actor http) throws Throwable;
+    public interface Controller {
+        public boolean handleRequest(Actor http) throws Throwable;
+        public void handleBody(Actor http) throws Throwable;
     }
     protected int _bufferSizeIn = 16384;
     protected int _bufferSizeOut = 16384;
@@ -460,7 +467,7 @@ public class HttpServer extends Server {
     protected Calendar _calendar = Calendar.getInstance();
     protected String _date;
     protected File _root;
-    protected HashMap<String,Handler> _handlers = new HashMap();
+    protected HashMap<String,Controller> _controllers = new HashMap();
     public boolean test = false;
     public HttpServer (String root) {
         super();
@@ -496,14 +503,14 @@ public class HttpServer extends Server {
      * @param path of the realm handled
      * @param handler of requests starting with this path
      */
-    public final void httpRoute (String path, Handler handler) {
-        _handlers.put(path, handler);
+    public final void httpRoute (String path, Controller handler) {
+        _controllers.put(path, handler);
     }
     public final Iterator<String> httpRoutes () {
-        return _handlers.keySet().iterator();
+        return _controllers.keySet().iterator();
     }
-    public final Handler httpHandler (String route) {
-        return _handlers.get(route);
+    public final Controller httpHandler (String route) {
+        return _controllers.get(route);
     }
     public final void httpListen(String address) throws Throwable {
         _host = address;
@@ -522,35 +529,35 @@ public class HttpServer extends Server {
         try { // to route to a handler, maybe continue ...
             String path = http._uri.getRawPath();
             String route = http._host + path;
-            Handler handler = _handlers.get(route); 
+            Controller handler = _controllers.get(route); 
             if (handler != null) { 
             	// ["example.com/context/predicate/subject"]
             	http.about = new String[]{route};
                 http.handler = handler;
-                return handler.request(http);
+                return handler.handleRequest(http);
             } 
             int slashAt = path.indexOf('/', 1);
             if (slashAt > 0) {
             	route = http._host + path.substring(0, slashAt);
-                handler = _handlers.get(route);
+                handler = _controllers.get(route);
                 if (handler != null) {
                 	// ["example.com/context", "/predicate/subject"]
                 	http.about = new String[]{route, path.substring(slashAt)};
                     http.handler = handler;
-                    return handler.request(http);
+                    return handler.handleRequest(http);
                 }
             }
-            handler = _handlers.get(http._host);
+            handler = _controllers.get(http._host);
             if (handler != null) { 
             	// ["example.com", "/context/predicate/subject"]
             	http.about = new String[]{http._host, path};
                 http.handler = handler;
-                return handler.request(http);
+                return handler.handleRequest(http);
             }
-            http.response(404); // Not Found
+            http.error(404); // Not Found
         } catch (Throwable e) {
             log(e);
-            http.response(500); // Server Error
+            http.error(500); // Server Error
         }
         return false;
     };
@@ -570,25 +577,3 @@ public class HttpServer extends Server {
             ));
     };
 }
-
-/*
-
-This HTTP server routes a GET request for the URI below:
-
-    "http://context/subject/predicate"
-
-to one of the handlers mapped by the following keys:
-
-    "GET context/subject/predicate"
-    "GET context/subject/"
-    "GET context/"
-
-or reply with a "404 Not Found" response.
-
-Most web applications can indentify their interfaces with such articulation, 
-and as many should (because "flat is better than nested").
-
-More elaborate routing may be implemented by handlers, usually using PCRE
-to match URIs and extract their metadata.
-
-*/

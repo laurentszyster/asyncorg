@@ -19,8 +19,8 @@
 
 package org.async.protocols;
 
+import org.async.chat.BytesProducer;
 import org.async.chat.Producer;
-import org.async.produce.BytesProducer;
 import org.async.simple.Objects;
 import org.async.simple.SIO;
 import org.async.simple.Strings;

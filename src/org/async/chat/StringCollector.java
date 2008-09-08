@@ -17,9 +17,8 @@
  *  
  */
 
-package org.async.collect;
+package org.async.chat;
 
-import org.async.chat.Collector;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;

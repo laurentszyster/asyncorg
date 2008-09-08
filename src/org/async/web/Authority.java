@@ -1,6 +1,6 @@
 package org.async.web;
 
-import org.async.web.HttpServer.Handler;
+import org.async.web.HttpServer.Controller;
 import org.async.web.HttpServer.Actor;
 import org.async.protocols.IRTD2;
 import org.async.simple.Strings;
@@ -53,21 +53,21 @@ public class Authority {
         sb.append(' ');
         sb.append(http.digest);
         sb.append(_qualifier);
-        http.responseCookie("IRTD2", sb.toString());
+        http.setCookie("IRTD2", sb.toString());
     }
     public final String unidentify (Actor http) {
-        http.responseCookie("IRTD2", _qualifier);
+        http.setCookie("IRTD2", _qualifier);
         return http.identity;
     }
-    protected static class Identified implements Handler {
-        private HttpServer.Handler _wrapped;
+    protected static class Identified implements Controller {
+        private HttpServer.Controller _wrapped;
         private Authority _authority;
-        public Identified (Handler handler, Authority authority) {
+        public Identified (Controller handler, Authority authority) {
             _wrapped = handler;
             _authority = authority;
         }
-        public final boolean request(Actor http) throws Throwable {
-            String irtd2 = http.requestCookie("IRTD2");
+        public final boolean handleRequest(Actor http) throws Throwable {
+            String irtd2 = http.getCookie("IRTD2");
             if (irtd2 != null) {
                 String[] parsed = IRTD2.parse(irtd2);
                 long time = http.when()/1000;
@@ -79,19 +79,19 @@ public class Authority {
                     http.rights = parsed[1];
                     http.digested = parsed[4];
                     _authority.identify(http, time);
-                    return _wrapped.request(http);
+                    return _wrapped.handleRequest(http);
                 } else {
                     http.channel().log("IRTD2 error " + error);
                 }
             }
-            http.response(401); // Unauthorized
+            http.error(401); // Unauthorized
             return false;
         }
-        public final void collected(Actor http) {
+        public final void handleBody(Actor http) {
     		throw new Error("unexpected call");
         }
     }
-    public final Handler identified(Handler handler) { 
+    public final Controller identified(Controller handler) { 
         return new Identified(handler, this);
     }
 }

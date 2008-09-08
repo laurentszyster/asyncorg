@@ -1,7 +1,7 @@
 package org.async.web;
 
 import org.async.web.HttpServer.Actor;
-import org.async.web.HttpServer.Handler;
+import org.async.web.HttpServer.Controller;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
@@ -61,16 +61,16 @@ import java.net.URLDecoder;
  * @author Laurent Szyster
  *
  */
-public class Routes implements Handler {
-    private Handler _routed;
+public class Routes implements Controller {
+    private Controller _routed;
     private Pattern _re; 
     private String[] _names;
-    public Routes (Handler routed, Pattern regular, String[] names) {
+    public Routes (Controller routed, Pattern regular, String[] names) {
         _re = regular;
         _names = names;
         _routed = routed;
     }
-    public final boolean request (Actor http) throws Throwable {
+    public final boolean handleRequest (Actor http) throws Throwable {
 		String value;
         Matcher re = _re.matcher(http.about[1]);
         if (re.matches()) {
@@ -82,11 +82,11 @@ public class Routes implements Handler {
             	}
             } 
             http.handler = _routed;
-            return _routed.request(http);
+            return _routed.handleRequest(http);
         }
         return false;
     }
-    public final void collected (Actor http) throws Throwable {
+    public final void handleBody (Actor http) throws Throwable {
 		throw new Error("unexpected call");
     }
 

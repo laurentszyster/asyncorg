@@ -22,15 +22,15 @@ package org.async.web;
 import org.async.simple.Fun;
 import org.async.protocols.JSON;
 import org.async.protocols.JSONR;
-import org.async.collect.GuardCollector;
-import org.async.collect.StringCollector;
+import org.async.chat.GuardCollector;
+import org.async.chat.StringCollector;
 import org.async.sql.Metabase;
 import org.async.web.HttpServer.Actor;
-import org.async.web.HttpServer.Handler;
+import org.async.web.HttpServer.Controller;
 
 /*
  * A class to decouple storage, semantics and access control from the 
- * application's processes.
+ * application's data processing.
  * 
  * Predicate handles GET and POST requests routed by Meta for a given predicate, 
  * enforce access control based on the identity and rights of the HTTP actor, 
@@ -47,16 +47,16 @@ import org.async.web.HttpServer.Handler;
  * state-full and persistent semantic web applications.
  * 
  */
-public class Predicate implements Handler {
+public class Predicate implements Controller {
 	protected static final class Pass implements Fun {
 		public final Object apply (Object input) {
 			return null;
 		}
 	}
 	public static final Fun PASS = new Pass();
-	public static final class Recode implements Fun {
+	public static final class EvalJSON implements Fun {
 		private Fun _fun = PASS;
-		public Recode(Fun fun) {
+		public EvalJSON(Fun fun) {
 			_fun = fun;
 		}
 		public final Object apply (Object input) throws Throwable {
@@ -67,10 +67,13 @@ public class Predicate implements Handler {
 			return response;
 		}
 	}
-	public static final class Validate implements Fun {
+	public static final Fun evalJSON (Fun fun) {
+		return new EvalJSON(fun);
+	}
+	public static final class ValidJSONR implements Fun {
 		private Fun _fun = PASS;
 		private JSONR.Type _type;
-		public Validate(Fun fun, JSONR.Type type) {
+		public ValidJSONR(Fun fun, JSONR.Type type) {
 			_fun = fun;
 			_type = type;
 		}
@@ -81,6 +84,9 @@ public class Predicate implements Handler {
 			args[3] = JSON.encode(args[2]);
 			return response;
 		}
+	}
+	public static final Fun validJSONR (Fun fun, JSONR.Type type) {
+		return new ValidJSONR(fun, type);
 	}
 	private Metabase _metabase;
 	private Fun _function = PASS;
@@ -97,7 +103,7 @@ public class Predicate implements Handler {
 		_function = function;
     	_limit = limit;
     }
-	public final boolean request(Actor http) throws Throwable {
+	public final boolean handleRequest(Actor http) throws Throwable {
 	    String method = http.method();
         String subject = http.about[1];
         String predicate = http.about[2];
@@ -109,7 +115,7 @@ public class Predicate implements Handler {
 		    		if (http.rights.contains(predicate)) {
 		    			object = _metabase.buffer(subject, predicate);
 		    		} else {
-			            http.response(403); // Forbidden
+			            http.error(403); // Forbidden
 			            return false;
 		    		}
 		    	} else if (
@@ -117,25 +123,25 @@ public class Predicate implements Handler {
 					) { // GET subject/predicate/context
 	                object = _metabase.select(subject, predicate, context);
 	            } else {
-		            http.response(403); // Forbidden
+		            http.error(403); // Forbidden
 		            return false;
 	            }
 	        } catch (Exception e) {
 	        	http.channel().log(e);
-	            http.response(500); // Server Error
+	            http.error(500); // Server Error
 	            return false;
 	        }
-	        http.responseHeader("Cache-control", "no-cache");
-	        http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
-	        http.response(200, object, "UTF-8");
+	        http.set("Cache-control", "no-cache");
+	        http.set("Content-Type", "text/javascript; charset=UTF-8");
+	        http.reply(200, object, "UTF-8");
 		    return false;
 	    } else if (method.equals("POST")) {
 	    	if (context == null) {
-	    		http.response(404); // Not found
+	    		http.error(404); // Not found
 	    		return false;
 	    	} 
             if (!(http.identity.equals(subject))) {
-                http.response(403); // Forbidden
+                http.error(403); // Forbidden
                 return false;
             }
             http.collect(new GuardCollector(
@@ -145,11 +151,11 @@ public class Predicate implements Handler {
     		return false;
 	    } else if (method.equals("PUT")) {
 	    	if (context == null) {
-	    		http.response(404); // Not found
+	    		http.error(404); // Not found
 	    		return false;
 	    	} 
             if (!http.rights.contains(predicate)) {
-                http.response(403); // Forbidden
+                http.error(403); // Forbidden
                 return false;
             }
             http.collect(new GuardCollector(
@@ -158,16 +164,16 @@ public class Predicate implements Handler {
 				));
     		return false;
 	    } else {
-	        http.response(501); // Not implemented
+	        http.error(501); // Not implemented
 	    }
 		return false;
 	}
-	public final void collected(Actor http) throws Throwable {
+	public final void handleBody(Actor http) throws Throwable {
 		String returned;
         String subject = http.about[1];
         String predicate = http.about[2];
         String context = http.about[3];
-        String object = http.requestBody().toString();
+        String object = http.body().toString();
 	    _metabase.sql.begin();
 	    try {
 	    	Object[] statement = new Object[]{
@@ -182,12 +188,12 @@ public class Predicate implements Handler {
 	    } catch (Exception e) {
 	        _metabase.sql.rollback();
         	http.channel().log(e);
-	        http.response(500);
+	        http.error(500);
 	        return;
 	    }
         _metabase.sql.commit();
-	    http.responseHeader("Cache-control", "no-cache");
-	    http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
-        http.response(200, returned, "UTF-8");
+	    http.set("Cache-control", "no-cache");
+	    http.set("Content-Type", "text/javascript; charset=UTF-8");
+        http.reply(200, returned, "UTF-8");
 	}
 }

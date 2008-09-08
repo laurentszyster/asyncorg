@@ -18,8 +18,8 @@
  */
 
 import org.async.chat.ChatDispatcher;
+import org.async.chat.StringsProducer;
 import org.async.core.Static;
-import org.async.produce.StringsProducer;
 import org.async.simple.Fun;
 
 public class AsyncChatTest extends ChatDispatcher {

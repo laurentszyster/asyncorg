@@ -27,17 +27,15 @@ import SQLite.Constants;
  * the database.
  * 
  * Note that any user with at least one right can create and drop temporary
- * data structures or begin transactions (but not necessarily update, insert
+ * data structures or begin transactions, but not necessarily update, insert
  * and delete rows because its role may limits its access to temporary 
- * data too).
- * 
- * To prevent abuse, 
+ * data too. So, practically this reduce the right of a reader to create,
+ * select and drop temporary views. 
  * 
  * Authorizations are enforced across the database by roles. 
  * 
  * To restrict access rights by domains, partition your application's relations 
  * in distinct authority realms. 
- * 
  */
 public class Database implements Fun {
     protected static final class Role implements Authorizer {
@@ -165,9 +163,9 @@ public class Database implements Fun {
         } else {
             JSON.strb(response, "unauthorized");
         }
-        http.responseHeader("Cache-control", "no-cache");
-        http.responseHeader("Content-Type", "text/javascript; charset=UTF-8");
-        http.response(200, response.toString(), Bytes.UTF8);
+        http.set("Cache-control", "no-cache");
+        http.set("Content-Type", "text/javascript; charset=UTF-8");
+        http.reply(200, response.toString(), Bytes.UTF8);
         return null;
     }
 }
