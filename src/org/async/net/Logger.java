@@ -22,7 +22,6 @@ package org.async.net;
 import org.async.core.Static;
 import org.async.core.Server;
 import org.async.core.Pipeline;
-import org.async.protocols.Netstring;
 import org.async.simple.SIO;
 import java.net.InetSocketAddress;
 import java.io.IOException;
@@ -86,8 +85,9 @@ public final class Logger extends Server {
             _output.write(',');
             return false;
         }
+        private static final byte[] _ZERO = new byte[]{'0', ':', ','};
         public final void handleClose() throws Throwable {
-            _output.write(Netstring.ZERO);
+            _output.write(_ZERO);
         }
         public final void close () {
             log("closed");
