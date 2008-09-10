@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.regex.Pattern;
 import java.math.BigDecimal;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.text.StringCharacterIterator;
 
@@ -39,7 +40,7 @@ import org.async.simple.Objects;
  * Regular</a> patterns to evaluate and validate a JSON string against an 
  * extensible type model of JSON types, numeric ranges, regular string, 
  * formated dates, collections, relations, regular dictionaries and
- * relevant namespaces.
+ * relevant name spaces.
  * 
  * @h3 Synopsis
  * 
@@ -103,7 +104,7 @@ import org.async.simple.Objects;
  *if (e != null)
  *    System.out.println(e.str());
  * 
- * @p Note that the first errors allways stops the evaluation, adding
+ * @p Note that the first errors always stops the evaluation, adding
  * effective safety limits on the memory allocated to requests by a
  * JSON service.
  * 
@@ -115,7 +116,7 @@ import org.async.simple.Objects;
  * 
  * @p <dl><di>
  *  <dt><code>"yyyy-MM-ddTHH:mm:ss"</code></dt>
- *  <dd>a valid date and type value formated alike, as the defacto standard
+ *  <dd>a valid date and type value formated alike, as the de-facto standard
  *  JavaScript 1.7 serialization of a date and time instance.</dd>
  * </di></dl>
  * 
@@ -125,14 +126,14 @@ import org.async.simple.Objects;
 public class JSONR extends JSON {
     
     /**
-     * A simple JSONR exception throwed for any type or value error found 
+     * A simple JSONR exception raised for any type or value error found 
      * by the regular interpreter.
      * 
      * @h3 Synopsis
      * 
      * @p This class is a shallow copy of JSON.Error to distinguish between
      * a syntax and a regular error, allowing the interpreter to recover
-     * valid JSON from an invalid JSONR (ie: to do error handling).
+     * valid JSON from an invalid JSONR (i.e.: to do error handling).
      * 
      * @pre String model = "[[true, \"[a-z]+\", null]]";
      * String string = "[[false, \"test\", 1.0][true, \"ERROR\", {}]]";
@@ -145,7 +146,7 @@ public class JSONR extends JSON {
     public static class Error extends JSON.Error {
         
         /**
-         * Instanciate a JSONR error with an error message.
+         * Instantiate a JSONR error with an error message.
          * 
          * @param message the error message
          */
@@ -244,7 +245,7 @@ public class JSONR extends JSON {
          * 
          * @p Note that is is only required by applications that expect to
          * alter their JSONR patterns after compilation, something quite
-         * unsual. Applications that don't (the overwhelming majority)
+         * unusual. Applications that don't (the overwhelming majority)
          * can consider a <code>JSONR.Type</code> as thread-safe.
          * 
          * @return an unsynchronized copy as a <code>Type</code> 
@@ -313,13 +314,9 @@ public class JSONR extends JSON {
                 throw new Error(JSON.INTEGER_TYPE_ERROR);
         }
         public final java.lang.Object eval (String string) 
-        throws JSON.Error {
+        throws JSONR.Error {
             if (string != null) {
-                try {
-                    return new Integer(string);
-                } catch (Exception e) {
-                    throw new Error(BIGINTEGER_VALUE_ERROR);
-                }
+                return new Integer(string);
             } else
                 throw new Error(BIGINTEGER_VALUE_ERROR);
         }
@@ -625,7 +622,7 @@ public class JSONR extends JSON {
                 Calendar dt = Calendar.getInstance();
                 dt.setTime(format.parse(string));
                 return dt;
-            } catch (Exception e) {
+            } catch (ParseException e) {
                 throw new JSONR.Error(DATETIME_VALUE_ERROR);
             }
         }

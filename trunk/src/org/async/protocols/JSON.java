@@ -273,7 +273,7 @@ public class JSON {
         
     }
     
-    protected static final String OBJECT_TYPE_ERROR = 
+    protected static final String OBJECT_TYPE_ERROR =  
         "Object type error";
     protected static final String ARRAY_TYPE_ERROR = 
         "Array type error";
@@ -294,37 +294,37 @@ public class JSON {
     
     protected static final char _done = CharacterIterator.DONE;
     
-    protected static final Number N (java.lang.Object value) throws Error {
+    protected static final Number N (java.lang.Object value) {
         if (value instanceof Number) {return (Number) value;} 
-        else throw new Error(NUMBER_TYPE_ERROR);
+        else throw new RuntimeException(NUMBER_TYPE_ERROR);
     }   
-    protected static final Integer I (java.lang.Object value) throws Error {
+    protected static final Integer I (java.lang.Object value) {
         if (value instanceof Integer) {return (Integer) value;} 
-        else throw new Error(INTEGER_TYPE_ERROR);
+        else throw new RuntimeException(INTEGER_TYPE_ERROR);
     }   
-    protected static final BigDecimal D(java.lang.Object value) throws Error {
+    protected static final BigDecimal D(java.lang.Object value) {
         if (value instanceof BigDecimal) {return (BigDecimal) value;}
-        else throw new Error(BIGDECIMAL_TYPE_ERROR);
+        else throw new RuntimeException(BIGDECIMAL_TYPE_ERROR);
     }
-    protected static final Double F(java.lang.Object value) throws Error {
+    protected static final Double F(java.lang.Object value) {
         if (value instanceof Double) {return (Double) value;}
-        else throw new Error(DOUBLE_TYPE_ERROR);
+        else throw new RuntimeException(DOUBLE_TYPE_ERROR);
     }
-    protected static final Boolean B(java.lang.Object value) throws Error {
+    protected static final Boolean B(java.lang.Object value) {
         if (value instanceof Boolean) {return (Boolean) value;}
-        else throw new Error(BOOLEAN_TYPE_ERROR);
+        else throw new RuntimeException(BOOLEAN_TYPE_ERROR);
     }
-    protected static final String S(java.lang.Object value) throws Error {
+    protected static final String S(java.lang.Object value) {
         if (value instanceof String) {return (String) value;}
-        else throw new Error(STRING_TYPE_ERROR);
+        else throw new RuntimeException(STRING_TYPE_ERROR);
     }
-    protected static final Array A(java.lang.Object value) throws Error {
+    protected static final Array A(java.lang.Object value) {
         if (value instanceof Array) {return (Array) value;} 
-        else throw new Error(ARRAY_TYPE_ERROR);
+        else throw new RuntimeException(ARRAY_TYPE_ERROR);
     }
-    protected static final Object O(java.lang.Object value) throws Error {
+    protected static final Object O(java.lang.Object value) {
         if (value instanceof Object) {return (Object) value;} 
-        else throw new Error(OBJECT_TYPE_ERROR);
+        else throw new RuntimeException(OBJECT_TYPE_ERROR);
     }
     
     /**
@@ -385,7 +385,7 @@ public class JSON {
          * @return an numeric value
          * @throws if there is no <code>Number</code> value by that named
          */
-        public final Number getNumber(String name) throws Error {
+        public final Number getNumber(String name) {
             return JSON.N(get(name));
         }
         /**
@@ -395,7 +395,7 @@ public class JSON {
          * @return an integer value
          * @throws if there is no <code>Integer</code> value by that named
          */
-        public final Integer getInteger(String name) throws Error {
+        public final Integer getInteger(String name) {
             return JSON.I(get(name));
         }
         /**
@@ -407,9 +407,11 @@ public class JSON {
          * @return an integer value
          */
         public final int intValue(String name, int def) {
-            if (!containsKey(name)) return def;
-            try {return JSON.N(get(name)).intValue();} 
-            catch (Error e) {return def;}
+            if (containsKey(name)) {
+            	return JSON.N(get(name)).intValue();
+            } else {
+            	return def;
+            }
         }
         /**
          * Access a value by name and cast it to an <code>long</code> or 
@@ -420,9 +422,11 @@ public class JSON {
          * @return an long value
          */
         public final long longValue(String name, long def) {
-            if (!containsKey(name)) return def;
-            try {return JSON.N(get(name)).longValue();} 
-            catch (Error e) {return def;}
+            if (containsKey(name)) {
+            	return JSON.N(get(name)).longValue();
+            } else {
+            	return def;
+            }
         }
         /**
          * Access a value by name and cast it to an <code>BigDecimal</code>.
@@ -431,7 +435,7 @@ public class JSON {
          * @return a decimal value
          * @throws if there is no <code>BigDecimal</code> value by that named
          */
-        public final BigDecimal getDecimal(String name) throws Error {
+        public final BigDecimal getDecimal(String name) {
             return JSON.D(get(name));
         }
         /**
@@ -443,18 +447,20 @@ public class JSON {
          * @return an decimal value
          */
         public final BigDecimal getDecimal(String name, BigDecimal def) {
-            if (!containsKey(name)) return def;
-            try {return JSON.D(get(name));} 
-            catch (Error e) {return def;}
+            if (containsKey(name)) {
+            	return JSON.D(get(name));
+            } else {
+            	return def;
+            }
         }
         /**
          * ...
          * 
          * @param name
          * @return
-         * @throws Error
+
          */
-        public final Double getDouble(String name) throws Error {
+        public final Double getDouble(String name) {
             return (JSON.F(get(name)));
         }
         /**
@@ -465,18 +471,20 @@ public class JSON {
          * @return
          */
         public final double doubleValue(String name, double def) {
-            if (!containsKey(name)) return def;
-            try {return JSON.N(get(name)).doubleValue();} 
-            catch (Error e) {return def;}
+            if (containsKey(name)) {
+            	return JSON.N(get(name)).doubleValue();
+            } else {
+            	return def;
+            }
         }
         /**
          * ...
          * 
          * @param name
          * @return
-         * @throws Error
+
          */
-        public final Boolean getBoolean(String name) throws Error {
+        public final Boolean getBoolean(String name) {
             return (JSON.B(get(name)));
         }
         /**
@@ -487,18 +495,20 @@ public class JSON {
          * @return
          */
         public final boolean booleanValue(String name, boolean def) {
-            if (!containsKey(name)) return def;
-            try {return JSON.B(get(name)).booleanValue();} 
-            catch (Error e) {return def;}
+            if (containsKey(name)) {
+            	return JSON.B(get(name)).booleanValue();
+            } else {
+            	return def;
+        	} 
         }
         /**
          * ...
          * 
          * @param name
          * @return
-         * @throws Error
+
          */
-        public final String getString(String name) throws Error {
+        public final String getString(String name) {
             return (JSON.S(get(name)));
         }
         /**
@@ -509,18 +519,20 @@ public class JSON {
          * @return
          */
         public final String getString(String name, String def) {
-            if (!containsKey(name)) return def;
-            try {return JSON.S(get(name));} 
-            catch (Error e) {return def;}
+            if (containsKey(name)) {
+                return JSON.S(get(name)); 
+            } else {
+            	return def;
+        	} 
         }
         /**
          * ...
          * 
          * @param name
          * @return
-         * @throws Error
+
          */
-        public final Array getArray(String name) throws Error {
+        public final Array getArray(String name) {
             return (JSON.A(get(name)));
         }
         /**
@@ -531,18 +543,20 @@ public class JSON {
          * @return
          */
         public final Array getArray(String name, JSON.Array def) {
-            if (!containsKey(name)) return def;
-            try {return (JSON.A(get(name)));} 
-            catch (Error e) {return def;}
+            if (containsKey(name)) {
+                return (JSON.A(get(name))); 
+            } else {
+            	return def;
+        	} 
         }
         /**
          * ...
          * 
          * @param name
          * @return
-         * @throws Error
+
          */
-        public final Object getObject(String name) throws Error {
+        public final Object getObject(String name) {
             return (JSON.O(get(name)));
         }
         /**
@@ -553,9 +567,11 @@ public class JSON {
          * @return
          */
         public final Object getObject(String name, JSON.Object def) {
-            if (!containsKey(name)) return def;
-            try {return (JSON.O(get(name)));} 
-            catch (Error e) {return def;}
+            if (containsKey(name)) {
+            	return (JSON.O(get(name))); 
+            } else {
+            	return def;
+        	} 
         }
         /**
          * ...
@@ -598,7 +614,7 @@ public class JSON {
          * @return an numeric value
          * @throws if there is no <code>Number</code> value at that index
          */
-        public final Number getNumber(int index) throws Error {
+        public final Number getNumber(int index) {
             return JSON.N(get(index));
         }
         /**
@@ -606,9 +622,9 @@ public class JSON {
          * 
          * @param index
          * @return
-         * @throws Error
+
          */
-        public final Integer getInteger(int index) throws Error {
+        public final Integer getInteger(int index) {
             return (JSON.I(get(index)));
         }
         /**
@@ -619,9 +635,11 @@ public class JSON {
          * @return
          */
         public final int intValue(int index, int def) {
-            if (index >= size()) return def;
-            try {return JSON.N(get(index)).intValue();} 
-            catch (Error e) {return def;}
+            if (index < size()) {
+            	return JSON.N(get(index)).intValue();
+            } else {
+            	return def;
+            } 
         }
         /**
          * ...
@@ -631,18 +649,20 @@ public class JSON {
          * @return
          */
         public final long longValue(int index, long def) {
-            if (index >= size()) return def;
-            try {return JSON.N(get(index)).longValue();} 
-            catch (Error e) {return def;}
+            if (index < size()) {
+            	return JSON.N(get(index)).longValue();
+            } else {
+            	return def;
+            } 
         }
         /**
          * ...
          * 
          * @param index
          * @return
-         * @throws Error
+
          */
-        public final BigDecimal getDecimal(int index) throws Error {
+        public final BigDecimal getDecimal(int index) {
             return JSON.D(get(index));
         }
         /**
@@ -653,18 +673,20 @@ public class JSON {
          * @return
          */
         public final BigDecimal getDecimal(int index, BigDecimal def) {
-            if (index >= size()) return def;
-            try {return JSON.D(get(index));} 
-            catch (Error e) {return def;}
+            if (index < size()) {
+            	return JSON.D(get(index));
+            } else {
+            	return def;
+            } 
         }
         /**
          * ...
          * 
          * @param index
          * @return
-         * @throws Error
+
          */
-        public final Double getDouble(int index) throws Error {
+        public final Double getDouble(int index) {
             return (JSON.F(get(index)));
         }
         /**
@@ -675,18 +697,20 @@ public class JSON {
          * @return
          */
         public final double doubleValue(int index, double def) {
-            if (index >= size()) return def;
-            try {return JSON.N(get(index)).doubleValue();} 
-            catch (Error e) {return def;}
+            if (index < size()) {
+            	return JSON.N(get(index)).doubleValue();
+            } else {
+            	return def;
+            } 
         }
         /**
          * ...
          * 
          * @param index
          * @return
-         * @throws Error
+
          */
-        public final Boolean getBoolean(int index) throws Error {
+        public final Boolean getBoolean(int index) {
             return (JSON.B(get(index)));
         }
         /**
@@ -697,18 +721,19 @@ public class JSON {
          * @return
          */
         public final boolean booleanValue(int index, boolean def) {
-            if (index >= size()) return def;
-            try {return JSON.B(get(index)).booleanValue();} 
-            catch (Error e) {return def;}
+            if (index < size()) {
+            	return JSON.B(get(index)).booleanValue();
+            } else {
+            	return def;
+            } 
         }
         /**
          * ...
          * 
          * @param index
          * @return
-         * @throws Error
          */
-        public final String getString(int index) throws Error {
+        public final String getString(int index) {
             return (JSON.S(get(index)));
         }
         /**
@@ -719,18 +744,20 @@ public class JSON {
          * @return
          */
         public final String getString(int index, String def) {
-            if (index >= size()) return def;
-            try {return JSON.S(get(index));} 
-            catch (Error e) {return def;}
+            if (index < size()) {
+            	return JSON.S(get(index));
+            } else {
+            	return def;
+            } 
         }
         /**
          * ...
          * 
          * @param index
          * @return
-         * @throws Error
+
          */
-        public final Array getArray(int index) throws Error {
+        public final Array getArray(int index) {
             return (JSON.A(get(index)));
         }
         /**
@@ -741,18 +768,20 @@ public class JSON {
          * @return
          */
         public final Array getArray(int index, JSON.Array def) {
-            if (index >= size()) return def;
-            try {return (JSON.A(get(index)));} 
-            catch (Error e) {return def;}
+            if (index < size()) {
+                return (JSON.A(get(index))); 
+            } else {
+            	return def;
+            } 
         }
         /**
          * ...
          * 
          * @param index
          * @return
-         * @throws Error
+
          */
-        public final JSON.Object getObject(int index) throws Error {
+        public final JSON.Object getObject(int index) {
             return (JSON.O(get(index)));
         }
         /**
@@ -763,9 +792,11 @@ public class JSON {
          * @return
          */
         public final JSON.Object getObject(int index, JSON.Object def) {
-            if (index >= size()) return def;
-            try {return (JSON.O(get(index)));} 
-            catch (Error e) {return def;}
+            if (index < size()) {
+                return (JSON.O(get(index))); 
+            } else {
+            	return def;
+            } 
         }
         /**
          * ...
