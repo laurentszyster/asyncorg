@@ -136,8 +136,8 @@ public class XML {
          * The name of this element.
          * 
          * @p Note that qualified names are represented as a string joining 
-         * the namespace and the local name with a single space character, 
-         * while unqualified names (aka tags) are represented as a string 
+         * the name space and the local name with a single space character, 
+         * while unqualified names (a.k.a tags) are represented as a string 
          * without white spaces.
          */
         public String name = null;
@@ -152,7 +152,7 @@ public class XML {
         public String first = null;
         /**
          * The CDATA after this element's closing tag and before this 
-         * element's next sibbling.
+         * element's next sibling.
          */
         public String follow = null;
         /**
@@ -193,7 +193,7 @@ public class XML {
             this.attributes = attributes;
         }
         /**
-         * instantiate a new childless <code>Element</code> with attributes,
+         * instantiate a new child-less <code>Element</code> with attributes,
          * first and following CDATA.
          * 
          * @param name the fully qualified name of this element
@@ -365,7 +365,7 @@ public class XML {
             }
         }
         /**
-         * Returns the element's local name, ie: without namespace.
+         * Returns the element's local name, i.e.: without name space.
          * 
          * @return the element's unqualified name
          * 
@@ -627,7 +627,7 @@ public class XML {
     
     /**
      * A class with just enough properties to fully represent an XML
-     * document with namespaces and processing instructions. 
+     * document with name spaces and processing instructions. 
      */
     public static class Document implements Type {
         /**
@@ -654,7 +654,7 @@ public class XML {
         } 
         /**
          * instantiate a new document with a root element named after the
-         * doctype.
+         * document type.
          * 
          * @param doctype ...
          */
