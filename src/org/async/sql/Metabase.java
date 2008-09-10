@@ -439,20 +439,26 @@ public class Metabase implements PublicRDF {
      * @param objects
      * @throws Exception
      */
-    public final void 
-    get (String subject, String predicate, HashMap<String, Object> objects) 
-    throws Exception, JSON.Error {
-        _SELECT_STATEMENTS.reset();
-        _SELECT_STATEMENTS.bind(1, subject);
-        _SELECT_STATEMENTS.bind(2, predicate);
-        if (_SELECT_STATEMENTS.step()) {
-            do {
-                objects.put(
-                    _SELECT_STATEMENTS.column_string(0), 
-                    JSON.decode(_SELECT_STATEMENTS.column_string(1))
-                    );
-            } while (_SELECT_STATEMENTS.step());
-        }
+    public final void get (
+		String subject, String predicate, HashMap<String, Object> objects
+		) {
+    	try {
+	        _SELECT_STATEMENTS.reset();
+	        _SELECT_STATEMENTS.bind(1, subject);
+	        _SELECT_STATEMENTS.bind(2, predicate);
+	        if (_SELECT_STATEMENTS.step()) {
+	            do {
+	                objects.put(
+	                    _SELECT_STATEMENTS.column_string(0), 
+	                    JSON.decode(_SELECT_STATEMENTS.column_string(1))
+	                    );
+	            } while (_SELECT_STATEMENTS.step());
+	        }
+    	} catch (Exception e) {
+    		throw new RuntimeException("SQL Error " + e.getMessage());
+    	} catch (JSON.Error e) {
+    		throw new RuntimeException("JSON Error " + e.getMessage());
+    	}
     }
     /**
      * Fill a <code>StringBuilder</code> with one or more statements' object, 
@@ -496,7 +502,7 @@ public class Metabase implements PublicRDF {
      * @param subject
      * @param predicate
      * @param sb
-     * @throws Exception
+     * @throws Error
      */
     private byte[] _OPEN_OBJECT = new byte[]{'{'};
     private byte[] _CLOSE_OBJECT = new byte[]{'}'};
