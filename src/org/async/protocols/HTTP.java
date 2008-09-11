@@ -19,17 +19,15 @@
 
 package org.async.protocols;
 
-import org.async.chat.BytesProducer;
-import org.async.chat.Producer;
-import org.async.simple.Objects;
 import org.async.simple.SIO;
+import org.async.simple.Objects;
 import org.async.simple.Strings;
 
 import java.util.regex.Pattern;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.HashMap;
-import java.util.LinkedList;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.FileInputStream;
@@ -154,7 +152,7 @@ public final class HTTP {
     
     public static abstract class Entity {
         public HashMap<String, String> headers = new HashMap();
-        public abstract Producer body() throws Throwable;
+        public abstract Iterator<byte[]> body() throws Throwable;
     }
     public static final class FileEntity extends Entity {
         public String absolutePath;
@@ -176,20 +174,10 @@ public final class HTTP {
             headers.put("Last-Modified", HTTP.date(lastModified));
             headers.put("Etag", sha1.hexdigest());
         } 
-        public Producer body () throws IOException {
-            return new BytesProducer(SIO.read(
+        public Iterator<byte[]> body () throws IOException {
+            return SIO.read(
                 new FileInputStream(absolutePath), SIO.netBufferSize
-                ));
-        }
-    }
-    public static final class CacheEntity extends Entity {
-        private LinkedList<byte[]> _bytes = new LinkedList<byte[]>(); 
-        public CacheEntity (Entity cached) throws Throwable {
-            headers = cached.headers;
-            _bytes = BytesProducer.tee(cached.body());
-        }
-        public Producer body () {
-            return new BytesProducer(_bytes.iterator()); 
+                );
         }
     }
 }
