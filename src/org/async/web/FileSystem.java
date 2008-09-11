@@ -1,6 +1,7 @@
 package org.async.web;
 
 import org.async.web.HttpServer;
+import org.async.chat.BytesProducer;
 import org.async.protocols.HTTP;
 import java.io.File;
 
@@ -32,7 +33,7 @@ public class FileSystem implements HttpServer.Controller {
                 String method = http.method();
                 if (method.equals("GET")) {
                     http.set("Cache-control", _cacheControl);
-                    http.reply(200, entity.headers, entity.body()); 
+                    http.reply(200, entity.headers, new BytesProducer(entity.body())); 
                 } else if (method.equals("HEAD")) {
                     http.set("Cache-control", _cacheControl);
                     http.reply(200, entity.headers);
