@@ -70,4 +70,12 @@ public class BytesProducer implements Producer {
         }
         return bytes;
     }
+    public static final LinkedList<byte[]> tee (Iterator<byte[]> iterator) 
+    throws Throwable {
+        LinkedList<byte[]> bytes = new LinkedList<byte[]>();
+        while (iterator.hasNext()) {
+        	bytes.add(iterator.next());
+        }
+        return bytes;
+    }
 }
