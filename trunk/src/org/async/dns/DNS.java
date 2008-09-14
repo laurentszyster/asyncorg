@@ -144,7 +144,7 @@ public class DNS {
     
     public static final DNSClient resolver = client();
     
-    public static final void resolve (String[] question, Fun callback) 
+    public static final void resolve (String question, Fun callback) 
     throws Throwable {
     	resolver.resolve(question, callback);
     }
@@ -168,7 +168,7 @@ public class DNS {
     connect (Dispatcher dispatcher, String host, int port) 
     throws Throwable {
     	resolver.resolve(
-			new String[]{host, "A"}, new _Connect(dispatcher, port)
+			"A " + host, new _Connect(dispatcher, port)
 			);
     }
     

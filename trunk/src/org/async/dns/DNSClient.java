@@ -20,7 +20,6 @@
 package org.async.dns;
 
 import org.async.simple.Fun;
-import org.async.simple.Strings;
 import org.async.core.Timeouts;
 import org.async.core.Dispatcher;
 
@@ -45,7 +44,7 @@ import java.nio.ByteBuffer;
 public class DNSClient extends Dispatcher {
 
     protected static final class RequestA extends DNSRequest {
-        protected RequestA(String[] question) {
+        protected RequestA(String question) {
             super(question);
         }
         private static final String[] _template = new String[]{
@@ -93,7 +92,7 @@ public class DNSClient extends Dispatcher {
     	    };
     	}
     	private ArrayList<RecordNS> _records = new ArrayList<RecordNS>();
-        protected RequestNS(String[] question) {
+        protected RequestNS(String question) {
             super(question);
         }
         private static final String[] _template = new String[]{
@@ -128,7 +127,7 @@ public class DNSClient extends Dispatcher {
     }
     
     protected static final class RequestPTR extends DNSRequest {
-        protected RequestPTR(String[] question) {
+        protected RequestPTR(String question) {
             super(question);
         }
         private static final String[] _template = new String[]{
@@ -152,7 +151,7 @@ public class DNSClient extends Dispatcher {
     }
     
     protected static final class RequestTXT extends DNSRequest {
-        protected RequestTXT(String[] question) {
+        protected RequestTXT(String question) {
             super(question);
         }
         private static final String[] _template = new String[]{
@@ -197,7 +196,7 @@ public class DNSClient extends Dispatcher {
     	    };
     	}
     	private ArrayList<RecordMX> _records = new ArrayList<RecordMX>();
-        protected RequestMX(String[] question) {
+        protected RequestMX(String question) {
             super(question);
         }
         private static final String[] _template = new String[]{
@@ -261,7 +260,7 @@ public class DNSClient extends Dispatcher {
     protected DNSTimeouts _timeouts;
     protected long _sent = 0;
     protected int _failover = 3;
-    protected HashMap<String[], DNSRequest> _cache = new HashMap();
+    protected HashMap<String, DNSRequest> _cache = new HashMap();
     protected HashMap<Integer, DNSRequest> _pending = new HashMap();
     protected SocketAddress[] _servers;
     
@@ -271,7 +270,7 @@ public class DNSClient extends Dispatcher {
         _timeouts = new DNSTimeouts(timeout, precision);
     }
     
-    public final void resolve(String[] question, Fun resolved) throws Throwable {
+    public final void resolve(String question, Fun resolved) throws Throwable {
         DNSRequest request = _cache.get(question);
         if (request != null) {
             if (request.defered == null) {
@@ -284,20 +283,20 @@ public class DNSClient extends Dispatcher {
                 return;
             }
         }
-        if (question == null || question.length != 2) {
+        if (question == null) {
             throw new Error("parameter must be an array of two strings");
-        } else if (question[1].equals("A")) {
+        } else if (question.startsWith("A ")) {
         	request = new RequestA(question);
-        } else if (question[1].equals("PTR")) {
+        } else if (question.startsWith("PTR ")) {
         	request = new RequestPTR(question);
-        } else if (question[1].equals("MX")) {
+        } else if (question.startsWith("MX ")) {
         	request = new RequestMX(question);
-        } else if (question[1].equals("NS")) {
+        } else if (question.startsWith("NS ")) {
         	request = new RequestNS(question);
-        } else if (question[1].equals("TXT")) {
+        } else if (question.startsWith("TXT ")) {
         	request = new RequestTXT(question);
         } else {
-            throw new Error("unsupported DNS request type " + question[0]);
+            throw new Error("unsupported DNS request type " + question);
         }
         request.servers = _servers;
         request.peer = _servers[0];
