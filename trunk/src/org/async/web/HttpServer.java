@@ -183,7 +183,7 @@ public class HttpServer extends Server {
         }
         public final String get(String name) {
             return _requestHeaders.get(name);
-        };
+        }
         public final String get(String name, String defaultValue) {
             String value = _requestHeaders.get(name);
             if (value == null) {
@@ -200,13 +200,13 @@ public class HttpServer extends Server {
         }
         public final Collector body() {
             return _requestBody;
-        };
+        }
         public final void set(String name, String value) {
         	if (HEADERS.contains(name.toLowerCase())) {
         		throw new Error("HTTP header already set by the server:" + name);
         	}
             _responseHeaders.put(name, value);
-        };
+        }
         public final void setCookie(String name, String value) {
             if (_responseCookies == null) {
                 _responseCookies = new HashMap<String, String>();
@@ -492,7 +492,7 @@ public class HttpServer extends Server {
         super.serverMaintain();
         _calendar.add(Calendar.MILLISECOND, precision);
         _date = HTTP.date(_calendar);
-    };
+    }
     public final String httpHost () {
         return _host;
     }
@@ -563,7 +563,7 @@ public class HttpServer extends Server {
             http.error(500); // Server Error
         }
         return false;
-    };
+    }
     public void httpLog(Actor http) { // TODO: replace with a Fun ?
         _loop.log((
             http._channel.toString()
@@ -578,5 +578,5 @@ public class HttpServer extends Server {
             + " " + ((http.digest == null) ? "-" : http.digest)
             + " " + ((http.digested == null) ? "-" : http.digested)
             ));
-    };
+    }
 }
