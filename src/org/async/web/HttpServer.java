@@ -51,6 +51,17 @@ import java.net.URI;
  *    
  */
 public class HttpServer extends Server {
+	/**
+	 * HTTP headers set by the server.
+	 */
+    public static final HashSet<String> HEADERS = Objects.set(
+		"content-length", 
+		"connection", 
+		"date", 
+		"server", 
+		"set-cookie",
+		"transfer-encoding"
+		);
     /**
      * An Actor holding one HTTP/1.1 resource state transition with support
      * for IRTD2 and JSON. It can be applied to handle simple HTTP/1.0 
@@ -190,17 +201,9 @@ public class HttpServer extends Server {
         public final Collector body() {
             return _requestBody;
         };
-        public static final HashSet<String> HEADERS = Objects.set(
-    		"cache", 
-    		"content-type", 
-    		"location"
-    		
-    		// TODO: complete the set ...
-    		
-    		);
         public final void set(String name, String value) {
-        	if (!HEADERS.contains(name.toLowerCase())) {
-        		throw new Error("Invalid HTTP header: " + name);
+        	if (HEADERS.contains(name.toLowerCase())) {
+        		throw new Error("HTTP header already set by the server:" + name);
         	}
             _responseHeaders.put(name, value);
         };
