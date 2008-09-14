@@ -42,13 +42,6 @@ import java.net.URI;
 
 /**
  * An extensible HTTP/1.1 server for high-performance state-full applications.
- * 
- * @h3 Synopsis
- * 
- * @p This HTTP server is made for Web 2.0 applications, with support for:
- * IRTD2 strong identification; authorization of URL-form-encoded and JSON 
- * state transitions; state-full transaction handlers.
- *    
  */
 public class HttpServer extends Server {
 	/**
