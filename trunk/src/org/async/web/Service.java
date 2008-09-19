@@ -78,7 +78,7 @@ public class Service implements Controller {
         Object input = null;
         String body = ((StringCollector) http.body()).toString();
         if (_type == null) {
-            input = (new JSON()).eval(body);
+            input = JSON.decode(body);
         } else {
             input = (new JSONR(_type)).eval(body);
         }

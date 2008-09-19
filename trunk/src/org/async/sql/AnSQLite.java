@@ -493,7 +493,7 @@ public class AnSQLite {
      */
     public final void handle (byte[] request, StringBuilder response) {
         JSON.Array statement = new JSON.Array();
-        JSON.Error error = (new JSON()).extend(
+        JSON.Error error = (new JSON.Parser()).extend(
             statement, Bytes.decode(request, Bytes.UTF8)
             );
         if (error != null) {
