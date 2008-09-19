@@ -44,10 +44,10 @@ import org.async.simple.Objects;
  * 
  * @h3 Synopsis
  * 
- * @pre JSONR pattern = new JSONR("["my model", "is a constant"]");
+ * @pre JSONR jsonr = new JSONR.Parser("["my model", "is a constant"]");
  *try {
- *    Object value = pattern.eval("[\"my model\", \"is a constant\"]);
- *    Object value = pattern.eval("[\"will this fail?\", true]);
+ *    Object value = jsonr.eval("[\"my model\", \"is a constant\"]);
+ *    Object value = jsonr.eval("[\"will this fail?\", true]);
  *} catch (JSONR.Error e) {
  *    System.out.println(e.str());
  *}
@@ -60,7 +60,7 @@ import org.async.simple.Objects;
  * 
  * @pre Object map;
  *try {
- *    JSONR pattern = new JSONR("{\"pass\": null}");
+ *    JSONR pattern = new JSONR.Validator("{\"pass\": null}");
  *    map = pattern.eval(
  *        "{\"pass\": true}"
  *        );
@@ -123,7 +123,7 @@ import org.async.simple.Objects;
  * @p As a decent implementation of JSONR, this one is extensible and provides
  * a Java interface and enough singleton to do so easely.
  */
-public class JSONR extends JSON {
+public final class JSONR extends JSON.Parser {
     
     /**
      * A simple JSONR exception raised for any type or value error found 
@@ -138,7 +138,7 @@ public class JSONR extends JSON {
      * @pre String model = "[[true, \"[a-z]+\", null]]";
      * String string = "[[false, \"test\", 1.0][true, \"ERROR\", {}]]";
      * try {
-     *    Object json = (new JSONR(model)).eval(string)
+     *    Object json = (new JSONR.Parser(model)).eval(string)
      *} catch (JSONR.Error e) {
      *    System.out.println(e.toString())
      *}
@@ -163,8 +163,6 @@ public class JSONR extends JSON {
         }
         
     }
-    
-    private static final long serialVersionUID = 0L; 
     
     /**
      * An interface to extend JSONR with application types.
@@ -230,7 +228,7 @@ public class JSONR extends JSON {
          * @return a regular <code>Object</code>, or
          * @throws Error if the type or value is irregular
          */
-        public java.lang.Object value(java.lang.Object instance) throws Error ;
+        public Object value(Object instance) throws Error ;
         /**
          * Evaluate a JSON string <em>and</em> validate it as regular
          * 
@@ -238,7 +236,7 @@ public class JSONR extends JSON {
          * @return a regular <code>Object</code>, or
          * @throws JSON.Error if the string is irregular
          */
-        public java.lang.Object eval(String string) throws JSON.Error;
+        public Object eval(String string) throws JSON.Error;
         /**
          * Make a "deep" copy of the <code>Type</code>, something that
          * can safely be passed to a distinct thread.
@@ -252,15 +250,15 @@ public class JSONR extends JSON {
          */
         public Type copy();
         public String name();
-        public java.lang.Object json();
+        public Object json();
     }
     
     protected static final class TypeUndefined implements Type {
         public static final TypeUndefined singleton = new TypeUndefined();
-        public java.lang.Object value (java.lang.Object instance) {
+        public Object value (Object instance) {
             return instance;
             }
-        public java.lang.Object eval (String string) {
+        public Object eval (String string) {
             if (string.equals(JSON._null))
                 return null;
             else
@@ -269,14 +267,14 @@ public class JSONR extends JSON {
         public Type copy() {return singleton;}
         private static final String _name = "undefined";
         public String name() {return _name;} 
-        public java.lang.Object json() {return null;}
+        public Object json() {return null;}
     }
 
     protected static final class TypeBoolean implements Type {
         protected static final String BOOLEAN_VALUE_ERROR = 
             "Boolean value error";
         public static final TypeBoolean singleton = new TypeBoolean();
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             if (instance instanceof Boolean)
                 return instance;
@@ -285,7 +283,7 @@ public class JSONR extends JSON {
             else
                 throw new Error(JSON.BOOLEAN_TYPE_ERROR);
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             if (string.equals(JSON._true))
                 return Boolean.TRUE;
@@ -297,14 +295,14 @@ public class JSONR extends JSON {
         public final Type copy() {return singleton;}
         private static final String _name = "boolean";
         public String name() {return _name;} 
-        public java.lang.Object json() {return Boolean.FALSE;}
+        public Object json() {return Boolean.FALSE;}
     }
 
     protected static final class TypeInteger implements Type {
         protected static final String BIGINTEGER_VALUE_ERROR = 
             "Integer value error";
         public static final TypeInteger singleton = new TypeInteger();
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             if (instance instanceof Integer)
                 return instance;
@@ -313,7 +311,7 @@ public class JSONR extends JSON {
             else
                 throw new Error(JSON.INTEGER_TYPE_ERROR);
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSONR.Error {
             if (string != null) {
                 return new Integer(string);
@@ -324,14 +322,14 @@ public class JSONR extends JSON {
         private static final String _name = "integer";
         public String name() {return _name;} 
         private static final Integer _json = new Integer(0);
-        public java.lang.Object json() {return _json;}
+        public Object json() {return _json;}
     }
 
     protected static final class TypeDouble implements Type {
         protected static final String DOUBLE_VALUE_ERROR = 
             "Double value error";
         public static final TypeDouble singleton = new TypeDouble();
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             if (instance instanceof Double)
                 return instance;
@@ -342,7 +340,7 @@ public class JSONR extends JSON {
             else
                 throw new Error(JSON.DOUBLE_TYPE_ERROR);
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             if (string != null) {
                 return new Double(string);
@@ -353,14 +351,14 @@ public class JSONR extends JSON {
         private static final String _name = "double";
         public String name() {return _name;} 
         private static final Double _json = new Double(0);
-        public java.lang.Object json() {return _json;}
+        public Object json() {return _json;}
     }
 
     protected static final class TypeDecimal implements Type {
         protected static final String DOUBLE_VALUE_ERROR = 
             "BigDecimal value error";
         public static final Type singleton = new TypeDecimal();
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             BigDecimal b;
             if (instance instanceof BigDecimal) {
@@ -373,7 +371,7 @@ public class JSONR extends JSON {
                 throw new Error(JSON.DOUBLE_TYPE_ERROR);
             return b;
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             if (string != null) {
                 return (new BigDecimal(string));
@@ -384,21 +382,21 @@ public class JSONR extends JSON {
         private static final String _name = "decimal";
         public String name() {return _name;} 
         private static final BigDecimal _json = new BigDecimal("0");
-        public java.lang.Object json() {return _json;}
+        public Object json() {return _json;}
     }
 
     protected static final class TypeString implements Type {
         protected static final String STRING_VALUE_ERROR = 
             "String value error";
         public static final TypeString singleton = new TypeString();
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             if (instance instanceof String) {
                 return instance;
             } else
                 throw new Error(JSON.STRING_TYPE_ERROR);
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             if (string == null || string.length() == 0) 
                 throw new Error(STRING_VALUE_ERROR);
@@ -409,7 +407,7 @@ public class JSONR extends JSON {
         private static final String _name = "string";
         public String name() {return _name;} 
         private static final String _json = "";
-        public java.lang.Object json() {return _json;}
+        public Object json() {return _json;}
     }
     
     protected static final class TypeRegular implements Type {
@@ -422,20 +420,20 @@ public class JSONR extends JSON {
         public TypeRegular (String expression) {
             pattern = Pattern.compile(expression);
         } 
-        protected final java.lang.Object test (String string) throws Error {
+        protected final Object test (String string) throws Error {
             if (pattern.matcher(string).matches())
                 return string;
             else
                 throw new Error(IRREGULAR_STRING);
         }
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             if (instance instanceof String) {
                 return this.test((String) instance);
             } else
                 throw new Error(JSON.STRING_TYPE_ERROR);
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             if (string != null)
                 return this.test(string);
@@ -445,25 +443,25 @@ public class JSONR extends JSON {
         public Type copy() {return new TypeRegular(pattern);}
         private static final String _name = "pcre";
         public String name() {return _name;} 
-        public java.lang.Object json() {return pattern.pattern();}
+        public Object json() {return pattern.pattern();}
     }
 
     protected static final class TypeArray implements Type {
         public Type[] types = null;
         public TypeArray (Type[] types) {this.types = types;}
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             if (instance == null || instance instanceof ArrayList)
                 return instance;
             else
                 throw new Error(JSON.ARRAY_TYPE_ERROR);
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             return (new JSONR(this)).eval(string);
         }
         protected final Iterator iterator() {
-            return Objects.iter((java.lang.Object[])types);
+            return Objects.iter((Object[])types);
             }
         public static final Type singleton = new TypeArray(new Type[]{});
         public final Type copy() {
@@ -474,8 +472,8 @@ public class JSONR extends JSON {
         }
         private static final String _name = "array";
         public String name() {return _name;} 
-        public java.lang.Object json() {
-            return JSON.list((java.lang.Object[])types);
+        public Object json() {
+            return JSON.list((Object[])types);
             }
     }
 
@@ -489,7 +487,7 @@ public class JSONR extends JSON {
         public TypeDictionary (Type[] types) {
             this.types = types;
             }
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             if (instance == null)
                 return null;
@@ -502,7 +500,7 @@ public class JSONR extends JSON {
             } else
                 throw new Error(JSON.OBJECT_TYPE_ERROR);
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             return (new JSONR(this)).eval(string);
         }
@@ -512,8 +510,8 @@ public class JSONR extends JSON {
         }
         private static final String _name = "dictionary";
         public String name() {return _name;} 
-        public java.lang.Object json() {
-            return JSON.dict((java.lang.Object[])types);
+        public Object json() {
+            return JSON.dict((Object[])types);
             }
     }
 
@@ -533,7 +531,7 @@ public class JSONR extends JSON {
             Iterator i = names.iterator();
             while (i.hasNext()) {
                 String name = (String) i.next();
-                java.lang.Object value = namespace.get(name); 
+                Object value = namespace.get(name); 
                 if (!(
                     value instanceof TypeUndefined ||
                     value instanceof TypeArray ||
@@ -543,7 +541,7 @@ public class JSONR extends JSON {
                     mandatory.add(name);
                 }
             }
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             if (instance == null)
                 return null;
@@ -556,7 +554,7 @@ public class JSONR extends JSON {
             } else
                 throw new Error(JSON.OBJECT_TYPE_ERROR);
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             return (new JSONR(this)).eval(string);
         }
@@ -574,7 +572,7 @@ public class JSONR extends JSON {
         }
         private static final String _name = "namespace";
         public String name() {return _name;} 
-        public java.lang.Object json() {
+        public Object json() {
             JSON.Object _json = new JSON.Object();
             _json.putAll(namespace);
             return _json;
@@ -611,11 +609,11 @@ public class JSONR extends JSON {
             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         protected static final String DATETIME_VALUE_ERROR = 
             "DateTime value error";
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws JSONR.Error {
             return eval((String) STRING.value(instance));
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSONR.Error {
             try {
                 string.replace('T', ' ');
@@ -629,7 +627,7 @@ public class JSONR extends JSON {
         public final Type copy() {return singleton;}        
         private static final String _name = "datetime";
         public String name() {return _name;} 
-        public java.lang.Object json() {return format.toPattern();}
+        public Object json() {return format.toPattern();}
     }
     
     /**
@@ -660,7 +658,7 @@ public class JSONR extends JSON {
             "negative integer";
         Integer limit;
         public TypeIntegerAbsolute (Integer gt) {this.limit = gt;}
-        protected final java.lang.Object test (Integer i) throws Error {
+        protected final Object test (Integer i) throws Error {
             if (i.intValue() < 0)
                 throw new Error(NEGATIVE_INTEGER);
             else if (i.compareTo(limit) <= 0)
@@ -668,17 +666,17 @@ public class JSONR extends JSON {
             else
                 throw new Error(POSITIVE_INTEGER_OVERFLOW);
         } 
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             return test((Integer) INTEGER.value(instance));
         }
-        public final java.lang.Object eval (String string) throws JSON.Error {
+        public final Object eval (String string) throws JSON.Error {
             return test((Integer) INTEGER.eval(string));
         }
         public final Type copy() {return new TypeIntegerAbsolute(limit);}
         private static final String _name = "integerAbsolute";
         public String name() {return _name;} 
-        public java.lang.Object json() {return limit;}
+        public Object json() {return limit;}
     }
 
     protected static final class TypeIntegerRelative implements Type {
@@ -688,18 +686,18 @@ public class JSONR extends JSON {
         public TypeIntegerRelative (Integer gt) {
             this.limit = Math.abs(gt.intValue());
         }
-        protected final java.lang.Object test (Integer i) 
+        protected final Object test (Integer i) 
         throws Error {
             if (Math.abs(i.intValue()) < limit)
                 return i;
             else
                 throw new Error(INTEGER_OVERFLOW);
         } 
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             return test((Integer) INTEGER.value(instance));
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             return test((Integer) INTEGER.eval(string));
         }
@@ -708,7 +706,7 @@ public class JSONR extends JSON {
         }
         private static final String _name = "integerRelative";
         public String name() {return _name;} 
-        public java.lang.Object json() {return new Integer(limit);}
+        public Object json() {return new Integer(limit);}
     }
 
     private static final Double _double_zero = new Double(0.0);
@@ -720,7 +718,7 @@ public class JSONR extends JSON {
             "negative double";
         Double limit;
         public TypeDoubleAbsolute (Double gt) {this.limit = gt;}
-        protected final java.lang.Object test (Double d) 
+        protected final Object test (Double d) 
         throws Error {
             if (d.compareTo(_double_zero) < 0)
                 throw new Error(NEGATIVE_DOUBLE);
@@ -729,18 +727,18 @@ public class JSONR extends JSON {
             else
                 throw new Error(POSITIVE_DOUBLE_OVERFLOW);
         } 
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             return test((Double) DOUBLE.value(instance));
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             return test((Double) DOUBLE.eval(string));
         }
         public final Type copy() {return new TypeDoubleAbsolute(limit);}
         private static final String _name = "doubleAbsolute";
         public String name() {return _name;} 
-        public java.lang.Object json() {return limit;}
+        public Object json() {return limit;}
     }
     
     protected static final class TypeDoubleRelative implements Type {
@@ -750,24 +748,24 @@ public class JSONR extends JSON {
         public TypeDoubleRelative (double v) {
             this.limit = Math.abs(v);
             }
-        protected final java.lang.Object test (Double d) throws Error {
+        protected final Object test (Double d) throws Error {
             if (Math.abs(d.doubleValue()) <= limit)
                 return d;
             else
                 throw new Error(DOUBLE_OVERFLOW);
         } 
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             return test((Double) DOUBLE.value(instance));
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             return test((Double) DOUBLE.eval(string));
         }
         public final Type copy() {return new TypeDoubleRelative(limit);}
         private static final String _name = "doubleRelative";
         public String name() {return _name;} 
-        public java.lang.Object json() {return new Double(limit);}
+        public Object json() {return new Double(limit);}
     }
     
     private static final BigDecimal _decimal_zero = BigDecimal.valueOf(0);
@@ -783,7 +781,7 @@ public class JSONR extends JSON {
             limit = lt;
             scale = limit.scale(); 
         } 
-        protected final java.lang.Object test (BigDecimal b) 
+        protected final Object test (BigDecimal b) 
         throws Error {
             b.setScale(scale);
             if (b.compareTo(_decimal_zero) < 0)
@@ -793,18 +791,18 @@ public class JSONR extends JSON {
             else
                 throw new Error(POSITIVE_DECIMAL_OVERFLOW);
         }
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             return test((BigDecimal) DECIMAL.value(instance));
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             return test((BigDecimal) DECIMAL.eval(string));
         }
         public final Type copy() {return new TypeDecimalAbsolute(limit);}
         private static final String _name = "decimalAbsolute";
         public String name() {return _name;} 
-        public java.lang.Object json() {return limit;}
+        public Object json() {return limit;}
     }
     
     protected static final class TypeDecimalRelative implements Type {
@@ -816,7 +814,7 @@ public class JSONR extends JSON {
             limit = gt;
             scale = limit.scale(); 
         } 
-        protected final java.lang.Object test (BigDecimal b) 
+        protected final Object test (BigDecimal b) 
         throws Error {
             b.setScale(scale);
             if (b.abs().compareTo(limit) > 0)
@@ -824,18 +822,18 @@ public class JSONR extends JSON {
             else
                 throw new Error(DECIMAL_OVERFLOW);
         }
-        public final java.lang.Object value (java.lang.Object instance) 
+        public final Object value (Object instance) 
         throws Error {
             return test((BigDecimal) DECIMAL.value(instance));
         }
-        public final java.lang.Object eval (String string) 
+        public final Object eval (String string) 
         throws JSON.Error {
             return test((BigDecimal) DECIMAL.eval(string));
         }
         public Type copy() {return new TypeDecimalRelative(limit);}
         private static final String _name = "decimalAbsolute";
         public String name() {return _name;} 
-        public java.lang.Object json() {return limit;}
+        public Object json() {return limit;}
     }
     
     /**
@@ -853,9 +851,7 @@ public class JSONR extends JSON {
      * @return
      * @throws Error
      */
-    public static final java.lang.Object validate (
-        java.lang.Object instance, Type type
-        ) 
+    public static final Object validate (Object instance, Type type) 
     throws Error {
         if (type instanceof TypeArray) {
             if (type.value(instance) == null) // null
@@ -915,7 +911,7 @@ public class JSONR extends JSON {
     }
     
     protected static final Type compile(
-        java.lang.Object regular, Map extensions, HashMap cache
+        Object regular, Map extensions, HashMap cache
         ) {
         String pattern = JSON.encode(regular);
         if (cache.containsKey(pattern))
@@ -1008,7 +1004,7 @@ public class JSONR extends JSON {
      * @return
      */
     public static final 
-    Type compile(java.lang.Object regular, Map extensions) {
+    Type compile(Object regular, Map extensions) {
         return compile(regular, extensions, new HashMap());
     }
     
@@ -1022,7 +1018,7 @@ public class JSONR extends JSON {
      */
     public static final Type compile(String pattern, Map extensions)
     throws JSON.Error {
-        return compile((new JSON()).eval(pattern), extensions);
+        return compile((new JSON.Parser()).eval(pattern), extensions);
     }
     
     /**
@@ -1034,7 +1030,7 @@ public class JSONR extends JSON {
      */
     public static final Type compile(String pattern)
     throws JSON.Error {
-        return compile((new JSON()).eval(pattern), TYPES);
+        return compile((new JSON.Parser()).eval(pattern), TYPES);
     }
 
     protected static final String IRREGULAR_ARRAY = 
@@ -1075,7 +1071,7 @@ public class JSONR extends JSON {
      * @param regular
      * @throws JSON.Error
      */
-    public JSONR(java.lang.Object regular) throws JSON.Error {
+    public JSONR(Object regular) throws JSON.Error {
         super(); type = compile(regular, TYPES);
     }
     
@@ -1087,7 +1083,7 @@ public class JSONR extends JSON {
      * @param iterations
      * @throws JSON.Error
      */
-    public JSONR(java.lang.Object regular, int containers, int iterations) 
+    public JSONR(Object regular, int containers, int iterations) 
     throws JSON.Error {
         super(containers, iterations); type = compile(regular, TYPES);
     }
@@ -1118,7 +1114,7 @@ public class JSONR extends JSON {
     /**
      * ...
      */
-    public java.lang.Object eval(String json) 
+    public Object eval(String json) 
     throws JSON.Error {
         buf = new StringBuilder();
         it = new StringCharacterIterator(json);
@@ -1187,7 +1183,7 @@ public class JSONR extends JSON {
         }
     }
     
-    protected final java.lang.Object value(Type type) 
+    protected final Object value(Type type) 
     throws JSON.Error {
         while (Character.isWhitespace(c)) c = it.next();
         switch(c){
@@ -1244,10 +1240,10 @@ public class JSONR extends JSON {
             } else
                 throw error(NULL_EXPECTED);
         }
-        case ',': {c = it.next(); return JSON.COMMA;} 
-        case ':': {c = it.next(); return JSON.COLON;}
-        case ']': {c = it.next(); return JSON.ARRAY;} 
-        case '}': {c = it.next(); return JSON.OBJECT;}
+        case ',': {c = it.next(); return COMMA;} 
+        case ':': {c = it.next(); return COLON;}
+        case ']': {c = it.next(); return ARRAY;} 
+        case '}': {c = it.next(); return JSON.Parser.OBJECT;}
         case JSON._done:
             throw error(UNEXPECTED_END);
         default: 
@@ -1255,7 +1251,7 @@ public class JSONR extends JSON {
         }
     }
     
-    protected final java.lang.Object value(Type type, String name) 
+    protected final Object value(Type type, String name) 
     throws JSON.Error {
         try {
             return value(type);
@@ -1269,7 +1265,7 @@ public class JSONR extends JSON {
         }
     }
     
-    protected final java.lang.Object value(Type type, int index) 
+    protected final Object value(Type type, int index) 
     throws JSON.Error {
         try {
             return value(type);
@@ -1283,28 +1279,28 @@ public class JSONR extends JSON {
         }
     }
     
-    protected final java.lang.Object dictionary(Map o, Type[] types) 
+    protected final Object dictionary(Map o, Type[] types) 
     throws JSON.Error {
         if (--containers < 0) 
             throw error(CONTAINERS_OVERFLOW);
         
-        java.lang.Object val;
-        java.lang.Object token = value(types[0]);
-        while (token != JSON.OBJECT) {
+        Object val;
+        Object token = value(types[0]);
+        while (token != OBJECT) {
             if (!(token instanceof String))
                 throw error(STRING_EXPECTED);
             
             if (--iterations < 0) 
                 throw error(ITERATIONS_OVERFLOW);
             
-            if (value() == JSON.COLON) {
+            if (value() == COLON) {
                 val = value(types[1]);
-                if (val==JSON.COLON || val==JSON.COMMA || val==JSON.OBJECT || val==ARRAY)
+                if (val==COLON || val==COMMA || val==OBJECT || val==ARRAY)
                     throw error(VALUE_EXPECTED);
                 
                 o.put(token, val);
                 token = value(types[0]);
-                if (token == JSON.COMMA)
+                if (token == COMMA)
                     token = value();
             } else {
                 throw error(COLON_EXPECTED);
@@ -1313,16 +1309,16 @@ public class JSONR extends JSON {
         return o;
     }
     
-    protected final java.lang.Object namespace(Map o, HashMap namespace) 
+    protected final Object namespace(Map o, HashMap namespace) 
     throws JSON.Error {
         if (--containers < 0) 
             throw error(CONTAINERS_OVERFLOW);
         
         Type type;
         String name; 
-        java.lang.Object val;
-        java.lang.Object token = value();
-        while (token != JSON.OBJECT) {
+        Object val;
+        Object token = value();
+        while (token != OBJECT) {
             if (!(token instanceof String))
                 throw error(STRING_EXPECTED);
             
@@ -1331,17 +1327,17 @@ public class JSONR extends JSON {
             
             name = (String) token;
             type = (Type) namespace.get(name);
-            if (value() == JSON.COLON) {
+            if (value() == COLON) {
                 if (type == null)
                     throw new Error(NAME_ERROR);
                 else
                     val = value(type, name);
-                if (val==JSON.COLON || val==JSON.COMMA || val==JSON.OBJECT || val==ARRAY)
+                if (val==COLON || val==COMMA || val==OBJECT || val==ARRAY)
                     throw error(VALUE_EXPECTED);
                 
                 o.put(name, val);
                 token = value();
-                if (token == JSON.COMMA)
+                if (token == COMMA)
                     token = value();
             } else {
                 throw error(COLON_EXPECTED);
@@ -1350,17 +1346,17 @@ public class JSONR extends JSON {
         return o;
     }
     
-    protected final java.lang.Object array(List a, Iterator types) 
+    protected final Object array(List a, Iterator types) 
     throws JSON.Error {
         if (--containers < 0) 
             throw error(CONTAINERS_OVERFLOW);
 
         int i = 0;
         Type type = (Type) types.next();
-        java.lang.Object token = value(type, i++);
+        Object token = value(type, i++);
         if (types.hasNext()) {
-            while (token != JSON.ARRAY) {
-                if (token==JSON.COLON || token==JSON.COMMA || token==JSON.OBJECT)
+            while (token != ARRAY) {
+                if (token==COLON || token==COMMA || token==OBJECT)
                     throw error(VALUE_EXPECTED);
                 
                 if (--iterations < 0) 
@@ -1368,7 +1364,7 @@ public class JSONR extends JSON {
              
                 a.add(token);
                 token = value(); 
-                if (token == JSON.COMMA)
+                if (token == COMMA)
                     if (types.hasNext())
                         token = value((Type) types.next(), i++);
                     else
@@ -1377,8 +1373,8 @@ public class JSONR extends JSON {
             if (types.hasNext())
                 throw error(PARTIAL_ARRAY);
         } else {
-            while (token != JSON.ARRAY) {
-                if (token==JSON.COLON || token==JSON.COMMA || token==JSON.OBJECT)
+            while (token != ARRAY) {
+                if (token==COLON || token==COMMA || token==OBJECT)
                     throw error(VALUE_EXPECTED);
                 
                 if (--iterations < 0) 
@@ -1386,7 +1382,7 @@ public class JSONR extends JSON {
              
                 a.add(token);
                 token = value(); 
-                if (token == JSON.COMMA)
+                if (token == COMMA)
                     token = value(type, i++);
             }
         }

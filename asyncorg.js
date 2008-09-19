@@ -110,7 +110,7 @@ function _POST (service, model) {
         },
         'handleBody': function (http) {
             var input = (
-                (type == null) ? new JSON(): new JSONR(type)
+                (type == null) ? new JSON.Parser(): new JSONR(type)
                 ).eval(http.body().toString());
             if (input != null && typeof input == "JSON.Object") {
                 input.putAll(http.state);
@@ -218,7 +218,7 @@ function met4_request (http) {
                     ));
             }
         } catch (e) {
-            http.reply(500, e.toString(), "UTF-8");
+            http.reply(500, e.toString(), "UTF-8"); // Server error
         }
     } else {
         http.error(501); // Not implemented
@@ -244,7 +244,7 @@ function met4_body (http) {
         }
     } catch (e) {
         metabase.sql.rollback();
-        http.reply(500, e.toString(), "UTF-8");
+        http.reply(500, e.toString(), "UTF-8"); // Server error
         return;
     }
     metabase.sql.commit();
