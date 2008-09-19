@@ -76,7 +76,7 @@ import org.async.protocols.JSON;
  * @p ... <code>XML.Tree</code> ... <code>XML.Regular</code>
  *
  */
-public class XML {
+public final class XML {
 
     public static final String localName(String name) {
         int local = name.indexOf(' ');
@@ -122,7 +122,7 @@ public class XML {
      * @param attributes a HashMap of names and values
      */
     public static interface Type {
-        public Element newElement (String name, HashMap attributes);
+        public Element newElement (String name);
     }
      
     /**
@@ -228,8 +228,8 @@ public class XML {
         /**
          * ...
          */
-        public Element newElement (String name, HashMap attributes) {
-            return new Element(name, attributes);
+        public Element newElement (String name) {
+            return new Element(name);
         }
         /**
          * ...
@@ -269,7 +269,7 @@ public class XML {
          *    );
          */
         public XML.Element addChild (String name) {
-            return addChild(newElement(name, null));
+            return addChild(newElement(name));
         }
         /**
          * Add a new named child element with text, creates the 
@@ -286,7 +286,7 @@ public class XML {
          *    );
          */
         public XML.Element addChild (String name, String first) {
-            XML.Element child = addChild(newElement(name, null));
+            XML.Element child = addChild(newElement(name));
             child.first = first;
             return child;
         }
@@ -305,9 +305,9 @@ public class XML {
          *    );
          */
         public XML.Element addChild (String name, String[] attribute) {
-            return addChild(
-        		newElement(name, Objects.dict((Object[])attribute))
-        		);
+        	Element e = newElement(name);
+        	e.attributes = Objects.dict((Object[])attribute);
+            return addChild(e);
         }
         /**
          * Add a new named child element, creates the <code>children</code> 
@@ -328,9 +328,10 @@ public class XML {
         public XML.Element addChild (
             String name, String[] attrs, String first, String follow
             ) {
-            XML.Element child = addChild(newElement(
-                name, (HashMap) Objects.update(new HashMap(), (Object[])attrs)
-                ));
+            XML.Element child = addChild(newElement(name));
+            child.attributes = (HashMap) Objects.update(
+        		new HashMap(), (Object[])attrs
+        		);
             child.first = first;
             child.follow = follow;
             return child;
@@ -601,7 +602,7 @@ public class XML {
          * syntax tree.
          * 
          */
-        public void valid (Document doc) throws Error {
+        public void close (Document doc) throws Error {
             ;
         }
         /**
@@ -638,11 +639,11 @@ public class XML {
          * A <code>HashMap</code> of processing instructions, mapping
          * instruction names to lists of processing parameter strings.
          */
-        public HashMap pi;
+        public HashMap<String,ArrayList<String>> pi;
         /**
          * A map of prefix strings to namespace strings.
          */
-        public HashMap ns;
+        public HashMap<String,String> ns;
         /**
          * instantiate a new document without a root element.
          * 
@@ -661,10 +662,10 @@ public class XML {
         public Document (String doctype) {
             pi = new HashMap();
             ns = new HashMap();
-            root = newElement(doctype, null);
+            root = newElement(doctype);
         } 
-        public Element newElement (String name, HashMap attributes) {
-            return new Element(name, attributes);
+        public Element newElement (String name) {
+            return new Element(name);
         }
         /**
          * Try to parse an XML <code>InputStream</code> with path and base URL 
@@ -803,7 +804,7 @@ public class XML {
                 ; // checked exceptions suck ...
             }
             try {
-                return os.toString(_utf8);
+                return os.toString(Bytes.UTF8);
             } catch (Exception e){ 
                 return os.toString(); // ... a lot!
             }
@@ -818,55 +819,52 @@ public class XML {
     _namespace_prefix_not_found = "namespace prefix not found";
     public static class QuickParser extends ApplicationImpl {
         protected Document doc;
-        protected Map types = null;
-        protected HashMap prefixes = new HashMap();
+        protected Map<String,Type> types = null;
+        protected HashMap<String,String> prefixes = new HashMap();
         protected Element _curr = null;
-        public QuickParser (Document doc, Map types) {
+        public QuickParser (Document doc, Map<String,Type> types) {
             this.doc = doc;
             this.types = types;
             };
         public void processingInstruction(ProcessingInstructionEvent event) {
             String name = event.getName();
             if (doc.pi.containsKey(name))
-                ((ArrayList) doc.pi.get(name)).add(event.getInstruction());
+                doc.pi.get(name).add(event.getInstruction());
             else {
-                ArrayList pi = new ArrayList();
+                ArrayList<String> pi = new ArrayList<String>();
                 pi.add(event.getInstruction());
                 doc.pi.put(name, pi);
             }
         }
-        protected static String fqn (String name, HashMap prefixes) 
+        protected static String fqn (String name, HashMap<String,String> prefixes) 
         throws Error {
             int colon = name.indexOf(':');
             if (colon > -1) {
                 String prefix = name.substring(0, colon);
-                if (prefix.equals(_xml))
+                if (prefix.equals(_xml)) {
                     return name.substring(colon+1);
-                
-                else if (prefixes.containsKey(prefix))
+                } else if (prefixes.containsKey(prefix)) {
                     return (
                         ((String)prefixes.get(prefix)) 
                         + ' ' + name.substring(colon+1)
                         );
-                
+                }
                 throw new Error(_namespace_prefix_not_found);
-                
-            } else if (prefixes.containsKey(_no_prefix))
+            } else if (prefixes.containsKey(_no_prefix)) {
                 return (
-                    ((String)prefixes.get(_no_prefix)) 
-                    + ' ' + name.substring(colon+1)
+                    prefixes.get(_no_prefix) + ' ' + name.substring(colon+1)
                     );
-            
+            }
             return name;
         }
         public void startElement(StartElementEvent event) 
         throws Error {
             String name;
-            HashMap attributes = null;
+            String[] attributeNames = null;
             int L = event.getAttributeCount();
+            int A = 0;
             if (L > 0) {
-                int A = 0;
-                String[] attributeNames = new String[L]; 
+                attributeNames = new String[L]; 
                 for (int i=0; i<L; i++) {
                     name = event.getAttributeName(i);
                     if (name.equals(_xmlns)) {
@@ -884,33 +882,36 @@ public class XML {
                         A++;
                     }
                 }
-                if (A > 0) {
-                    attributes = new HashMap ();
-                    for (int i=0; i<L; i++) 
-                        if (attributeNames[i]!=null)
-                            attributes.put(
-                                fqn(attributeNames[i], prefixes), 
-                                event.getAttributeValue(i)
-                                );
-                }
             }
             name = fqn(event.getName(), prefixes);
             Element e;
-            if (types != null && types.containsKey(name))
-                e = ((Type)types.get(name)).newElement(name, attributes);
-            else
-                e = doc.newElement(name, attributes);
+            if (types != null && types.containsKey(name)) {
+                e = ((Type)types.get(name)).newElement(name);
+            } else {
+                e = doc.newElement(name);
+            }
             e.parent = _curr;
-            if (_curr == null)
+            if (A > 0) {
+                for (int i=0; i<L; i++) { 
+                    if (attributeNames[i] != null) {
+                        e.setAttribute(
+                            fqn(attributeNames[i], prefixes), 
+                            event.getAttributeValue(i)
+                            );
+                    }
+                }
+            }
+            if (_curr == null) {
                 doc.root = e;
-            else
+            } else {
                 _curr.addChild(e);
+            }
             _curr = e;
             e.open(doc);
         }
         public void endElement(EndElementEvent event) throws Error {
             Element parent = _curr.parent;
-            _curr.valid(doc);
+            _curr.close(doc);
             _curr = parent;
         }
         public void characterData (CharacterDataEvent event) 
@@ -965,8 +966,8 @@ public class XML {
         public Regular (String name, HashMap attributes) {
             super(name, attributes);
         }
-        public Element newElement (String name, HashMap attributes) {
-            return new Regular(name, attributes);
+        public Element newElement (String name) {
+            return new Regular(name, null);
         }
         protected void update(
             String name, Object value, Regular container
@@ -1000,7 +1001,7 @@ public class XML {
         /**
          * ...
          */
-        public void valid(XML.Document document) throws XML.Error {
+        public void close(XML.Document document) throws XML.Error {
             Object value = null;
             Regular container = getContainer();
             if (container == null) // root 
@@ -1078,11 +1079,11 @@ public class XML {
      * @param ns
      * @return
      */
-    public static final String prefixed (String name, Map ns) {
+    public static final String prefixed (String name, Map<String,String> ns) {
         int fqn = name.indexOf(' ');
         if (fqn > -1) {
             String namespace = name.substring(0, fqn);
-            String prefix = (String) ns.get(namespace);
+            String prefix = ns.get(namespace);
             if (prefix == null) {
                 prefix = _prefix + Integer.toString(ns.size());
                 ns.put(namespace, prefix);
@@ -1110,21 +1111,21 @@ public class XML {
         writer.startElement(tag);
         if (element.parent == null) { // root, declare namespaces now
             String namespace;
-            Iterator namespaces = ns.keySet().iterator();
+            Iterator<String> namespaces = ns.keySet().iterator();
             while (namespaces.hasNext()) {
-                namespace = (String) namespaces.next();
+                namespace = namespaces.next();
                 writer.attribute(
-                    _xmlns_colon + (String) ns.get(namespace), namespace
+                    _xmlns_colon + ns.get(namespace), namespace
                     );
             }
         }
         if (element.attributes != null) {
             String name;
-            Iterator names = element.attributes.keySet().iterator();
+            Iterator<String> names = element.attributes.keySet().iterator();
             while (names.hasNext()) {
-                name = (String) names.next();
+                name = names.next();
                 writer.attribute(
-                    prefixed(name, ns), (String) element.attributes.get(name)
+                    prefixed(name, ns), element.attributes.get(name)
                     );
             }
         }
@@ -1132,12 +1133,14 @@ public class XML {
             writer.write(element.first);
         if (element.children != null) {
             Iterator _children = element.children.iterator();
-            while (_children.hasNext())
+            while (_children.hasNext()) {
                 writeUTF8(writer, (Element) _children.next(), ns);
+            }
         }
         writer.endElement(tag);
-        if (element.follow != null)
+        if (element.follow != null) {
             writer.write(element.follow);
+        }
     }
     /**
      * 
