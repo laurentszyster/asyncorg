@@ -91,14 +91,16 @@ public final class Bytes {
         return -1;
     }
     /**
-     * 
+     * The UTF-8 character set name constant.
      */
     public static final String UTF8 = "UTF-8";
     /**
+     * Try to encode a UNICODE string to an named 8-bit bytes character set or
+     * use the "default" encoding (whatever it may be).
      * 
-     * @param unicode
-     * @param encoding
-     * @return
+     * @param unicode string to encode
+     * @param encoding to use
+     * @return 8-bit bytes
      */
     public static final byte[] encode(String unicode, String encoding) {
         try {
@@ -108,10 +110,12 @@ public final class Bytes {
         }
     }
     /**
+     * Try to decode a UNICODE string to an named 8-bit bytes character set or
+     * use the "default" encoding (whatever it may be).
      * 
-     * @param bytes
-     * @param encoding
-     * @return
+     * @param bytes to decode
+     * @param encoding to use
+     * @return a UNICODE string
      */
     public static final String decode(byte[] bytes, String encoding) {
         try {
