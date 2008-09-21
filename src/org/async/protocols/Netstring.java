@@ -31,8 +31,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.BufferOverflowException;
 
-import org.async.simple.Bytes;
-
 /**
  * Functional conveniences to support <a 
  * href="http://cr.yp.to/proto/netstrings.txt"
