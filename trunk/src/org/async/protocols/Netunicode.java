@@ -32,13 +32,13 @@ public class Netunicode {
     
     /**
      * Encode an array of <code>String</code> as netunicodes into a
-     * <code>StringBuffer</code>.
+     * <code>StringBuilder</code>.
      * 
      * <h4>Synopsis</h4>
      * 
      * <pre>System.out.println(
      *    Netunicode.encode(
-     *        new String[]{"A", "BC", "DEF"}, new StringBuffer();
+     *        new String[]{"A", "BC", "DEF"}, new StringBuilder();
      *        ).toString();
      *    );</pre>
      * 
@@ -47,9 +47,9 @@ public class Netunicode {
      * <pre>1:A,2:BC,3:DEF,</pre>
      * 
      * @param strings to encode
-     * @param sb the <code>StringBuffer</code> to fill
+     * @param sb the <code>StringBuilder</code> to fill
      */
-    public static final StringBuffer encode (String[] strings, StringBuffer sb) {
+    public static final StringBuilder encode (String[] strings, StringBuilder sb) {
         String string;
         for (int i = 0; i < strings.length; i++) {
             string = strings[i];
@@ -74,7 +74,7 @@ public class Netunicode {
      * @return a <code>String</code> of netunicodes 
      */
     public static final String encode (String[] strings) {
-        return encode(strings, new StringBuffer()).toString();
+        return encode(strings, new StringBuilder()).toString();
     }
     
     /**
@@ -82,24 +82,26 @@ public class Netunicode {
      * @param iter
      * @param sb
      */
-    public static final void encode (Iterator iter, StringBuffer sb) {
+    public static final StringBuilder encode (Iterator iter, StringBuilder sb) {
         Object item;
         String s;
         while(iter.hasNext()) {
             item = iter.next();
-            if (item instanceof String)
+            if (item instanceof String) {
                 s = (String) item;
-            else if (item instanceof String[])
+            } else if (item instanceof String[]) {
                 s = encode((String[])item);
-            else if (item instanceof Iterable)
+        	} else if (item instanceof Iterable) {
                 s = encode((Iterable)item);
-            else
+    		} else {
                 s = item.toString();
+    		}
             sb.append(s.length());
             sb.append(':');
             sb.append((String)item);
             sb.append(',');
         }
+        return sb;
     }
 
     /**
@@ -108,12 +110,10 @@ public class Netunicode {
      * @return
      */
     public static final String encode (Iterable list) {
-        StringBuffer sb = new StringBuffer();
-        encode(list.iterator(), sb);
-        return sb.toString();
+        return encode(list.iterator(), new StringBuilder()).toString();
     }
 
-    protected static final class Netiterator implements Iterator {
+    protected static final class Netiterator implements Iterator<String> {
         
         private String buffer;
         private String item;
@@ -162,17 +162,17 @@ public class Netunicode {
             return result;
         }
         
-        public final Object next() throws NoSuchElementException {
+        public final String next() throws NoSuchElementException {
             if (item == null) {
                 throw new NoSuchElementException();
             } else {
-            	Object result = (Object) item;
+            	String result = item;
             	item = _next();
             	return result;
             }
         }
         
-        public final void remove() {} // optional interfaces? what else now ...
+        public final void remove() {} 
         
     }
     
@@ -182,7 +182,7 @@ public class Netunicode {
      * @param encoded
      * @return
      */
-    public static final Iterator iter(String encoded) {
+    public static final Iterator<String> iter(String encoded) {
         return new Netiterator(encoded, true);
     }
     
