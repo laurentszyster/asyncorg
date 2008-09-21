@@ -18,7 +18,9 @@
 
 package org.async.simple;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Iterator;
 
 /**
  * Functional conveniences to support 8-bit bytes protocols.
@@ -108,6 +110,28 @@ public final class Bytes {
             return unicode.getBytes();
         }
     }
+    protected static final class StringsEncoder implements Iterator<byte[]> {
+    	private Iterator<String> _unicodes;
+    	private String _encoding;
+    	public StringsEncoder (Iterator<String> unicodes, String encoding) {
+    		_unicodes = unicodes;
+    		_encoding = encoding;
+    	}
+    	public final boolean hasNext() {
+    		return _unicodes.hasNext();
+    	}
+    	public final byte[] next() {
+    		return encode(_unicodes.next(), _encoding);
+    	}
+    	public final void remove () {
+    		_unicodes.remove();
+    	}
+    }
+    public static final Iterator<byte[]> encode (
+		Iterator<String> unicodes, String encoding
+		) {
+    	return new StringsEncoder(unicodes, encoding);
+    }
     /**
      * Try to decode a UNICODE string to an named 8-bit bytes character set or
      * use the "default" encoding (whatever it may be).
@@ -124,4 +148,28 @@ public final class Bytes {
         }
     }
 
+    protected static final class StringsDecoder implements Iterator<String> {
+        private Iterator<byte[]> _bytes;
+        private String _encoding;
+        public StringsDecoder (Iterator<byte[]> bytes, String encoding) {
+            _bytes = bytes; 
+            _encoding = encoding;
+        }
+        public final boolean hasNext() {
+            return _bytes.hasNext();
+        }
+        public final String next() {
+        	return decode(_bytes.next(), _encoding);
+        }
+        public final void remove () {
+        	_bytes.remove();
+        }
+    }
+    
+	public static final Iterator<String> decode (
+		Iterator<byte[]> bytes, String encoding
+		) {
+		return new StringsDecoder(bytes, encoding);
+	}
+    
 }

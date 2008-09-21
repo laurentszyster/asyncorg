@@ -25,9 +25,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 
 /**
- * A protocol to uniformely encode and validate well-articulated 
- * context graphs of UNICODE strings (may bring some intelligent order to 
- * the semantic chaos of network application interfaces names).
+ * A protocol to uniformely encode and validate well-articulated context graphs 
+ * of UNICODE strings (may bring some intelligent order to the semantic chaos of 
+ * network application interfaces names).
  */
 public class PublicNames {
     /**
@@ -39,18 +39,19 @@ public class PublicNames {
      * @return
      */
     public static final String validate (
-        String encoded, HashSet field, int horizon
+        String encoded, HashSet<String> field, int horizon
         ) {
-        Iterator names = Netunicode.iter(encoded);
+        Iterator<String> names = Netunicode.iter(encoded);
         if (!names.hasNext()) {
             if (field.contains(encoded)) {
                 return null;
             }
             field.add(encoded); return encoded;
         } else {
-            String name; ArrayList valid = new ArrayList();
+            String name; 
+            ArrayList<String> valid = new ArrayList();
             do {
-                name = validate((String)names.next(), field, horizon);
+                name = validate(names.next(), field, horizon);
                 if (name != null) {
                     valid.add(name); 
                     if (field.size() >= horizon) {
@@ -63,7 +64,7 @@ public class PublicNames {
                 return Netunicode.encode(valid);
             }
             if (valid.size() > 0) {
-                return (String)valid.get(0);
+                return valid.get(0);
             }
             return null;
         }
@@ -78,15 +79,15 @@ public class PublicNames {
      * @return
      */
     public static final String validate (
-        String encoded, HashSet field, int horizon, ArrayList tree
+        String encoded, HashSet<String> field, int horizon, ArrayList tree
         ) {
-        Iterator names = Netunicode.iter(encoded);
+        Iterator<String> names = Netunicode.iter(encoded);
         if (names.hasNext()) {
             String name;
-            ArrayList valid = new ArrayList();
+            ArrayList<String> valid = new ArrayList();
             ArrayList branch = new ArrayList();
             do {
-                name = validate((String)names.next(), field, horizon, branch);
+                name = validate(names.next(), field, horizon, branch);
                 if (name != null) {
                     if (branch.size() > 1) {
                         tree.add(branch);
@@ -105,7 +106,7 @@ public class PublicNames {
                 return Netunicode.encode(valid);
             }
             if (valid.size() > 0) {
-                return (String)valid.get(0);
+                return valid.get(0);
             }
             return null;
         } else {
@@ -125,19 +126,19 @@ public class PublicNames {
      * @return
      */
     public static final String validate (
-        Iterable articulated, HashSet field, int horizon
+        Iterable articulated, HashSet<String> field, int horizon
         ) {
-        Iterator names = articulated.iterator();
+        Iterator<String> names = articulated.iterator();
         if (!names.hasNext()) {
             return null;
         } else {
             Object item;
             String name;
-            ArrayList valid = new ArrayList();
+            ArrayList<String> valid = new ArrayList();
             do {
                 item = names.next(); 
                 if (item instanceof String) {
-                    name = (String)item;
+                    name = (String) item;
                     if (!field.contains(name)) {
                         valid.add(name); 
                         field.add(name);
@@ -146,7 +147,7 @@ public class PublicNames {
                         }
                     }
                 } else if (item instanceof Iterable) {
-                    name = validate((Iterable)item, field, horizon);
+                    name = validate((Iterable) item, field, horizon);
                     if (name != null) {
                         valid.add(name);
                     }
@@ -157,7 +158,7 @@ public class PublicNames {
                 return Netunicode.encode(valid);
             }
             if (valid.size() > 0) {
-                return (String)valid.get(0);
+                return valid.get(0);
             }
             return null;
         }
@@ -174,7 +175,7 @@ public class PublicNames {
     /**
      * ...
      */
-    public HashSet field = new HashSet();
+    public HashSet<String> field = new HashSet();
     
     /**
      * ...

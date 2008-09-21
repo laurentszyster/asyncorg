@@ -62,8 +62,9 @@ import org.async.simple.Bytes;
  *      System.in, 16384, "UTF-8"
  *      );
  *    // print them as lines to STDERR
- *    while (netstring.hasNext())
+ *    while (netstring.hasNext()) {
  *        System.err.println (netstring.next());
+ *    }
  *} finally {
  *    System.in.close ();
  *    System.out.close ();
@@ -181,8 +182,7 @@ public final class Netstring {
         bb.put((byte)44); // ,
     }
     
-    public static final void 
-    write (OutputStream stream, byte[] buffer)
+    public static final void write (OutputStream stream, byte[] buffer)
     throws IOException {
         byte[] digits = Integer.toString(buffer.length).getBytes();
         ByteBuffer bb = ByteBuffer.wrap(
@@ -217,9 +217,9 @@ public final class Netstring {
      * @param len the number of bytes to send
      * @throws IOException
      */
-    public static final void 
-    write (OutputStream stream, byte[] buffer, int off, int len) 
-    throws IOException {
+    public static final void write (
+		OutputStream stream, byte[] buffer, int off, int len
+		) throws IOException {
         byte[] digits = Integer.toString(len).getBytes();
         ByteBuffer bb = ByteBuffer.wrap(new byte[len + digits.length + 2]);
         bb.put(digits); // len
@@ -235,12 +235,12 @@ public final class Netstring {
      * single <code>byte</code> array, write it to the <code>conn</code>
      * socket's output stream and finally flush that stream. 
      * 
-     * @pre Iterator netstrings = Static.iter(new String[]{
-     *    "one", "two", "three", "four"
-     *});
+     * @pre Iterator netstrings = ;
      *OutputStream stream = new Socket("server", 1234).getOutputStream();
      *try {
-     *    Netstring.write(stream, netstrings, "UTF-8");
+     *    Netstring.write(stream, Bytes.encode(Objects.iter(new String[]{
+     *        "one", "two", "three", "four"
+     *        }), "UTF-8"));
      *} finally {
      *    conn.close();
      *}
@@ -257,27 +257,25 @@ public final class Netstring {
      * UDP datagrams and considerably slow down its application.</p>
      * 
      * @param stream to write output
-     * @param string to encode as 8-bit bytes
-     * @param encoding character set
+     * @param bytes <code>Iterator</code> to write out
      * @throws IOException
      */
-    public static final void 
-    write (OutputStream stream, Iterator strings, String encoding) 
+    public static final void write (OutputStream stream, Iterator<byte[]> bytes) 
     throws IOException {
         int chunk = 0;
-        ArrayList netstrings = new ArrayList();
+        ArrayList<byte[][]> netstrings = new ArrayList();
         byte[] digits, buffer;
-        while (strings.hasNext()) {
-            buffer = Bytes.encode((String) strings.next(), encoding);
+        while (bytes.hasNext()) {
+            buffer = bytes.next();
             digits = Integer.toString(buffer.length).getBytes();
             chunk = chunk + buffer.length + digits.length + 2;
             netstrings.add(new byte[][]{digits, buffer});
         }
         ByteBuffer bb = ByteBuffer.wrap(new byte[chunk]);
-        Iterator bytes = netstrings.iterator();
+        Iterator<byte[][]> encoded = netstrings.iterator();
         byte[][] digits_buffer;
-        while (bytes.hasNext()) {
-            digits_buffer = (byte[][]) bytes.next();
+        while (encoded.hasNext()) {
+            digits_buffer = encoded.next();
             bb.put(digits_buffer[0]); // encoded string's length
             bb.put((byte)58); // :
             bb.put(digits_buffer[1]); // the bytes string encoded
@@ -286,21 +284,20 @@ public final class Netstring {
         stream.write(bb.array());
     }
     
-    protected static final class ByteCollector implements Iterator {
+    protected static final class ByteCollector implements Iterator<byte[]> {
         private int _limit;
         private byte[] _buffer;
         private InputStream _is = null;
         public String error = null;
-        public ByteCollector (InputStream is, int limit)
-        throws IOException {
+        public ByteCollector (InputStream is, int limit) {
             _is = is;
             _limit = limit;
             _buffer = new byte[Integer.toString(limit).length() + 1];
         }
         public final boolean hasNext () {
-            return true; // synchronous API can't stall
+            return true; // synchronous API do not stall
         }
-        public final Object next () {
+        public final byte[] next () {
             int read = 0, len, c;
             try {
                 // read the prologue up to ':', assert numeric only
@@ -323,21 +320,20 @@ public final class Netstring {
                     return null; // nothing more to read, stop iteration.
                 }
                 len = Integer.parseInt(new String(_buffer, 0, read));
-                if (len > _limit)
+                if (len > _limit) {
                     throw new NoSuchElementException(ERROR_TOO_LONG);
-                
+                }
                 byte[] bytes = new byte[len];
                 read = _is.read(bytes);
-                if (read < len)
+                if (read < len) {
                     throw new NoSuchElementException(ERROR_UNEXPECTED_END);
-                
-                if (_is.read() != 44)
+                }
+                if (_is.read() != 44) {
                     throw new NoSuchElementException(ERROR_INVALID_EPILOGUE);
-                
+                }
                 return bytes;
-                
             } catch (IOException e) {
-                throw new NoSuchElementException(e.toString());
+                throw new RuntimeException(e);
             }
         }
         public final void remove () {}
@@ -350,9 +346,10 @@ public final class Netstring {
      *try {
      *    Iterator bytes = Netstring.read(is, 16384);
      *    byte[] data = bytes.next();
-     *    while (data != null)
+     *    while (data != null) {
      *        data = bytes.next();
-     *} (catch NoSuchElementException e) {
+     *    }
+     *} catch (Exception e) {
      *    ; // handle error
      *} finally {
      *    is.close();
@@ -367,65 +364,8 @@ public final class Netstring {
      * @return an <code>Iterator</code> of <code>byte[]</code>
      * @throws IOException
      */
-    public static final Iterator read (InputStream stream, int limit) 
-    throws IOException {
+    public static final Iterator<byte[]> read (InputStream stream, int limit) {
         return new ByteCollector (stream, limit);
     }
 
-    protected static final class StringIterator implements Iterator {
-        private Iterator _byteIterator;
-        private String _encoding;
-        public StringIterator (Iterator byteIterator, String encoding) 
-        throws IOException, Error {
-            _byteIterator = byteIterator; 
-            _encoding = encoding;
-        }
-        public final boolean hasNext() {
-            return _byteIterator.hasNext();
-        }
-        public final Object next() {
-            byte[] buffer = (byte[]) _byteIterator.next();
-            try {
-                return new String(buffer, _encoding);
-            } catch (UnsupportedEncodingException e) {
-                return new String(buffer);
-            }
-        }
-        public final void remove () {/* worse than failure, repeated ... */}
-    }
-    
-    /**
-     * Instanciate an <code>Iterator</code> of <code>String</code> received
-     * and decoded from the given 8-bit character set <code>encoding</code>.
-     * 
-     * @pre InputStream is = new Socket("server", 1234).getInputStream();
-     *try {
-     *    Iterator strings = Netstring.read(conn, 16384, "UTF-8");
-     *    String data = strings.next ();
-     *    while (data != null)
-     *        data = strings.next();
-     *} (catch NoSuchElementException e) {
-     *    ; // handle error
-     *} finally {
-     *    is.close();
-     *}
-     *
-     * <p>The code above opens a connection to "server" on TCP port 1234,
-     * then receive and decode from "UTF-8" all incoming netstrings until the 
-     * connection is closed by the server.</p>
-     * 
-     * @param conn the <code>Socket</code> to receive from 
-     * @param limit the maximum netstring length
-     * @param encoding the character set to decode <code>byte</code> received
-     * @return an <code>Iterator</code> of <code>String</code>
-     * @throws IOException
-     */
-    public final static Iterator read (
-        InputStream stream, int limit, String encoding
-        ) throws IOException {
-        return new StringIterator(
-            new ByteCollector(stream, limit), encoding
-            );
-    }
-    
 }

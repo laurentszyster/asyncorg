@@ -116,14 +116,14 @@ public class SAT {
         String text, Pattern[] articulators, int depth, ArrayList articulated
         ) {
         int bottom = articulators.length;
-        Iterator texts;
+        Iterator<String> texts;
         String t;
         int L;
         while (depth < bottom) {
             texts = Strings.split(text, articulators[depth]); 
             depth++;
             while (texts.hasNext()) {
-                t = (String) texts.next();
+                t = texts.next();
                 if (t.length() > 0) {
                     articulated.add(t);
                 }
