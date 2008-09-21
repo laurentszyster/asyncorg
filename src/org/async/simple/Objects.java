@@ -1,19 +1,18 @@
-/*  Copyright (C) 2007 Laurent A.V. Szyster
+/*  Copyright (C) 2007 - 2008 Laurent A.V. Szyster
  *
- *  This library is free software; you can redistribute it and/or modify
- *  it under the terms of version 2 of the GNU General Public License as
- *  published by the Free Software Foundation.
+ *  This library is free software; you can redistribute it and/or modify it under 
+ *  the terms of the GNU Lesser General Public License as published by the Free 
+ *  Software Foundation; either version 2.1 of the License, or (at your option) 
+ *  any later version.
  *  
- *   http://www.gnu.org/copyleft/gpl.html
+ *  This library is distributed in the hope that it will be useful, but WITHOUT 
+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *  FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more 
+ *  details.
  *  
- *  This library is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  
- *  You should have received a copy of the GNU General Public License
- *  along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
- *  USA
+ *  You should have received a copy of the GNU Lesser General Public License along 
+ *  with this library; if not, write to the Free Software Foundation, Inc., 
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *  
  */
 
@@ -61,8 +60,9 @@ public final class Objects {
      * @return the extended <code>List</code>
      */
     public static final List extend (List sequence, Object[] items) {
-        for (int i=0; i<items.length; i++)
+        for (int i=0; i<items.length; i++) {
             sequence.add(items[i]);
+        }
         return sequence;
     }
     
@@ -79,8 +79,9 @@ public final class Objects {
      */
     public static final ArrayList list (Object ... items) {
         ArrayList sequence = new ArrayList();
-        for (int i=0; i<items.length; i++)
+        for (int i=0; i<items.length; i++) {
             sequence.add(items[i]);
+        }
         return sequence;
     }
     
@@ -95,8 +96,9 @@ public final class Objects {
      */
     public static final HashSet set (Object ... items) {
         HashSet result = new HashSet();
-        for (int i=0; i<items.length; i++)
+        for (int i=0; i<items.length; i++) {
             result.add(items[i]);
+        }
         return result;
     }
     
@@ -146,8 +148,9 @@ public final class Objects {
      * @return the updated <code>Map</code>
      */
     public static final Map update (Map map, Object ... pairs) {
-        for (int i=0; i<pairs.length; i=i+2)
+        for (int i=0; i<pairs.length; i=i+2) {
             map.put(pairs[i], pairs[i+1]);
+        }
         return map;
     }
     
@@ -171,8 +174,9 @@ public final class Objects {
      */
     public static final HashMap dict (Object ... pairs) {
         HashMap map = new HashMap();
-        for (int i=0; i<pairs.length; i=i+2)
+        for (int i=0; i<pairs.length; i=i+2) {
             map.put(pairs[i], pairs[i+1]);
+        }
         return map;
     }
     
