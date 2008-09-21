@@ -1,19 +1,18 @@
-/*  Copyright (C) 2007 Laurent A.V. Szyster
+/*  Copyright (C) 2007 - 2008 Laurent A.V. Szyster
  *
- *  This library is free software; you can redistribute it and/or modify
- *  it under the terms of version 2 of the GNU General Public License as
- *  published by the Free Software Foundation.
+ *  This library is free software; you can redistribute it and/or modify it under 
+ *  the terms of the GNU Lesser General Public License as published by the Free 
+ *  Software Foundation; either version 2.1 of the License, or (at your option) 
+ *  any later version.
  *  
- *   http://www.gnu.org/copyleft/gpl.html
+ *  This library is distributed in the hope that it will be useful, but WITHOUT 
+ *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+ *  FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more 
+ *  details.
  *  
- *  This library is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
- *  
- *  You should have received a copy of the GNU General Public License
- *  along with this library; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
- *  USA
+ *  You should have received a copy of the GNU Lesser General Public License along 
+ *  with this library; if not, write to the Free Software Foundation, Inc., 
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  *  
  */
 
@@ -38,10 +37,9 @@ import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 /**
- * Functional conveniences to handle simple I/O.
+ * Functional conveniences to handle simple synchronous I/O.
  */
 public class SIO {
-
     /**
      * The default file I/O buffer size, 4096 bytes.
      * 
@@ -118,6 +116,7 @@ public class SIO {
      *     
      * @param stream to read from
      * @return the string read or <code>null</code>
+     * @throws IOException
      */
     public static final String read (InputStream stream) throws IOException {
         return read (new BufferedReader(
@@ -137,6 +136,7 @@ public class SIO {
      * 
      * @param url to read from
      * @return the string read or <code>null</code>
+     * @throws IOException
      */
     public static final String read (URL url) throws IOException {
         return read (url.openStream());
@@ -163,11 +163,14 @@ public class SIO {
         private InputStream _input;
         private byte[] _next;
         private int _read;
-        public ReadBytes (InputStream input, int chunk) 
-        throws IOException {
+        public ReadBytes (InputStream input, int chunk) {
             _input = input;
             _next = new byte[chunk];
-            _read = _input.read(_next);
+            try {
+            	_read = _input.read(_next);
+            } catch (IOException e) {
+            	throw new RuntimeException(e);
+            }
         }
         public final boolean hasNext() {
             return _read > 0;
@@ -181,14 +184,19 @@ public class SIO {
                     _input.close();
                 }
             } catch (IOException e) {
-                ;
+                throw new RuntimeException(e);
             }
             return data;
         }
         public final void remove () {}
     }
-    public static final Iterator<byte[]> read(InputStream input, int chunk) 
-    throws IOException {
+    /**
+     * 
+     * @param input
+     * @param chunk
+     * @return
+     */
+    public static final Iterator<byte[]> read(InputStream input, int chunk) {
         return new ReadBytes(input, chunk);
     }
     protected static final class ReadStrings implements Iterator<String> {
@@ -196,12 +204,15 @@ public class SIO {
         private byte[] _next;
         private int _read;
         private CharsetDecoder _decoder;
-        public ReadStrings (InputStream input, int chunk, String encoding) 
-        throws IOException {
+        public ReadStrings (InputStream input, int chunk, String encoding) {
         	_decoder = Charset.forName(encoding).newDecoder();
             _input = input;
             _next = new byte[chunk];
-            _read = _input.read(_next);
+            try {
+            	_read = _input.read(_next);
+            } catch (IOException e) {
+            	throw new RuntimeException(e);
+            } 
         }
         public final boolean hasNext() {
             return _read > 0;
@@ -217,7 +228,7 @@ public class SIO {
                     _input.close();
                 }
             } catch (IOException e) {
-                ;
+                throw new RuntimeException(e);
             }
             CharBuffer decoded = CharBuffer.allocate(data.length); 
             _decoder.decode(buffer, decoded, false);
@@ -226,10 +237,17 @@ public class SIO {
         }
         public final void remove () {}
     }
+    /**
+     * 
+     * @param input
+     * @param chunk
+     * @param encoding
+     * @return
+     */
     public static final Iterator<String> read(
 		InputStream input, int chunk, String encoding
-    	) throws IOException {
-    	return null;
+    	) {
+    	return new ReadStrings(input, chunk, encoding);
     }
     /**
      * ...
@@ -239,7 +257,7 @@ public class SIO {
      * @throws Exception
      */
     public static final void write (String filename, String text) 
-    throws Exception {
+    throws IOException {
     	write(filename, text, "UTF-8");
     }
     /**
@@ -251,7 +269,7 @@ public class SIO {
      * @throws Exception
      */
     public static final void write (String filename, String text, String encoding) 
-    throws Exception {
+    throws IOException {
     	OutputStreamWriter osw = new OutputStreamWriter(
 			new FileOutputStream(new File(filename)), encoding
 			);
