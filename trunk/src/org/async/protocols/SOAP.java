@@ -61,7 +61,7 @@ public final class SOAP {
             return new Element(name);
         }
         @Override
-        public final void close(XML.Document document) throws XML.Error {
+        public final void close(XML.Document document) {
             XML.Element parent = this.parent;
             while (parent != null && !(parent instanceof SOAP.Element)) {
                 parent = this.parent;
@@ -83,7 +83,7 @@ public final class SOAP {
                             update((Element) parent, first);
                         }
                     } catch (JSON.Error e) {
-                        throw new XML.Error (e.getMessage());
+                        throw new RuntimeException (e.getMessage());
                     } else {
                         update((Element) parent, first);
                     }
@@ -124,9 +124,6 @@ public final class SOAP {
         }
     } 
     public static class Document extends XML.Document {
-        public final XML.Element newElement(String name) {
-            return new Element(name);
-        }
         public final Object call (String action, Fun fun) 
         throws Throwable {
         	return fun.apply(

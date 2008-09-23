@@ -44,6 +44,7 @@ import com.jclark.xml.parse.DocumentParser;
 import com.jclark.xml.parse.OpenEntity;
 import com.jclark.xml.parse.EntityManagerImpl;
 import com.jclark.xml.parse.base.ApplicationImpl;
+import com.jclark.xml.parse.ApplicationException;
 import com.jclark.xml.output.UTF8XMLWriter;
 import com.jclark.xml.sax.ReaderInputStream;
 
@@ -97,21 +98,12 @@ public final class XML {
      * exception is raised by its application.
      */
     public static class Error extends Exception {
-        private String _message;
         /**
          * instantiate a new exception with the given message.
          * 
          * @param message the error(s information <code>String</code>
          */
-        public Error (String message) {_message = message;}
-        /**
-         * Returns the error's message, usually it will be <code>XP</code>
-         * exception's message unless the error was raised by a broken XML
-         * namespace prefix.
-         * 
-         * @return a message <code>String</code>
-         */
-        public String getMessage () {return _message;}
+        public Error (Exception e) {super(e);}
     };
     
     /**
@@ -158,7 +150,7 @@ public final class XML {
         /**
          * A list of this element's children. 
          */
-        public ArrayList children = null;
+        public ArrayList<Element> children = null;
         /**
          * A map of this element's fully qualified attributes.
          */
@@ -231,10 +223,6 @@ public final class XML {
         public Element newElement (String name) {
             return new Element(name);
         }
-        /**
-         * ...
-         */
-        public static Type singleton = new Document();
         /**
          * Add a child element, creates the <code>children</code> array list
          * if it does not exist yet.
@@ -450,7 +438,7 @@ public final class XML {
             return getChild(children.size()-1);
         }
         
-        protected class ChildrenIterator implements Iterator {
+        protected class ChildrenIterator implements Iterator<Element> {
             private Iterator _children = null;
             private Element _next = null;
             private HashSet _names = null;
@@ -469,8 +457,8 @@ public final class XML {
             public boolean hasNext() {
                 return (_next == null);
             }
-            public Object next() {
-                Object result = _next;
+            public Element next() {
+                Element result = _next;
                 while (_children.hasNext()) {
                     _next = (Element) _children.next();
                     if (_names.contains(_next.name))
@@ -500,7 +488,7 @@ public final class XML {
          *    named.hasNext() == false
          *    );
          */
-        public Iterator getChildren (HashSet names) {
+        public Iterator<Element> getChildren (HashSet names) {
             return new ChildrenIterator(this, names);
         }
         /**
@@ -602,7 +590,7 @@ public final class XML {
          * syntax tree.
          * 
          */
-        public void close (Document doc) throws Error {
+        public void close (Document doc) {
             ;
         }
         /**
@@ -630,7 +618,7 @@ public final class XML {
      * A class with just enough properties to fully represent an XML
      * document with name spaces and processing instructions. 
      */
-    public static class Document implements Type {
+    public static class Document {
         /**
          * This document's root <code>XML.Element</code>.
          */
@@ -659,14 +647,11 @@ public final class XML {
          * 
          * @param doctype ...
          */
-        public Document (String doctype) {
+        public Document (Element root) {
             pi = new HashMap();
             ns = new HashMap();
-            root = newElement(doctype);
+            this.root = root;
         } 
-        public Element newElement (String name) {
-            return new Element(name);
-        }
         /**
          * Try to parse an XML <code>InputStream</code> with path and base URL 
          * using the extension <code>types</code>. 
@@ -675,16 +660,20 @@ public final class XML {
          * @param path locating the parsed entity
          * @param baseURL for external entity resolution
          * @param types to use as extensions
-         * @throws Error if the XML file is not well-formed or if one of the
-         *               extension type is broken
-         * @throws IOException raised by accessing the XML file
+         * @throws Error
+         * @throws IOException
          */
-        public void read (InputStream is, String path, URL baseURL, Map types) 
-        throws Throwable {
-            QuickParser qp = new QuickParser(this, types);
-            DocumentParser.parse(new OpenEntity(
-                is, path, baseURL
-                ), new EntityManagerImpl(), qp, Locale.US);
+        public void read (
+    		InputStream is, String path, URL baseURL, Map types, Type type
+    		) throws Error, IOException {
+            QuickParser qp = new QuickParser(this, types, type);
+            try {
+	            DocumentParser.parse(new OpenEntity(
+	                is, path, baseURL
+	                ), new EntityManagerImpl(), qp, Locale.US);
+            } catch (ApplicationException e) {
+            	throw new Error(e);
+            }
         }
         /**
          * Try to parse an XML <code>file</code> using the extension 
@@ -692,23 +681,33 @@ public final class XML {
          * 
          * @param file to parse
          * @param types to use as extensions
-         * @throws Error if the XML file is not well-formed or if one of the
-         *               extension type is broken
-         * @throws IOException raised by accessing the XML file
+         * @throws Error
+         * @throws IOException
          */
-        public void read(File file, Map types) throws Throwable {
+        public void read(File file, Map types, Type type) 
+        throws Error, IOException {
             read (
                 new FileInputStream(file), 
                 file.getAbsolutePath(), 
                 file.toURL(),
-                types
+                types,
+                type
                 );
         }
-        public void read(File file) throws Throwable {
+        /**
+         * Try to parse an XML <code>file</code> using the extension 
+         * <code>types</code>. 
+         * 
+         * @param file to parse
+         * @throws Error
+         * @throws IOException
+         */
+        public void read(File file) throws Error, IOException {
             read(
                 new FileInputStream(file), 
                 file.getAbsolutePath(), 
                 file.toURL(), 
+                null,
                 null
                 );
         }
@@ -740,14 +739,14 @@ public final class XML {
          * @param path locating the parsed entity
          * @param baseURL for external entity resolution
          * @param types to use as extensions
-         * @throws Error if the XML file is not well-formed
-         * @throws IOException raised by accessing the XML file
+         * @throws XML or I/O exceptions
          */
-        public void parse(String string, String path, URL baseURL, Map types) 
-        throws Throwable {
+        public void parse(
+    		String string, String path, URL baseURL, Map types, Type type
+    		) throws Throwable {
             read(
                 new ReaderInputStream(new StringReader(string)), 
-                path, baseURL, types
+                path, baseURL, types, type
                 );
         }
         /**
@@ -755,42 +754,27 @@ public final class XML {
          * 
          * @param string to parse
          * @param types to use as extensions
-         * @throws Error if the XML file is not well-formed
-         * @throws IOException raised by accessing the XML file
+         * @throws XML or I/O exceptions
          */
-        public void parse(String string, Map types) 
+        public void parse(String string, Map types, Type type) 
         throws Throwable {
             read(
                 new ReaderInputStream(new StringReader(string)), 
-                "", null, types
+                "", null, types, type
                 );
         }
         /**
          * Try to parse an XML <code>String</code>. 
          * 
          * @param string to parse
-         * @throws Error if the XML file is not well-formed
-         * @throws IOException raised by accessing the XML file
+         * @throws XML or I/O exceptions
          */
         public void parse(String string) 
         throws Throwable {
             read(
                 new ReaderInputStream(new StringReader(string)), 
-                "", null, null
+                "", null, null, null
                 );
-        }
-        /**
-         * 
-         * @return
-         */
-        public byte[] encodeUTF8 () {
-            ByteArrayOutputStream os = new ByteArrayOutputStream();
-            try {
-                this.write(os, "");
-            } catch (IOException e) {
-                ; // checked exceptions suck.
-            }
-            return os.toByteArray();
         }
         /**
          * 
@@ -800,33 +784,34 @@ public final class XML {
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             try {
                 this.write(os, "");
-            } catch (IOException e) {
-                ; // checked exceptions suck ...
-            }
-            try {
-                return os.toString(Bytes.UTF8);
+                return os.toString(Bytes.UTF8); // it's always an UTF8 writer ,-)
             } catch (Exception e){ 
-                return os.toString(); // ... a lot!
+            	throw new RuntimeException(e); // checked exceptions suck ...
             }
         }
     }    
     // The Quick Parser, in Java (a "little bit" slower).
+    private static final Element _ELEMENT = new Element("");
     private static final String _xml = "xml";
     private static final String _xmlns = "xmlns";
     private static final String _xmlns_colon = "xmlns:";
     private static final String _no_prefix = "";
     private static final String 
     _namespace_prefix_not_found = "namespace prefix not found";
-    public static class QuickParser extends ApplicationImpl {
+    protected static class QuickParser extends ApplicationImpl {
         protected Document doc;
+        protected Type type;
         protected Map<String,Type> types = null;
         protected HashMap<String,String> prefixes = new HashMap();
         protected Element _curr = null;
-        public QuickParser (Document doc, Map<String,Type> types) {
+        public QuickParser (
+    		Document doc, Map<String,Type> types, Type type
+    		) {
             this.doc = doc;
             this.types = types;
+            this.type = (type == null) ? _ELEMENT: type;
             };
-        public void processingInstruction(ProcessingInstructionEvent event) {
+        public final void processingInstruction(ProcessingInstructionEvent event) {
             String name = event.getName();
             if (doc.pi.containsKey(name))
                 doc.pi.get(name).add(event.getInstruction());
@@ -836,8 +821,9 @@ public final class XML {
                 doc.pi.put(name, pi);
             }
         }
-        protected static String fqn (String name, HashMap<String,String> prefixes) 
-        throws Error {
+        protected final static String fqn (
+    		String name, HashMap<String,String> prefixes
+    		) {
             int colon = name.indexOf(':');
             if (colon > -1) {
                 String prefix = name.substring(0, colon);
@@ -849,7 +835,7 @@ public final class XML {
                         + ' ' + name.substring(colon+1)
                         );
                 }
-                throw new Error(_namespace_prefix_not_found);
+                throw new RuntimeException (_namespace_prefix_not_found);
             } else if (prefixes.containsKey(_no_prefix)) {
                 return (
                     prefixes.get(_no_prefix) + ' ' + name.substring(colon+1)
@@ -857,8 +843,7 @@ public final class XML {
             }
             return name;
         }
-        public void startElement(StartElementEvent event) 
-        throws Error {
+        public final void startElement(StartElementEvent event) {
             String name;
             String[] attributeNames = null;
             int L = event.getAttributeCount();
@@ -888,7 +873,7 @@ public final class XML {
             if (types != null && types.containsKey(name)) {
                 e = ((Type)types.get(name)).newElement(name);
             } else {
-                e = doc.newElement(name);
+                e = type.newElement(name);
             }
             e.parent = _curr;
             if (A > 0) {
@@ -909,12 +894,12 @@ public final class XML {
             _curr = e;
             e.open(doc);
         }
-        public void endElement(EndElementEvent event) throws Error {
+        public final void endElement(EndElementEvent event) {
             Element parent = _curr.parent;
             _curr.close(doc);
             _curr = parent;
         }
-        public void characterData (CharacterDataEvent event) 
+        public final void characterData (CharacterDataEvent event) 
         throws IOException {
             StringWriter sw = new StringWriter();
             event.writeChars(sw);
@@ -966,10 +951,10 @@ public final class XML {
         public Regular (String name, HashMap attributes) {
             super(name, attributes);
         }
-        public Element newElement (String name) {
+        public final Element newElement (String name) {
             return new Regular(name, null);
         }
-        protected void update(
+        protected final void update(
             String name, Object value, Regular container
             ) {
             JSON.Object map = container.json; 
@@ -998,10 +983,17 @@ public final class XML {
         		json.put("@" + localName(name), attributes.get(name));
         	}
         }
-        /**
-         * ...
-         */
-        public void close(XML.Document document) throws XML.Error {
+        public final Regular getContainer() {
+            Element container = this.parent;
+            while (container != null) {
+                if (container instanceof Regular)
+                    return (Regular) container;
+
+                container = container.parent;
+            }
+            return null;
+        }
+        public final void close(Document document) {
             Object value = null;
             Regular container = getContainer();
             if (container == null) // root 
@@ -1027,7 +1019,7 @@ public final class XML {
                 	_putAllLocal(attributes, (JSON.Object) value);
                 }
             }
-            this.validate (value, container, (Tree) document);
+            this.validate (value, container, document);
         }
         /**
          * Applications of XML.Regular should override this method for each
@@ -1040,7 +1032,7 @@ public final class XML {
          * @param document
          */
         public void validate(
-            Object value, Regular container, Tree document
+            Object value, Regular container, Document document
             ) {
             if (container != null) { 
                 if (value != null) {
@@ -1049,26 +1041,7 @@ public final class XML {
                 remove();
             }
         }
-        public Regular getContainer() {
-            Element container = this.parent;
-            while (container != null) {
-                if (container instanceof Regular)
-                    return (Regular) container;
-
-                container = container.parent;
-            }
-            return null;
-        }
     } 
-    
-    /**
-     * ...
-     */
-    public static class Tree extends Document {
-        public Element newElement(String name, HashMap attributes) {
-            return new Regular(name, attributes);
-        }
-    }
     
     private static final String _prefix = "ns";
     
@@ -1160,4 +1133,18 @@ public final class XML {
         return os.toByteArray();
     }
     
+    // TODO: an UTF-8 bytes iterator, using a stack of children iterators
+    //       and connecting a PipedOutputStream and a PipedInputStream to
+    //       write XML by chunks ... when needed ;-)
+    //
+    //       XML is out there, with high-latency HTTP/1.0 SOAP clients 
+    //       requesting verbose responses over sluggish VPN enterprise
+    //       network ... it should be serialized when needed, not before.
+    //       
+    //       By rationing bandwith by the usual TCP/IP windows of 16KB,
+    //       a network server can limit each client share of the CPU for
+    //       XML serialization ... when encoding the element tree is done
+    //       on socket a read event, when the client is ready to receive
+    //       it, avoiding to buffer more than needed and let other clients
+    //       have their turn.
 }
