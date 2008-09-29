@@ -176,6 +176,18 @@ public abstract class Dispatcher extends Call {
         _loop.log(_name, error.getMessage());
         _loop.log(error);
     }
+    /**
+     * 
+     * @param host
+     * @param port
+     */
+    public final void setAddress (String host, int port) {
+    	_addr = new InetSocketAddress(host, port);
+    }
+    /**
+     * 
+     * @param address
+     */
     public final void listen (SocketAddress address) throws Throwable {
         if (System.getProperty("os.name").toLowerCase().startsWith("windows")) {
             listen(address, 5);
@@ -187,10 +199,8 @@ public abstract class Dispatcher extends Call {
      * ...
      * 
      * @param addr
-     * @throws Throwable
      */
-    public final void listen (SocketAddress address, int backlog) 
-    throws Throwable {
+    public final void listen (SocketAddress address, int backlog) throws Throwable {
         _name = _get_ip_from_address(address);
         _addr = address;
         listen(backlog);
@@ -201,7 +211,8 @@ public abstract class Dispatcher extends Call {
      * @throws Throwable
      */
     public final void listen (int backlog) throws Throwable {
-        ServerSocketChannel channel = ServerSocketChannel.open();
+    	ServerSocketChannel channel = null;
+        channel = ServerSocketChannel.open();
         channel.configureBlocking(false);
         channel.socket().bind(_addr, backlog);
         channel.socket().setReuseAddress(true);
@@ -218,6 +229,7 @@ public abstract class Dispatcher extends Call {
         try {
             return ((ServerSocketChannel) _channel).accept();
         } catch (IOException e) {
+        	log(e);
             return null;
         }
     }
@@ -229,7 +241,7 @@ public abstract class Dispatcher extends Call {
      */
     public final void accepted (SocketChannel channel) throws Throwable {
         _channel = channel;
-        _channel.configureBlocking(false);
+    	_channel.configureBlocking(false);
         _addr = channel.socket().getRemoteSocketAddress();;
         _name = _get_ip_from_address(_addr);
         _writable = 0;
@@ -252,7 +264,7 @@ public abstract class Dispatcher extends Call {
      * @throws Throwable
      */
     public final void connect (String host, int port) throws Throwable {
-        SocketAddress address = new InetSocketAddress(host, port); 
+		SocketAddress address = new InetSocketAddress(host, port);
         connect(address);
     }
     /**

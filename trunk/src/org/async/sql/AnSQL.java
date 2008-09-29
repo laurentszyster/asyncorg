@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
 /**
  * An SQL client for AnSQL servers.
  * 
- * @pre AnSQL.connect("127.0.0.2:3999").execute(
+ * @pre AnSQL.connection("127.0.0.2", 3999).execute(
  *    "SELECT * from SALES where COUNTRY = ? and YEAR > ? ", 
  *    JSON.list("Belgium", 1998), 
  *    new Fun {
@@ -104,5 +104,10 @@ public class AnSQL extends NetDispatcher  {
                 log(e);
             }
         }
+    }
+    public static final AnSQL connection(String host, int port) {
+    	AnSQL dispatcher = new AnSQL();
+    	dispatcher.setAddress(host, port);
+    	return dispatcher;
     }
 }
