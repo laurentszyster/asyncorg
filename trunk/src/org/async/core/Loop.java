@@ -468,17 +468,27 @@ public final class Loop {
  * @p API design and implementation details are ported from Allegra, a fork of 
  * Medusa developped on the same principle as INNS asynchronous I/O loop.
  * 
- * @p So, this Old New Thing will probably run everywhere Java 1.4 runs today
+ * @p So, this Old New Thing will probably run everywhere Java 1.5 runs today
  * because it is also the unobvious way to handle concurrency right in C as
  * in Python, for many operating systems as different as Linux and Windows.
  * 
  * @p This implementation relies on <code>java.nio</code> and should instead
  * use C bindings to the native OS socket calls. Until then it will carry
- * the weight of those old locks (although without contention).
+ * the weight of those old locks (although without contention ... or getting
+ * tangled in threads).
  * 
  * @p The path of least resistance toward native sockets is probably to
  * reuse the Apache Portable Runtime (APR) as provided by Tomcat 6.0:
  * 
  * http://tomcat.apache.org/tomcat-6.0-doc/api/org/apache/tomcat/jni/package-summary.html
+ * 
+ * @p Yet, in its current form asyncorg supports an HTTP/1.1 server implementation
+ * that performs as well as a Tomcat 6.0 container for serving files.
+ * 
+ * @p For many applications that practicality beats the purity of a C library.
+ * 
+ * @p Asynchronous Java now is better than never.
+ * 
+ * @p But never is better than APR right now ;-)
  * 
  */
