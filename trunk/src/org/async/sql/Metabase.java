@@ -362,7 +362,7 @@ public class Metabase implements PublicRDF {
         _UPDATE_STATEMENT.step();
     }
     /**
-	 * Get a statement's object as <code>byte[]</code> or return <code>null</code> 
+	 * Get a statement's object as a <code>String</code> or return <code>null</code> 
 	 * if the statement does not exist.
 	 * 
 	 * @param subject of the statement
@@ -386,13 +386,14 @@ public class Metabase implements PublicRDF {
 	}
 	private static final byte[] _null = new byte[]{'n','u','l','l'};
 	/**
-	 * ...
+	 * Get a statement's object as <code>byte[]</code> or return <code>null</code> 
+	 * if the statement does not exist.
 	 * 
-	 * @param subject
-	 * @param predicate
-	 * @param context
-	 * @return
-	 * @throws Exception
+	 * @param subject of the statement
+	 * @param predicate of the statement
+	 * @param context of the statement
+	 * @return the statement's object as bytes
+	 * @throws Exception if SQLite failed 
 	 */
 	public final byte[] bytes (
 	    String subject, String predicate, String context
