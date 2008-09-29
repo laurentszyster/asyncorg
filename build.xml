@@ -31,7 +31,6 @@
       >
     </jar>
   </target>
-	
   <target name="dist">
     <javac 
        srcdir="src"
@@ -56,33 +55,28 @@
       -->
     <javadoc 
       docletpath=
-        "lib/asyncorg.jar;
-         lib/doctestj.jar;
-         lib/less4j-protocols.jar;
-         lib/smalljs.jar;
-         lib/xp.jar;
-         ${host-jdk-path}lib/tools.jar"
-      doclet="org.doctestj.Doclet"
+        "asyncorg.jar;
+         lib/sqlite.jar;
+         lib/js.jar;
+         lib/xp.jar"
+      doclet="org.doctest.Doclet"
       packagenames=
-        "org.async.chat, 
-         org.async.core, 
-         org.async.collect, 
+        "org.async.simple,
+    	 org.async.core, 
          org.async.net,
-         org.async.produce, 
+    	 org.async.chat,
          org.async.protocols,
          org.async.prototypes,
-         org.async.simple, 
          org.async.sql,
          org.async.web"
       source="1.5" 
       sourcepath="src" 
       classpath=
-        "lib/doctestj.jar;
-         lib/sqlite.jar;
-         lib/less4j-protocols.jar;
-         lib/smalljs.jar;
+        "asyncorg.jar;
+    	 lib/sqlite.jar;
+         lib/js.jar;
          lib/xp.jar;
-         ${host-jdk-path}lib/tools.jar"
+    	 ${host-jdk-path}lib/tools.jar"
       access="public" 
       >
     </javadoc>
