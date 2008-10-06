@@ -53,13 +53,15 @@ import org.async.simple.Objects;
 import org.async.protocols.JSON;
 
 /**
- * An port of Greg Stein's <a 
+ * An enhanced port of Greg Stein's <a 
  * href="http://www.lyra.org/greg/python/qp_xml.py"
  * >qp_xml.py</a> for Java, enhancing James Clark's <a 
  * href="http://www.jclark.com/xml/xp/index.html"
- * >XP</a> to build an element tree model more practical than the W3C's DOM.
+ * >XP</a> to build an element tree model more practical than the W3C's DOM
+ * for XML data.
+ * 
  * It also provides a convenient API to develop extensible interpreters and
- * comes with conveniences to map XML string to JSON arrays and objects. 
+ * comes with a convenience to map XML string to JSON arrays and objects. 
  *
  * @h3 Simple Object Model
  *
@@ -69,16 +71,68 @@ import org.async.protocols.JSON;
  * 
  * @h3 Agile Interpreters
  *
- * @p The <code>XML.Type</code> interface supports the reuse of derived 
- * element and document classes in the development of agile XML interpreters.
+ * @p The <code>XML.Element</code> class supports the reuse of derived 
+ * element in the development of agile XML interpreters.
  * 
  * @h3 From XML To JSON
  * 
- * @p ... <code>XML.Tree</code> ... <code>XML.Regular</code>
+ * @p ... <code>XML.Regular</code>
  *
  */
 public final class XML {
 
+	public final static String fqn (
+		String name, HashMap<String,String> prefixes
+		) {
+	    int colon = name.indexOf(':');
+	    if (colon > -1) {
+	        String prefix = name.substring(0, colon);
+	        if (prefix.equals(_xml)) {
+	            return name.substring(colon+1);
+	        } else if (prefixes.containsKey(prefix)) {
+	            return (
+	                ((String)prefixes.get(prefix)) 
+	                + ' ' + name.substring(colon+1)
+	                );
+	        }
+	        throw new RuntimeException (_namespace_prefix_not_found);
+	    } else if (prefixes.containsKey(_no_prefix)) {
+	        return (
+	            prefixes.get(_no_prefix) + ' ' + name.substring(colon+1)
+	            );
+	    }
+	    return name;
+	}
+	public static final String[] xmlns (
+		StartElementEvent event, 
+		HashMap<String,String> ns,
+		HashMap<String,String> prefixes
+		) {
+	    String name;
+	    String[] attributeNames = null;
+	    int L = event.getAttributeCount();
+	    int A = 0;
+	    if (L > 0) {
+	        attributeNames = new String[L]; 
+	        for (int i=0; i<L; i++) {
+	            name = event.getAttributeName(i);
+	            if (name.equals(_xmlns)) {
+	                ns.put(event.getAttributeValue(i), _no_prefix);
+	                prefixes.put(_no_prefix, event.getAttributeValue(i));
+	            } else if (name.startsWith(_xmlns_colon)) {
+	                ns.put(event.getAttributeValue(i), name.substring(6));
+	                prefixes.put(
+	                    name.substring(6), event.getAttributeValue(i)
+	                    );
+	            } else {
+	                attributeNames[i] = name; 
+	                A++;
+	            }
+	        }
+	    }
+	    return (A > 0) ? attributeNames: null;
+	}
+    
     public static final String localName(String name) {
         int local = name.indexOf(' ');
         if (local > -1)
@@ -107,23 +161,12 @@ public final class XML {
     };
     
     /**
-     * An interface to extend the tree builder with new classes of element 
-     * derived from <code>Element</code>.
-     * 
-     * @param name the fully qualified name of this element
-     * @param attributes a HashMap of names and values
-     */
-    public static interface Type {
-        public Element newElement (String name);
-    }
-     
-    /**
      * A base class for all nodes in an XML element tree, with only five
      * properties, just enough to fully represent an XML string (without
      * comments) as a compact tree of Java objects with the smallest
      * memory footprint.
      */
-    public static class Element implements XML.Type {
+    public static class Element {
         /**
          * The name of this element.
          * 
@@ -664,7 +707,7 @@ public final class XML {
          * @throws IOException
          */
         public void read (
-    		InputStream is, String path, URL baseURL, Map types, Type type
+    		InputStream is, String path, URL baseURL, Map types, Element type
     		) throws Error, IOException {
             QuickParser qp = new QuickParser(this, types, type);
             try {
@@ -684,7 +727,7 @@ public final class XML {
          * @throws Error
          * @throws IOException
          */
-        public void read(File file, Map types, Type type) 
+        public void read(File file, Map types, Element type) 
         throws Error, IOException {
             read (
                 new FileInputStream(file), 
@@ -742,7 +785,7 @@ public final class XML {
          * @throws XML or I/O exceptions
          */
         public void parse(
-    		String string, String path, URL baseURL, Map types, Type type
+    		String string, String path, URL baseURL, Map types, Element type
     		) throws Throwable {
             read(
                 new ReaderInputStream(new StringReader(string)), 
@@ -756,7 +799,7 @@ public final class XML {
          * @param types to use as extensions
          * @throws XML or I/O exceptions
          */
-        public void parse(String string, Map types, Type type) 
+        public void parse(String string, Map types, Element type) 
         throws Throwable {
             read(
                 new ReaderInputStream(new StringReader(string)), 
@@ -798,14 +841,14 @@ public final class XML {
     private static final String _no_prefix = "";
     private static final String 
     _namespace_prefix_not_found = "namespace prefix not found";
-    protected static class QuickParser extends ApplicationImpl {
+    public static class QuickParser extends ApplicationImpl {
         protected Document doc;
-        protected Type type;
-        protected Map<String,Type> types = null;
+        protected Element type;
+        protected Map<String,Element> types = null;
         protected HashMap<String,String> prefixes = new HashMap();
-        protected Element _curr = null;
+        protected Element curr = null;
         public QuickParser (
-    		Document doc, Map<String,Type> types, Type type
+    		Document doc, Map<String,Element> types, Element type
     		) {
             this.doc = doc;
             this.types = types;
@@ -821,90 +864,46 @@ public final class XML {
                 doc.pi.put(name, pi);
             }
         }
-        protected final static String fqn (
-    		String name, HashMap<String,String> prefixes
-    		) {
-            int colon = name.indexOf(':');
-            if (colon > -1) {
-                String prefix = name.substring(0, colon);
-                if (prefix.equals(_xml)) {
-                    return name.substring(colon+1);
-                } else if (prefixes.containsKey(prefix)) {
-                    return (
-                        ((String)prefixes.get(prefix)) 
-                        + ' ' + name.substring(colon+1)
-                        );
-                }
-                throw new RuntimeException (_namespace_prefix_not_found);
-            } else if (prefixes.containsKey(_no_prefix)) {
-                return (
-                    prefixes.get(_no_prefix) + ' ' + name.substring(colon+1)
-                    );
-            }
-            return name;
-        }
         public final void startElement(StartElementEvent event) {
-            String name;
-            String[] attributeNames = null;
-            int L = event.getAttributeCount();
-            int A = 0;
-            if (L > 0) {
-                attributeNames = new String[L]; 
-                for (int i=0; i<L; i++) {
-                    name = event.getAttributeName(i);
-                    if (name.equals(_xmlns)) {
-                        doc.ns.put(event.getAttributeValue(i), _no_prefix);
-                        prefixes.put(_no_prefix, event.getAttributeValue(i));
-                    } else if (name.startsWith(_xmlns_colon)) {
-                        doc.ns.put(
-                            event.getAttributeValue(i), name.substring(6)
-                            );
-                        prefixes.put(
-                            name.substring(6), event.getAttributeValue(i)
-                            );
-                    } else {
-                        attributeNames[i] = name; 
-                        A++;
-                    }
-                }
-            }
-            name = fqn(event.getName(), prefixes);
+            String[] attributeNames = xmlns (event, doc.ns, prefixes);
+            String name = fqn(event.getName(), prefixes);
             Element e;
+            // hook element instantiation here
             if (types != null && types.containsKey(name)) {
-                e = ((Type)types.get(name)).newElement(name);
+                e = types.get(name).newElement(name);
             } else {
                 e = type.newElement(name);
             }
-            e.parent = _curr;
-            if (A > 0) {
-                for (int i=0; i<L; i++) { 
+            e.parent = curr;
+            if (attributeNames != null) {
+                for (int i=0; i < attributeNames.length; i++) { 
                     if (attributeNames[i] != null) {
-                        e.setAttribute(
+                        e.setAttribute( // hook attribute setters here ;-)
                             fqn(attributeNames[i], prefixes), 
                             event.getAttributeValue(i)
                             );
                     }
                 }
             }
-            if (_curr == null) {
+            if (curr == null) {
                 doc.root = e;
             } else {
-                _curr.addChild(e);
+                curr.addChild(e);
             }
-            _curr = e;
-            e.open(doc);
+            curr = e;
+            e.open(doc); // hook element initialization here
         }
         public final void endElement(EndElementEvent event) {
-            Element parent = _curr.parent;
-            _curr.close(doc);
-            _curr = parent;
+            Element parent = curr.parent;
+            curr.close(doc);
+            curr = parent;
         }
         public final void characterData (CharacterDataEvent event) 
         throws IOException {
             StringWriter sw = new StringWriter();
             event.writeChars(sw);
             sw.flush();
-            _curr.addCdata(sw.toString());
+            curr.addCdata(sw.toString()); // hook CDATA setter here
         }
     }
     
@@ -946,13 +945,21 @@ public final class XML {
      * 
      */
     public static class Regular extends Element {
-        public static XML.Type TYPE = new Regular(null, null);
+        public static Element TYPE = new Regular(null, null);
         public JSON.Object json = null;
+        public Regular (String name) {
+            super(name);
+        }
         public Regular (String name, HashMap attributes) {
             super(name, attributes);
         }
+        public Regular (
+    		String name, String[] attributes, String first, String follow
+    		) {
+            super(name, attributes, first, follow);
+        }
         public final Element newElement (String name) {
-            return new Regular(name, null);
+            return new Regular(name);
         }
         protected final void update(
             String name, Object value, Regular container
@@ -1042,6 +1049,33 @@ public final class XML {
             }
         }
     } 
+    /**
+     * Read an XML file and return a JSON object.
+     * 
+     * @param xml
+     * @return
+     * @throws Error
+     * @throws IOException
+     */
+    public static final JSON.Object regular (File xml) throws Error, IOException {
+    	Document doc = new Document();
+    	doc.read(xml, null, Regular.TYPE);
+    	return ((Regular) doc.root).json;
+    }
+    /**
+     * Read XML from an input stream and return a JSON object.
+     * 
+     * @param is
+     * @return
+     * @throws Error
+     * @throws IOException
+     */
+    public static final JSON.Object regular (InputStream is) 
+    throws Error, IOException {
+    	Document doc = new Document();
+    	doc.read(is, null, null, null, Regular.TYPE);
+    	return ((Regular) doc.root).json;
+    }
     
     private static final String _prefix = "ns";
     
@@ -1128,11 +1162,10 @@ public final class XML {
             writeUTF8(writer, element, ns);
             writer.flush();
         } catch (IOException e) {
-            ; // checked exceptions suck.
+            throw new RuntimeException(e); // checked exceptions suck.
         }
         return os.toByteArray();
     }
-    
     // TODO: an UTF-8 bytes iterator, using a stack of children iterators
     //       and connecting a PipedOutputStream and a PipedInputStream to
     //       write XML by chunks ... when needed ;-)
@@ -1141,10 +1174,11 @@ public final class XML {
     //       requesting verbose responses over sluggish VPN enterprise
     //       network ... it should be serialized when needed, not before.
     //       
-    //       By rationing bandwith by the usual TCP/IP windows of 16KB,
+    //       Rationing bandwith through the usual TCP/IP windows of 16KB
     //       a network server can limit each client share of the CPU for
     //       XML serialization ... when encoding the element tree is done
     //       on socket a read event, when the client is ready to receive
     //       it, avoiding to buffer more than needed and let other clients
     //       have their turn.
+
 }
