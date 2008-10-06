@@ -100,8 +100,32 @@ import org.mozilla.javascript.NativeJavaObject;
 public final class JSON {
     
 	protected static final char _done = CharacterIterator.DONE;
-	
+	/**
+	 * The JSON application MIME type.
+	 */
     public static final String MIME_TYPE = "application/json"; 
+    /**
+     * To be implemented by classes that serialize to JSON "natively".  
+     */
+    public static interface Native {
+    	/**
+    	 * Append the outlined JSON representation of an instance to
+    	 * the given <code>StringBuilder</code>, with the given indent.
+    	 * 
+    	 * @param sb <code>StringBuilder</code> to fill
+    	 * @param indent to use for outline
+    	 * @return the fillerd <code>StringBuilder</code>
+    	 */
+    	public StringBuilder toJSON(StringBuilder sb, String indent);
+    	/**
+    	 * Append the uniform JSON representation of an instance to
+    	 * the given <code>StringBuilder</code>.
+    	 * 
+    	 * @param sb <code>StringBuilder</code> to fill
+    	 * @return the fillerd <code>StringBuilder</code>
+    	 */
+    	public StringBuilder toJSON(StringBuilder sb);
+    }
     
     /**
      * A simple JSON exception throwed for any syntax error found by the
@@ -118,7 +142,7 @@ public final class JSON {
      *    System.out.println(e.toString());
      *}
      */
-    public static class Error extends Exception {
+    public static class Error extends Exception implements Native {
         
         /**
          * The position of the JSON syntax error, -1 by default.
@@ -149,6 +173,10 @@ public final class JSON {
             jsonIndex = index;
             }
         
+        public final StringBuilder toJSON(StringBuilder sb, String indent) {
+        	return toJSON(sb, null);
+        }
+        
         /**
          * Buffers the JSON representation of a <code>JSON.Error</code>.
          * 
@@ -164,7 +192,7 @@ public final class JSON {
          * 
          * @return the updated StringBuilder
          */
-        public StringBuilder strb(StringBuilder sb) {
+        public final StringBuilder toJSON(StringBuilder sb) {
             sb.append('[');
             JSON.strb(sb, getMessage());
             sb.append(',');
@@ -174,14 +202,13 @@ public final class JSON {
             sb.append(']');
             return sb;
         }
-        
         /**
          * ...
          */
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append("JSON error ");
-            strb(sb);
+            toJSON(sb, null);
             return sb.toString(); 
         }
         
@@ -749,7 +776,9 @@ public final class JSON {
      * type. Not having to break the chain for "manual" type casting
      * helps a lot and make the whole a lot clearer to read and debug. 
      */
-    public static class Object extends HashMap {
+    public static class Object 
+    extends HashMap<String,java.lang.Object> 
+    implements Native {
         public final void add (String name, java.lang.Object value) {
             if (containsKey(name)) {
                 java.lang.Object curr = get(name);
@@ -957,11 +986,23 @@ public final class JSON {
             	return def;
         	} 
         }
+        public final StringBuilder toJSON(StringBuilder sb, String indent) {
+            java.lang.Object[] names = keySet().toArray();
+            Arrays.sort(names);
+            return outline(sb, this, Objects.iter(names), indent);
+        }
+        public final StringBuilder toJSON(StringBuilder sb) {
+            java.lang.Object[] names = keySet().toArray();
+            Arrays.sort(names);
+        	return strb(sb, this, Objects.iter(names));
+        }
         /**
          * ...
          */
         public final String toString() {
-            return JSON.strb(new StringBuilder(), this).toString();
+            java.lang.Object[] names = keySet().toArray();
+            Arrays.sort(names);
+        	return strb(new StringBuilder(), this, Objects.iter(names)).toString();
         }
 
     }
@@ -990,7 +1031,7 @@ public final class JSON {
      * 
      * @p ...
      */
-    public static class Array extends ArrayList {
+    public static class Array extends ArrayList implements Native {
         /**
          * Access an <code>Number</code> value by index.
          * 
@@ -1182,11 +1223,17 @@ public final class JSON {
             	return def;
             } 
         }
+        public final StringBuilder toJSON(StringBuilder sb, String indent) {
+        	return outline(sb, this.iterator(), indent);
+        }
+        public final StringBuilder toJSON(StringBuilder sb) {
+        	return strb(sb, this.iterator());
+        }
         /**
          * ...
          */
         public final String toString() {
-            return JSON.strb(new StringBuilder(), this).toString();
+            return strb(new StringBuilder(), this.iterator()).toString();
         }
     }
 
@@ -1208,7 +1255,7 @@ public final class JSON {
         JSON.Object result = new JSON.Object();
         for (int i=0; i< pairs.length; i=i+2)
             if (pairs[i] instanceof String)
-                result.put(pairs[i], pairs[i+1]);
+                result.put((String) pairs[i], pairs[i+1]);
             else
                 result.put(pairs[i].toString(), pairs[i+1]);
         return result;
@@ -1602,19 +1649,21 @@ public final class JSON {
     public static final StringBuilder strb(
         StringBuilder sb, java.lang.Object value
         ) {
-        if (value == null) 
+        if (value == null) {
             sb.append(_null);
-        else if (value instanceof Boolean)
+        } else if (value instanceof Boolean) {
             sb.append(((Boolean) value).booleanValue() ? _true : _false);
-        else if (value instanceof Number) 
+        } else if (value instanceof Number) { 
             sb.append(trimZero(((Number) value).toString()));
-        else if (value instanceof String) 
+    	} else if (value instanceof String) {
             strb(sb, (String) value);
-        else if (value instanceof Character) 
+    	} else if (value instanceof Character) {
             strb(sb, ((Character) value).toString());
-        else if (value instanceof Iterator) 
+        } else if (value instanceof Native) {
+        	((Native) value).toJSON(sb);
+    	} else if (value instanceof Iterator) { 
             strb(sb, (Iterator) value);
-        else if (value instanceof Map) {
+    	} else if (value instanceof Map) {
             Map object = (Map) value;
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
@@ -1871,19 +1920,21 @@ public final class JSON {
     public static final StringBuilder outline(
         StringBuilder sb, java.lang.Object value, String indent
         ) {
-        if (value == null) 
+        if (value == null) {
             sb.append(_null);
-        else if (value instanceof Boolean)
+        } else if (value instanceof Boolean) {
             sb.append(((Boolean) value).booleanValue() ? _true : _false);
-        else if (value instanceof Number) 
+        } else if (value instanceof Number) { 
             sb.append(trimZero(((Number) value).toString()));
-        else if (value instanceof String)
+        } else if (value instanceof String) {
             strb(sb, (String) value);
-        else if (value instanceof Character) 
+        } else if (value instanceof Character) { 
             strb(sb, ((Character) value).toString());
-        else if (value instanceof Iterator) 
+        } else if (value instanceof Native) {
+        	((Native) value).toJSON(sb);
+        } else if (value instanceof Iterator) { 
             outline(sb, (Iterator) value, indent);
-        else if (value instanceof Map) {
+        } else if (value instanceof Map) {
             Map object = (Map) value;
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
@@ -2007,19 +2058,21 @@ public final class JSON {
     protected static final StringBuilder pprint(
         StringBuilder sb, java.lang.Object value, String indent, OutputStream os 
         ) throws IOException {
-        if (value == null) 
+        if (value == null) {
             sb.append(_null);
-        else if (value instanceof Boolean)
+        } else if (value instanceof Boolean) {
             sb.append(((Boolean) value).booleanValue() ? _true : _false);
-        else if (value instanceof Number) 
+        } else if (value instanceof Number) { 
             sb.append(trimZero(((Number) value).toString()));
-        else if (value instanceof String)
+        } else if (value instanceof String) {
             strb(sb, (String) value);
-        else if (value instanceof Character) 
+        } else if (value instanceof Character) { 
             strb(sb, ((Character) value).toString());
-        else if (value instanceof Iterator) 
+        } else if (value instanceof Native) { 
+            ((Native) value).toJSON(sb, indent);
+        } else if (value instanceof Iterator) { 
             sb = pprint(sb, (Iterator) value, indent, os);
-        else if (value instanceof Map) {
+        } else if (value instanceof Map) {
             Map object = (Map) value;
             java.lang.Object[] names = object.keySet().toArray();
             Arrays.sort(names);
@@ -2221,10 +2274,11 @@ public final class JSON {
                 } else {
                     return utf8(Objects.iter((java.lang.Object[]) value));
                 }
-            } else
+            } else {
                 return Objects.iter(new java.lang.Object[]{
             		Bytes.encode(encode(value.toString()), Bytes.UTF8)
             		});
+            }
         }
     }
     
