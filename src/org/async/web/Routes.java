@@ -78,7 +78,7 @@ public class Routes implements Controller {
             for (int i=1; i<n; i++) {
             	value = re.group(i);
             	if (value != null)  {
-            		http.state.put(_names, URLDecoder.decode(value, "UTF-8"));
+            		http.state.put(_names[i], URLDecoder.decode(value, "UTF-8"));
             	}
             } 
             http.handler = _routed;
