@@ -25,8 +25,7 @@ import org.async.protocols.JSONR;
 import org.async.chat.GuardCollector;
 import org.async.chat.StringCollector;
 import org.async.sql.Metabase;
-import org.async.web.HttpServer.Actor;
-import org.async.web.HttpServer.Controller;
+import org.async.web.HttpServer;
 
 /*
  * A class to decouple storage, semantics and access control from the 
@@ -39,24 +38,24 @@ import org.async.web.HttpServer.Controller;
  * bodies, set by default to the size of its channel input buffer (ie: 16KB).
  * 
  * Predicate's implementation enables developers to focus on application features
- * rather than figuring out why Object Relational Mapping sucks, which simple
- * URL routing is enough and how role based access control fits in a contextual
- * resource description framework.
+ * rather than figuring out how much Object Relational Mapping can suck, which 
+ * simple URL routing is enough and how role based access control fits in a 
+ * contextual resource description framework.
  * 
- * Using predicates buys you a linear and risk-free development cycle for auditable,
- * state-full and persistent semantic web applications.
+ * Using predicates buys you a linear and risk-free development cycle for 
+ * audited, state-full and persistent semantic web applications.
  * 
  */
-public class Predicate implements Controller {
+public class Predicate implements HttpServer.Controller {
 	protected static final class Pass implements Fun {
 		public final Object apply (Object input) {
 			return null;
 		}
 	}
 	public static final Fun PASS = new Pass();
-	public static final class EvalJSON implements Fun {
+	protected static final class ApplyJSON implements Fun {
 		private Fun _fun = PASS;
-		public EvalJSON(Fun fun) {
+		public ApplyJSON(Fun fun) {
 			_fun = fun;
 		}
 		public final Object apply (Object input) throws Throwable {
@@ -67,13 +66,13 @@ public class Predicate implements Controller {
 			return response;
 		}
 	}
-	public static final Fun evalJSON (Fun fun) {
-		return new EvalJSON(fun);
+	public static final Fun applyJSON (Fun fun) {
+		return new ApplyJSON(fun);
 	}
-	public static final class ValidJSONR implements Fun {
+	protected static final class ApplyJSONR implements Fun {
 		private Fun _fun = PASS;
 		private JSONR.Type _type;
-		public ValidJSONR(Fun fun, JSONR.Type type) {
+		public ApplyJSONR(Fun fun, JSONR.Type type) {
 			_fun = fun;
 			_type = type;
 		}
@@ -85,8 +84,8 @@ public class Predicate implements Controller {
 			return response;
 		}
 	}
-	public static final Fun validJSONR (Fun fun, JSONR.Type type) {
-		return new ValidJSONR(fun, type);
+	public static final Fun applyJSONR (Fun fun, JSONR.Type type) {
+		return new ApplyJSONR(fun, type);
 	}
 	private Metabase _metabase;
 	private Fun _function = PASS;
@@ -103,7 +102,7 @@ public class Predicate implements Controller {
 		_function = function;
     	_limit = limit;
     }
-	public final boolean handleRequest(Actor http) throws Throwable {
+	public final boolean handleRequest(HttpServer.Actor http) throws Throwable {
 	    String method = http.method();
         String subject = http.about[1];
         String predicate = http.about[2];
@@ -168,30 +167,48 @@ public class Predicate implements Controller {
 	    }
 		return false;
 	}
-	public final void handleBody(Actor http) throws Throwable {
+	public final void handleBody(HttpServer.Actor http) throws Throwable {
 		String returned;
         String subject = http.about[1];
         String predicate = http.about[2];
         String context = http.about[3];
         String object = http.body().toString();
-	    _metabase.sql.begin();
+    	Object[] statement = new Object[]{
+			subject, predicate, object, context, http.digest
+			};
+    	try {
+    		returned = (String) _function.apply(statement); // .toString() ?
+    	} catch (Throwable t) {
+        	http.channel().log(t);
+	        http.error(500);
+	        return;
+    	}
+    	
+    	// TODO: defer to a different process via a queue ... or block :-(
+    	//
+    	// _metabase.sql.begin();
+    	
 	    try {
-	    	Object[] statement = new Object[]{
-    			subject, predicate, object, context, http.digest
-    			};
-        	returned = (String) _function.apply(statement);
 	        if (http.method().equals("PUT")) {
-	            _metabase.insert(subject, predicate, context, (String) statement[2]);
+	            _metabase.insert(
+            	    subject, predicate, context, (String) statement[2]
+                    );
 	        } else {
-	        	_metabase.update(subject, predicate, context, (String) statement[2]);
+	        	_metabase.update(
+            	    subject, predicate, context, (String) statement[2]
+                    );
 	        }
 	    } catch (Exception e) {
-	        _metabase.sql.rollback();
+	    	
+	        // _metabase.sql.rollback();
+	    	
         	http.channel().log(e);
 	        http.error(500);
 	        return;
 	    }
-        _metabase.sql.commit();
+	    
+        //_metabase.sql.commit();
+        
 	    http.set("Cache-control", "no-cache");
 	    http.set("Content-Type", "text/javascript; charset=UTF-8");
         http.reply(200, returned, "UTF-8");
