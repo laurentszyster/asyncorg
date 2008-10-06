@@ -19,13 +19,15 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 
 /**
- * An SQL meta-base, the implementation of a Public RDF subset backed by AnSQLite.
+ * An SQL meta-base for the web, the implementation of a Public RDF subset backed 
+ * by AnSQLite and serving JSON objects only.
  */
 public class Metabase implements PublicRDF {
 	private Stmt _INSERT_TOPIC;
 	private Stmt _SELECT_TOPIC;
 	private Stmt _INSERT_STATEMENT;
     private Stmt _UPDATE_STATEMENT;
+    private Stmt _REPLACE_STATEMENT;
     private Stmt _SELECT_STATEMENT;
     private Stmt _SELECT_STATEMENTS;
     private Stmt _INSERT_INDEX;
@@ -82,6 +84,9 @@ public class Metabase implements PublicRDF {
             );
         _INSERT_STATEMENT = sql.prepared(
             "INSERT INTO m4statements (topic, predicate, object) VALUES (?, ?, ?)"
+            );
+        _REPLACE_STATEMENT = sql.prepared(
+            "REPLACE INTO m4statements (topic, predicate, object) VALUES (?, ?, ?)"
             );
         _SELECT_STATEMENT = sql.prepared(
             "SELECT object FROM m4statements, m4topics "
@@ -182,7 +187,7 @@ public class Metabase implements PublicRDF {
     public final void remove() {
         _statements.removeFirst();
     }
-    public final String topic (String subject, String context) throws Exception {
+    protected final String topic (String subject, String context) throws Exception {
         _SELECT_TOPIC.reset();
         _SELECT_TOPIC.bind(1, subject);
         _SELECT_TOPIC.bind(2, context);
@@ -300,6 +305,13 @@ public class Metabase implements PublicRDF {
         	} while (_SELECT_ROUTES.step());
         }
     }
+    /**
+     * ...
+     * 
+     * @param name
+     * @return
+     * @throws Exception
+     */
     public final HashMap<String, ArrayList<String>> walk (String name) 
     throws Exception {
     	String index = indexed(name);
@@ -341,6 +353,24 @@ public class Metabase implements PublicRDF {
         _INSERT_STATEMENT.bind(3, object);
         _INSERT_STATEMENT.step();
     }
+	/**
+	 * Insert or replace a statement
+	 * 
+	 * @param subject
+	 * @param predicate
+	 * @param objects
+	 * @throws Exception
+	 */
+    public final void replace (
+        String subject, String predicate, String context, String object
+        ) throws Exception {
+    	String digest = topic(subject, context);
+        _REPLACE_STATEMENT.reset();
+        _REPLACE_STATEMENT.bind(1, digest);
+        _REPLACE_STATEMENT.bind(2, predicate);
+        _REPLACE_STATEMENT.bind(3, object);
+        _REPLACE_STATEMENT.step();
+	}
     /**
      * Update a statement's object in the metabase and return null or the previous 
      * object if any.  
@@ -408,29 +438,6 @@ public class Metabase implements PublicRDF {
 	        return _null;
 	    }
 	}
-    public final void post (
-	    String subject, String predicate, HashMap<String, Object> objects
-	    ) throws Exception {
-		String context;
-		Iterator<String> names = objects.keySet().iterator();
-		while (names.hasNext()) {
-			context = names.next();
-	    	String digest = topic(subject, context);
-	    	if (select(subject, predicate, context) == null) {
-	            _INSERT_STATEMENT.reset();
-	            _INSERT_STATEMENT.bind(1, digest);
-	            _INSERT_STATEMENT.bind(2, predicate);
-	            _INSERT_STATEMENT.bind(3, JSON.encode(objects.get(context)));
-	            _INSERT_STATEMENT.step();
-	    	} else {
-		        _UPDATE_STATEMENT.reset();
-		        _UPDATE_STATEMENT.bind(1, JSON.encode(objects.get(context)));
-		        _UPDATE_STATEMENT.bind(2, digest);
-		        _UPDATE_STATEMENT.bind(3, predicate);
-		        _UPDATE_STATEMENT.step();
-	    	}
-		}
-	}
 	/**
      * Fill a <code>HashMap</code> with one or more statements' object, 
      * keyed by context, for a given subject and predicate.
@@ -440,8 +447,8 @@ public class Metabase implements PublicRDF {
      * @param objects
      * @throws Exception
      */
-    public final void get (
-		String subject, String predicate, HashMap<String, Object> objects
+    public final void objects (
+		String subject, String predicate, HashMap<String, Object> json
 		) {
     	try {
 	        _SELECT_STATEMENTS.reset();
@@ -449,7 +456,7 @@ public class Metabase implements PublicRDF {
 	        _SELECT_STATEMENTS.bind(2, predicate);
 	        if (_SELECT_STATEMENTS.step()) {
 	            do {
-	                objects.put(
+	                json.put(
 	                    _SELECT_STATEMENTS.column_string(0), 
 	                    JSON.decode(_SELECT_STATEMENTS.column_string(1))
 	                    );
@@ -491,6 +498,14 @@ public class Metabase implements PublicRDF {
         	sb.append("null");
         }
     }
+    /**
+     * ...
+     * 
+     * @param subject
+     * @param predicate
+     * @return
+     * @throws Exception
+     */
     public final String buffer (String subject, String predicate) throws Exception {
     	StringBuilder sb = new StringBuilder();
     	buffer(subject, predicate, sb);
@@ -512,7 +527,7 @@ public class Metabase implements PublicRDF {
     private byte[] _NULL = new byte[]{'n', 'u', 'l', 'l'};
     public final Producer produce (String subject, String predicate) 
     throws Exception {
-    	ArrayList<byte[]> bytes = new ArrayList<byte[]>();
+    	LinkedList<byte[]> bytes = new LinkedList();
         _SELECT_STATEMENTS.reset();
         _SELECT_STATEMENTS.bind(1, subject);
         _SELECT_STATEMENTS.bind(2, predicate);
@@ -538,3 +553,19 @@ public class Metabase implements PublicRDF {
         return new BytesProducer(bytes.iterator());
     }
 }
+/*
+
+Transactions with BEGIN, COMMIT or ROLLBACK are bound to disk, at a not so fast
+pace of 7200rpm in most case. That's 120 access per seconds, two by transactions
+and 60 transactions per seconds. So a transacted metabase can handle at most sixty 
+concurrent updates per seconds with the fraction of a single core CPU time, the
+rest is available to handle more metabase queries (which are simpler in execution)
+... by chunks of 1/60th of second.
+
+To handle more of all types of requests without wait state, transactions must be 
+deferred to another process either in I/O buffers and/or persistent queues.
+
+Or do not transact, size your CPU and RAM to your I/O buffers and make sure that 
+the server shuts down gracefully on error ... with a final COMMIT.
+
+*/
