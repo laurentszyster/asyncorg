@@ -31,7 +31,7 @@ import java.net.InetSocketAddress;
 /**
  * A <code>Loginfo</code> implementation that logs netstrings to a server.
  * 
- * @pre Netlogs netlog = new Netlog();
+ * @pre Logs netlog = new Log();
  *netlog.connect("127.0.0.1", 12345);
  *netlog.connect("127.0.0.2", 12345, "DEBUG");
  *
