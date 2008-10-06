@@ -158,7 +158,7 @@ public final class JSONR extends JSON.Parser {
         public String toString() {
             StringBuilder sb = new StringBuilder();
             sb.append("JSONR error ");
-            strb(sb);
+            toJSON(sb, null);
             return sb.toString(); 
         }
         
