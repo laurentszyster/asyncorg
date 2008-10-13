@@ -21,7 +21,7 @@ package org.async.core;
 
 import java.util.Iterator;
 
-import org.async.simple.Fun;
+import org.simple.Fun;
 
 public abstract class Call implements Fun {
     protected Loop _loop = Static.loop;

@@ -1,6 +1,6 @@
 import org.async.core.Static;
-import org.async.simple.FileClassLoader;
-import org.async.simple.Fun;
+import org.simple.FileClassLoader;
+import org.simple.Fun;
 
 public final class ClassLoaderTest {
     public static final void main (String[] args) throws Throwable {

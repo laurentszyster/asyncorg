@@ -1,9 +1,9 @@
 package org.async.web;
 
 import org.async.sql.AnSQLite;
-import org.async.protocols.JSON;
-import org.async.simple.Bytes;
-import org.async.simple.Fun;
+import org.protocols.JSON;
+import org.simple.Bytes;
+import org.simple.Fun;
 
 import SQLite.Authorizer;
 import SQLite.Constants;

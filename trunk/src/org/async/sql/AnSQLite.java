@@ -1,7 +1,7 @@
 package org.async.sql;
 
-import org.async.protocols.JSON;
-import org.async.simple.Bytes;
+import org.protocols.JSON;
+import org.simple.Bytes;
 
 import SQLite.Database;
 import SQLite.Exception;

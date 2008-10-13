@@ -19,9 +19,9 @@
 
 package org.async.web;
 
-import org.async.simple.Fun;
-import org.async.protocols.JSON;
-import org.async.protocols.JSONR;
+import org.simple.Fun;
+import org.protocols.JSON;
+import org.protocols.JSONR;
 import org.async.chat.GuardCollector;
 import org.async.chat.StringCollector;
 import org.async.sql.Metabase;
@@ -107,12 +107,19 @@ public class Predicate implements HttpServer.Controller {
         String subject = http.about[1];
         String predicate = http.about[2];
         String context = http.about[3];
+        Metabase.Predicate column = _metabase.predicates.get(predicate);
+        if (column == null) {
+            http.error(404); // Not Found
+            return false;
+        }
 	    if (method.equals("GET")) {
 	    	String object = "null";
 	        try {
 		    	if (context == null) { // GET subject/predicate
 		    		if (http.rights.contains(predicate)) {
-		    			object = _metabase.buffer(subject, predicate);
+		    			object = column.buffer(
+	    					subject, new StringBuilder()
+	    					).toString();
 		    		} else {
 			            http.error(403); // Forbidden
 			            return false;
@@ -120,7 +127,7 @@ public class Predicate implements HttpServer.Controller {
 		    	} else if (
 					context.equals(http.identity) || http.rights.contains(predicate) 
 					) { // GET subject/predicate/context
-	                object = _metabase.select(subject, predicate, context);
+	                object = column.select(subject, context);
 	            } else {
 		            http.error(403); // Forbidden
 		            return false;
@@ -188,15 +195,12 @@ public class Predicate implements HttpServer.Controller {
     	//
     	// _metabase.sql.begin();
     	
+        Metabase.Predicate column = _metabase.predicates.get(predicate);
 	    try {
 	        if (http.method().equals("PUT")) {
-	            _metabase.insert(
-            	    subject, predicate, context, (String) statement[2]
-                    );
+	            column.insert(subject, context, (String) statement[2]);
 	        } else {
-	        	_metabase.update(
-            	    subject, predicate, context, (String) statement[2]
-                    );
+	        	column.update(subject, context, (String) statement[2]);
 	        }
 	    } catch (Exception e) {
 	    	

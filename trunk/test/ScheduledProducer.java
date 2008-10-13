@@ -18,7 +18,7 @@
  */
 
 import org.async.chat.Producer;
-import org.async.simple.Fun;
+import org.simple.Fun;
 
 /**
  * A wrapping <code>Producer</code> that stalls until its 

@@ -20,7 +20,7 @@
 import org.async.chat.ChatDispatcher;
 import org.async.chat.StringsProducer;
 import org.async.core.Static;
-import org.async.simple.Fun;
+import org.simple.Fun;
 
 public class AsyncChatTest extends ChatDispatcher {
     public AsyncChatTest() {

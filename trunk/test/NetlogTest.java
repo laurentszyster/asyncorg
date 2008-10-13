@@ -19,7 +19,7 @@
 
 import org.async.core.Static;
 import org.async.net.Log;
-import org.async.simple.Fun;
+import org.simple.Fun;
 
 import java.net.InetSocketAddress;
 

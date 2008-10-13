@@ -19,7 +19,7 @@
 
 package org.async.chat;
 
-import org.async.simple.Objects;
+import org.simple.Objects;
 import java.util.LinkedList;
 import java.util.Iterator;
 

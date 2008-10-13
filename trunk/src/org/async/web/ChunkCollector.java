@@ -23,9 +23,9 @@ import org.async.chat.Chat;
 import org.async.chat.Channel;
 import org.async.chat.Collector;
 import org.async.chat.Protocol;
-import org.async.protocols.HTTP;
-import org.async.simple.Bytes;
-import org.async.simple.Strings;
+import org.protocols.HTTP;
+import org.simple.Bytes;
+import org.simple.Strings;
 
 import java.util.HashMap;
 
