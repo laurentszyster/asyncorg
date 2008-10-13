@@ -21,12 +21,13 @@
  *  configuration significantly and supports a fast development cycle.
  * 
  */
+importClass(Packages.org.protocols.JSON);
+importClass(Packages.org.protocols.JSONR);
+
 var asyncorg = Packages.org.async;
  
 importClass(asyncorg.core.Static);
 importClass(asyncorg.chat.StringCollector);
-importClass(asyncorg.protocols.JSON);
-importClass(asyncorg.protocols.JSONR);
 importClass(asyncorg.sql.AnSQLite);
 importClass(asyncorg.sql.Metabase);
 importClass(asyncorg.web.HttpServer);
