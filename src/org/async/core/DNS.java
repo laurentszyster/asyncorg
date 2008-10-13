@@ -1,8 +1,8 @@
 package org.async.core;
 
-import org.async.simple.Fun;
-import org.async.simple.SIO;
-import org.async.simple.Strings;
+import org.simple.Fun;
+import org.simple.SIO;
+import org.simple.Strings;
 
 import java.util.ArrayList;
 import java.util.Arrays;

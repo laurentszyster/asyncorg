@@ -2,8 +2,8 @@ package org.async.web;
 
 import org.async.web.HttpServer;
 import org.async.chat.BytesProducer;
-import org.async.protocols.HTTP;
-import org.async.simple.SIO;
+import org.protocols.HTTP;
+import org.simple.SIO;
 import java.io.File;
 import java.util.Iterator;
 import java.util.HashMap;

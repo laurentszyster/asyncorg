@@ -23,9 +23,9 @@ import org.async.web.HttpServer.Actor;
 import org.async.web.HttpServer.Controller;
 import org.async.chat.GuardCollector;
 import org.async.chat.StringCollector;
-import org.async.protocols.JSONR;
-import org.async.protocols.JSON;
-import org.async.simple.Fun;
+import org.protocols.JSONR;
+import org.protocols.JSON;
+import org.simple.Fun;
 
 /**
  * The redefinition of a web service, using JSON in place of SOAP and

@@ -2,8 +2,8 @@ package org.async.web;
 
 import org.async.web.HttpServer.Controller;
 import org.async.web.HttpServer.Actor;
-import org.async.protocols.IRTD2;
-import org.async.simple.Strings;
+import org.protocols.IRTD2;
+import org.simple.Strings;
 
 /**
  * ...

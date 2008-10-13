@@ -21,7 +21,7 @@ package org.async.chat;
 
 import java.nio.ByteBuffer;
 
-import org.async.simple.Bytes;
+import org.simple.Bytes;
 
 /**
  * A convenience to encapsulate protocols. Usefull for instance to nest

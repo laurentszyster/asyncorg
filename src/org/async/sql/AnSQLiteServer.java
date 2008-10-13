@@ -4,8 +4,8 @@ import org.async.core.Server;
 import org.async.core.Static;
 import org.async.core.Pipeline;
 import org.async.net.NetDispatcher;
-import org.async.simple.Bytes;
-import org.async.protocols.JSON;
+import org.simple.Bytes;
+import org.protocols.JSON;
 import org.async.sql.AnSQLite;
 
 import java.nio.ByteBuffer;

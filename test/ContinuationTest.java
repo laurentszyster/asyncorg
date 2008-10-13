@@ -19,7 +19,7 @@
 
 import org.async.core.Call;
 import org.async.core.Static;
-import org.async.simple.Objects;
+import org.simple.Objects;
 
 class ContinuationTest {
     

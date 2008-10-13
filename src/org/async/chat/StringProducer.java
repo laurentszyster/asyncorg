@@ -19,7 +19,7 @@
 
 package org.async.chat;
 
-import org.async.simple.Bytes;
+import org.simple.Bytes;
 
 public class StringProducer implements Producer {
     private byte[] _buffer;

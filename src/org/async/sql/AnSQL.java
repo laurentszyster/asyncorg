@@ -1,9 +1,9 @@
 package org.async.sql;
 
-import org.async.simple.Fun;
-import org.async.simple.Bytes;
+import org.simple.Fun;
+import org.simple.Bytes;
 import org.async.net.NetDispatcher;
-import org.async.protocols.JSON;
+import org.protocols.JSON;
 
 import java.util.Iterator;
 import java.util.LinkedList;

@@ -26,11 +26,11 @@ import org.async.chat.ByteProducer;
 import org.async.chat.ChatDispatcher;
 import org.async.chat.Producer;
 import org.async.chat.Collector;
-import org.async.protocols.HTTP;
-import org.async.protocols.JSON;
-import org.async.simple.Bytes;
-import org.async.simple.Strings;
-import org.async.simple.Objects;
+import org.protocols.HTTP;
+import org.protocols.JSON;
+import org.simple.Bytes;
+import org.simple.Strings;
+import org.simple.Objects;
 
 import java.util.Iterator;
 import java.util.HashMap;

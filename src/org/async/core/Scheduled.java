@@ -19,7 +19,7 @@
 
 package org.async.core;
 
-import org.async.simple.Fun;
+import org.simple.Fun;
 
 /**
  * ...

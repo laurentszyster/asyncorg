@@ -4,7 +4,7 @@ import org.async.web.Database;
 import org.async.web.Service;
 import org.async.sql.AnSQLite;
 import org.async.core.Static;
-import org.async.simple.Fun;
+import org.simple.Fun;
 
 
 public class HttpServerTest {

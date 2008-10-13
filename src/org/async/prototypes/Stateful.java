@@ -1,8 +1,8 @@
 package org.async.prototypes;
 
 import org.async.core.Static;
-import org.async.simple.Fun;
-import org.async.simple.SIO;
+import org.simple.Fun;
+import org.simple.SIO;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;

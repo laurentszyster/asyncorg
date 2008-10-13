@@ -20,8 +20,8 @@
 package org.async.web;
 
 import org.async.chat.Producer;
-import org.async.simple.Strings;
-import org.async.simple.Bytes;
+import org.simple.Strings;
+import org.simple.Bytes;
 import java.util.ArrayList;
 import java.nio.ByteBuffer;
 
