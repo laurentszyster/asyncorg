@@ -47,6 +47,22 @@ import org.async.web.HttpServer;
  * 
  */
 public class Predicate implements HttpServer.Controller {
+	/**
+	 * What an application of <code>Predicate</code> handles.
+	 * 
+	 * Applications may alter the object and relation of a statement, to further 
+	 * validate a resource description and record facts about it that can be used 
+	 * to establish functional relations between resources.
+	 *  
+	 * Note that the <code>relation</code> map is <code>null</code> by default,
+	 * which translates in no relation update.
+	 */
+	public static final class Statement extends Metabase.Statement {
+		protected Statement (HttpServer.Actor http) {
+			super (http.digest, http.about[0], http.about[2]);
+			object = http.body().toString();
+		}
+	}
 	protected static final class Pass implements Fun {
 		public final Object apply (Object input) {
 			return null;
@@ -59,10 +75,10 @@ public class Predicate implements HttpServer.Controller {
 			_fun = fun;
 		}
 		public final Object apply (Object input) throws Throwable {
-			Object[] args = (Object[]) input; 
-			args[3] = JSON.decode((String) args[2]);
-			Object response = _fun.apply(args);
-			args[3] = JSON.encode(args[2]);
+			Statement statement = (Statement) input; 
+			statement.object = JSON.decode((String) statement.object);
+			Object response = _fun.apply(statement);
+			statement.object = JSON.encode(statement.object);
 			return response;
 		}
 	}
@@ -77,10 +93,10 @@ public class Predicate implements HttpServer.Controller {
 			_type = type;
 		}
 		public final Object apply (Object input) throws Throwable {
-			Object[] args = (Object[]) input; 
-			args[3] = _type.eval((String) args[2]);
-			Object response = _fun.apply(args);
-			args[3] = JSON.encode(args[2]);
+			Statement statement = (Statement) input; 
+			statement.object = _type.eval((String) statement.object);
+			Object response = _fun.apply(statement);
+			statement.object = JSON.encode(statement.object);
 			return response;
 		}
 	}
@@ -176,13 +192,8 @@ public class Predicate implements HttpServer.Controller {
 	}
 	public final void handleBody(HttpServer.Actor http) throws Throwable {
 		String returned;
-        String subject = http.about[1];
-        String predicate = http.about[2];
-        String context = http.about[3];
-        String object = http.body().toString();
-    	Object[] statement = new Object[]{
-			subject, predicate, object, context, http.digest
-			};
+        Metabase.Predicate column = _metabase.predicates.get(http.about[2]);
+		Statement statement = new Statement (http);
     	try {
     		returned = (String) _function.apply(statement); // .toString() ?
     	} catch (Throwable t) {
@@ -190,29 +201,18 @@ public class Predicate implements HttpServer.Controller {
 	        http.error(500);
 	        return;
     	}
-    	
-    	// TODO: defer to a different process via a queue ... or block :-(
-    	//
-    	// _metabase.sql.begin();
-    	
-        Metabase.Predicate column = _metabase.predicates.get(predicate);
 	    try {
 	        if (http.method().equals("PUT")) {
-	            column.insert(subject, context, (String) statement[2]);
+	            column.insert(statement);
 	        } else {
-	        	column.update(subject, context, (String) statement[2]);
+	        	column.update(statement);
 	        }
 	    } catch (Exception e) {
-	    	
-	        // _metabase.sql.rollback();
-	    	
+	        // TODO: this *may* also be a major failure (disk crash, etc ...)
         	http.channel().log(e);
 	        http.error(500);
 	        return;
 	    }
-	    
-        //_metabase.sql.commit();
-        
 	    http.set("Cache-control", "no-cache");
 	    http.set("Content-Type", "text/javascript; charset=UTF-8");
         http.reply(200, returned, "UTF-8");

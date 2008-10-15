@@ -23,6 +23,50 @@ import java.util.LinkedList;
  * by AnSQLite and serving JSON objects only.
  */
 public class Metabase implements PublicRDF {
+	public static final String digest (String subject, String context) {
+    	SHA1 sha1 = new SHA1();
+    	sha1.update(Netunicode.encode(
+			new String[]{subject,context}).getBytes()
+			);
+    	return sha1.hexdigest();
+	}
+	/**
+	 * What an application of a <code>Metabase.Predicate</code> handles.
+	 * 
+	 * Applications may alter the object and relation of a statement, to further 
+	 * validate a resource description and record facts about it that can be used 
+	 * to establish functional relations between resources.
+	 *  
+	 * Note that the <code>relation</code> map is <code>null</code> by default,
+	 * which translates in no relation update.
+	 */
+	public static class Statement {
+		protected String audit;
+		protected String subject;
+		protected String context;
+		public Object object;
+		public HashMap<String,Object> relation = null;
+		public Statement (String audit, String subject, String context) {
+			this.subject = subject;
+			this.context = context;
+			this.audit = audit;
+		}
+		public final String subject () {
+			return subject;
+		}
+		public final String context () {
+			return subject;
+		}
+		public final String object () {
+			if (object == null) {
+				return null;
+			}
+			return object.toString();
+		}
+		public final String audit () {
+			return audit;
+		}
+	}
 	/**
 	 * Prepares and execute SQLite statements to insert, update, replace, select
 	 * and get statements for one predicate. 
@@ -32,63 +76,68 @@ public class Metabase implements PublicRDF {
 	 * object states on which the application could benefit from an index to 
 	 * report on statements about unrelated subjects and contexts.
 	 * 
-	 * TODO: extend with columns.
 	 */
 	public static final class Predicate {
+		private Stmt _INSERT_RELATION;
+		private Stmt _UPDATE_RELATION;
+		private Stmt _REPLACE_RELATION;
 		private Stmt _INSERT;
 		private Stmt _UPDATE;
 		private Stmt _REPLACE;
 		private Stmt _SELECT;
 		private Stmt _GET;
 		private Metabase _metabase;
-		private String name;
-		private String[] domains;
-		private String[] constraints;
+		private String _name;
+		private String[] _domains;
+		private String[] _constraints;
 		public Predicate (
 			Metabase metabase, String name, HashMap<String,String> columns
 			) {
 			_metabase = metabase;
-			this.name = name;
-			domains = (String[]) columns.keySet().toArray();
-			constraints = new String[domains.length];
-			for (int i=0; i<constraints.length; i++) {
-				constraints[i] = columns.get(domains[i]); 
+			this._name = name;
+			_domains = (String[]) columns.keySet().toArray();
+			_constraints = new String[_domains.length];
+			for (int i=0; i<_constraints.length; i++) {
+				_constraints[i] = columns.get(_domains[i]); 
 			}
 			try {
-				initialize(metabase.sql);
+				createTable(metabase.sql);
+				prepareStatements(metabase.sql);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		}
-		private final void initialize (AnSQLite sql) throws Exception {
+		protected final void createTable (AnSQLite sql) throws Exception {
 			sql.execute(
-                "CREATE TABLE IF NOT EXISTS " + name + " ( "
+                "CREATE TABLE IF NOT EXISTS " + _name + " ( "
                 + "topic TEXT(40) NOT NULL UNIQUE, " 
                 + "object TEXT " 
                 + ")"
                 );
+		}
+		protected final void prepareStatements (AnSQLite sql) throws Exception {
 	        _UPDATE = sql.prepared(
-                "UPDATE " + name + " SET object = ? WHERE topic = ? "
+                "UPDATE " + _name + " SET object = ? WHERE topic = ? "
                 );
             _INSERT = sql.prepared(
-                "INSERT INTO " + name + " (topic, object) VALUES (?, ?)"
+                "INSERT INTO " + _name + " (topic, object) VALUES (?, ?)"
                 );
             _REPLACE = sql.prepared(
-                "REPLACE INTO " + name + " (topic, object) VALUES (?, ?)"
+                "REPLACE INTO " + _name + " (topic, object) VALUES (?, ?)"
                 );
             _SELECT = sql.prepared(
                 "SELECT object "
-                + "FROM " + name + " NATURAL JOIN m4Topics "
+                + "FROM " + _name + " NATURAL JOIN m4Topics "
                 + "WHERE m4Topics.subject = ? AND m4Topics.context = ?"
                 );
             _GET = sql.prepared(
                 "SELECT context, object "
-                + "FROM " + name + " NATURAL JOIN m4Topics "
+                + "FROM " + _name + " NATURAL JOIN m4Topics "
                 + "WHERE m4Topics.subject = ?"
                 );
 		}
 	    /**
-	     * Insert a statement's object in the metabase, eventually index the topic. 
+	     * Insert a statement's object, eventually index a new topic. 
 	     * 
 	     * @param subject
 	     * @param context
@@ -96,18 +145,43 @@ public class Metabase implements PublicRDF {
 	     * @throws Exception
 	     */
 		public final void 
-		insert (String subject, String context, String ... object) 
+		insert (String subject, String context, String object) 
 		throws Exception {
 	    	String digest = _metabase.topic(subject, context);
 	        _INSERT.reset();
 	        _INSERT.bind(1, digest);
-	        for (int i=0; i<object.length; i++) {
-	        	_INSERT.bind(i+2, object[i]);
-			}
+	        _INSERT.bind(2, object);
 	        _INSERT.step();
 		}
 	    /**
-	     * Update a statement's object in the metabase.  
+	     * Insert a statement's object and its relation, eventually index a new 
+	     * topic. 
+	     * 
+	     * @param statement
+	     * @throws Exception
+	     */
+		public final void insert (Statement statement) throws Exception {
+			if (statement.relation == null) {
+				insert(statement.subject, statement.context, statement.object());
+				return;
+			}
+	    	String digest = _metabase.topic(statement.subject, statement.context);
+	        _INSERT_RELATION.reset();
+	        _INSERT_RELATION.bind(1, digest);
+	        _INSERT_RELATION.bind(2, statement.object());
+	        Object value;
+	        for (int i=0; i<_domains.length; i++) {
+	        	value = statement.relation.get(_domains[i]);
+	        	if (value == null) { // everything but null ...
+		        	_INSERT_RELATION.bind(i+3);
+	        	} else { // ... is a UNICODE string.
+		        	_INSERT_RELATION.bind(i+3, value.toString());
+	        	}
+			}
+	        _INSERT_RELATION.step();
+		}
+	    /**
+	     * Update a statement's object.
 	     * 
 	     * @param subject
 	     * @param context
@@ -115,34 +189,81 @@ public class Metabase implements PublicRDF {
 	     * @throws Exception
 	     */
 		public final void 
-		update (String subject, String context, String ... object) 
+		update (String subject, String context, String object) 
 		throws Exception {
-	    	String digest = _metabase.topic(subject, context);
 	        _UPDATE.reset();
-	        int i;
-	        for (i=0; i<object.length; i++) {
-		        _UPDATE.bind(i+1, object[i]);
-			}
-	        _UPDATE.bind(i+2, digest);
+	        _UPDATE.bind(1, object);
+	        _UPDATE.bind(2, digest(subject, context));
 	        _UPDATE.step();
 		}
+	    /**
+	     * Update a statement's object and its relation.
+	     * 
+	     * @param statement
+	     * @throws Exception
+	     */
+		public final void update (Statement statement) throws Exception {
+			if (statement.relation == null) {
+				update(statement.subject, statement.context, statement.object());
+				return;
+			}
+	        _UPDATE_RELATION.reset();
+	        int i;
+	        Object value;
+	        for (i=0; i<_domains.length; i++) {
+	        	value = statement.relation.get(_domains[i]);
+	        	if (value == null) {
+		        	_UPDATE_RELATION.bind(i+1);
+	        	} else {
+		        	_UPDATE_RELATION.bind(i+1, value.toString());
+	        	}
+			}
+	        _UPDATE_RELATION.bind(i+1, digest(statement.subject, statement.context));
+	        _UPDATE_RELATION.step();
+		}
 		/**
-		 * Insert or replace a statement
+		 * Insert or replace a statement, eventually index a new topic.
 		 * 
 		 * @param subject
-		 * @param objects
+	     * @param context
+		 * @param object
 		 * @throws Exception
 		 */
 		public final void 
-		replace (String subject, String context, String ... object) 
+		replace (String subject, String context, String object) 
 		throws Exception {
 	    	String digest = _metabase.topic(subject, context);
 	        _REPLACE.reset();
 	        _REPLACE.bind(1, digest);
-	        for (int i=0; i<object.length; i++) {
-	        	_REPLACE.bind(i+2, object[i]);
-			}
+        	_REPLACE.bind(2, object);
 	        _REPLACE.step();
+		}
+		/**
+		 * Insert or replace a statement and its relation, eventually index a 
+		 * new topic.
+		 * 
+	     * @param statement
+		 * @throws Exception
+		 */
+		public final void replace (Statement statement) throws Exception {
+			if (statement.relation == null) {
+				replace(statement.subject, statement.context, statement.object());
+				return;
+			}
+	    	String digest = _metabase.topic(statement.subject, statement.context);
+	        _REPLACE_RELATION.reset();
+	        _REPLACE_RELATION.bind(1, digest);
+	        _REPLACE_RELATION.bind(2, statement.object());
+	        Object value;
+	        for (int i=0; i<_domains.length; i++) {
+	        	value = statement.relation.get(_domains[i]);
+	        	if (value == null) {
+	        		_REPLACE_RELATION.bind(i+3);
+	        	} else {
+	        		_REPLACE_RELATION.bind(i+3, value.toString());
+	        	}
+			}
+	        _REPLACE_RELATION.step();
 		}
 	    /**
 		 * Get a statement's object as a <code>String</code> or return 
@@ -167,16 +288,16 @@ public class Metabase implements PublicRDF {
 		private static final byte[] _null = new byte[]{'n','u','l','l'};
 		/**
 		 * Get a statement's object as <code>byte[]</code> or return 
-		 * <code>null</code> if the statement does not exist.
+		 * the '<code>null</code>' bytes string if the statement does not exist.
 		 * 
 		 * @param subject of the statement
 		 * @param context of the statement
 		 * @return the statement's object as bytes
 		 * @throws Exception if SQLite failed 
 		 */
-		public final byte[] bytes (
-		    String subject, String predicate, String context
-		    ) throws Exception {
+		public final byte[] 
+        bytes (String subject, String predicate, String context) 
+		throws Exception {
 		    _SELECT.reset();
 		    _SELECT.bind(1, subject);
 		    _SELECT.bind(2, context);
@@ -313,6 +434,12 @@ public class Metabase implements PublicRDF {
      * @throws Exception
      */
     public Metabase (AnSQLite sql, int horizon) throws Exception {
+        this.sql = sql;
+        this.horizon = horizon;
+        createTables();
+        prepareStatements();
+    }
+    protected final void createTables () throws Exception {
     	sql.execute("PRAGMA encoding = \"UTF-8\"");
         sql.execute(
             "CREATE TABLE IF NOT EXISTS m4Topics ( "
@@ -334,6 +461,8 @@ public class Metabase implements PublicRDF {
             + "PRIMARY KEY (name) "
             + ")"
             );
+    }
+    protected final void prepareStatements () throws Exception {
         _INSERT_TOPIC = sql.prepared(
             "INSERT INTO m4Topics (subject, context, digest) VALUES (?, ?, ?)"
             );
@@ -355,8 +484,6 @@ public class Metabase implements PublicRDF {
         _SELECT_ROUTES = sql.prepared(
             "SELECT context FROM m4Routes WHERE name = ?"
             );
-        this.sql = sql;
-        this.horizon = horizon;
     }
     /**
      * Interpret a statement sent to the metabase and push the result to be
@@ -427,7 +554,7 @@ public class Metabase implements PublicRDF {
     public final void remove() {
         _statements.removeFirst();
     }
-    protected final String topic (String subject, String context) throws Exception {
+    public final String topic (String subject, String context) throws Exception {
         _SELECT_TOPIC.reset();
         _SELECT_TOPIC.bind(1, subject);
         _SELECT_TOPIC.bind(2, context);
@@ -461,12 +588,7 @@ public class Metabase implements PublicRDF {
                 _INSERT_ROUTE.step();
             } while (articulated.hasNext());
         }
-    	String digest;
-    	SHA1 sha1 = new SHA1();
-    	sha1.update(Netunicode.encode(
-			new String[]{subject,context}).getBytes()
-			);
-    	digest = sha1.hexdigest();
+    	String digest = digest(subject, context);
         _INSERT_TOPIC.reset();
         _INSERT_TOPIC.bind(1, subject);
         _INSERT_TOPIC.bind(2, context);
