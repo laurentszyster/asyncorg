@@ -21,6 +21,7 @@ public class AnSQLite {
     protected Database _db = null;
     protected String _path = ":memory:";
     protected int _options = 0;
+    protected int _limit = 1024;
     protected HashMap<String, Stmt> _statements;
     /**
      * 
@@ -34,9 +35,9 @@ public class AnSQLite {
      * @param path
      * @param options
      */
-    public AnSQLite(String path, int options) {
+    public AnSQLite(String path, int limit) {
         _path = path;
-        _options = options;
+        _limit = limit;
     }
     /**
      * 
@@ -231,7 +232,7 @@ public class AnSQLite {
      * @param sb
      * @throws Exception
      */
-    public static final void resultset (Stmt st, StringBuilder sb) 
+    public static final void resultset (Stmt st, StringBuilder sb, int limit) 
     throws Exception {
         int col, count = st.column_count();
         if (st.step()) {
@@ -242,7 +243,7 @@ public class AnSQLite {
                 JSON.strb(sb, st.column(col));
             }
             sb.append(']');
-            while (st.step()) {
+            while (limit-- > 0 && st.step()) {
                 sb.append(",[");
                 JSON.strb(sb, st.column(0));
                 for (col=1; col<count; col++) {
@@ -256,7 +257,7 @@ public class AnSQLite {
             sb.append("null");
         }
     }
-    public static final void resultmap (Stmt st, StringBuilder sb) 
+    public static final void resultmap (Stmt st, StringBuilder sb, int limit) 
     throws Exception {
         int col, count = st.column_count();
         if (st.step()) {
@@ -270,7 +271,7 @@ public class AnSQLite {
                     JSON.strb(sb, st.column(col));
                 }
                 sb.append(']');
-                while (st.step()) {
+                while (limit-- > 0 && st.step()) {
                     sb.append(",");
                     JSON.strb(sb, st.column(0));
                     sb.append(":[");
@@ -285,7 +286,7 @@ public class AnSQLite {
                 JSON.strb(sb, st.column(0));
                 sb.append(":");
                 JSON.strb(sb, st.column(1));
-                while (st.step()) {
+                while (limit-- > 0 && st.step()) {
                     sb.append(",");
                     JSON.strb(sb, st.column(0));
                     sb.append(":");
@@ -294,7 +295,7 @@ public class AnSQLite {
             } else {
                 JSON.strb(sb, st.column(0));
                 sb.append(":null");
-                while (st.step()) {
+                while (limit-- > 0 && st.step()) {
                     sb.append(",");
                     JSON.strb(sb, st.column(0));
                     sb.append(":null");
@@ -315,7 +316,7 @@ public class AnSQLite {
      */
     public final boolean execute (String statement, StringBuilder response) {
         try {
-            resultset(prepared(statement), response);
+            resultset(prepared(statement), response, _limit);
         } catch (Exception e) {
             JSON.strb(response, e.getMessage());
             return false;
@@ -334,7 +335,19 @@ public class AnSQLite {
         try {
             Stmt st = prepared(statement);
             bind(st, parameters);
-            resultset(st, response);
+            resultset(st, response, _limit);
+        } catch (Exception e) {
+            JSON.strb(response, e.getMessage());
+            return false;
+        }
+        return true;
+    }
+    public final boolean execute (
+        String statement, Iterable parameters, StringBuilder response) {
+        try {
+            Stmt st = prepared(statement);
+            bind(st, parameters.iterator());
+            resultset(st, response, _limit);
         } catch (Exception e) {
             JSON.strb(response, e.getMessage());
             return false;
@@ -349,7 +362,7 @@ public class AnSQLite {
      */
     public final boolean map (String statement, StringBuilder response) {
         try {
-            resultmap(prepared(statement), response);
+            resultmap(prepared(statement), response, _limit);
         } catch (Exception e) {
             JSON.strb(response, e.getMessage());
             return false;
@@ -368,7 +381,7 @@ public class AnSQLite {
         try {
             Stmt st = prepared(statement);
             bind(st, parameters);
-            resultmap(st, response);
+            resultmap(st, response, _limit);
         } catch (Exception e) {
             JSON.strb(response, e.getMessage());
             return false;
@@ -397,7 +410,7 @@ public class AnSQLite {
             response.append('[');
             try {
                 bind(st, parameters.next().iterator());
-                resultset(st, response);
+                resultset(st, response, _limit);
             } catch (Exception e) {
                 JSON.strb(response, e.getMessage());
                 response.append(']');
@@ -408,7 +421,7 @@ public class AnSQLite {
                 try {
                     st.reset();
                     bind(st, parameters.next().iterator());
-                    resultset(st, response);
+                    resultset(st, response, _limit);
                 } catch (Exception e) {
                     JSON.strb(response, e.getMessage());
                     response.append(']');
@@ -560,7 +573,7 @@ public class AnSQLite {
      * @return
      * @throws Exception
      */
-    public static final JSON.Array resultset (Stmt st) 
+    public static final JSON.Array resultset (Stmt st, int limit) 
     throws Exception {
         if (st.step()) {
             JSON.Array rs = new JSON.Array();
@@ -572,7 +585,7 @@ public class AnSQLite {
                     row.add(st.column(col));
                 }
                 rs.add(row);
-            } while (st.step());
+            } while (0 < limit-- && st.step());
             return rs;
         } else {
             return null;
@@ -584,7 +597,7 @@ public class AnSQLite {
      * @return
      * @throws Exception
      */
-    public static final JSON.Object resultmap (Stmt st) 
+    public static final JSON.Object resultmap (Stmt st, int limit) 
     throws Exception {
         if (st.step()) {
             JSON.Object rm = new JSON.Object();
@@ -597,15 +610,15 @@ public class AnSQLite {
                         row.add(st.column(col));
                     }
                     rm.put(st.column_string(0), row);
-                } while (st.step());
+                } while (0 < limit-- && st.step());
             } else if (count > 1) {
                 do {
                     rm.put(st.column_string(0), st.column(1));
-                } while (st.step());
+                } while (0 < limit-- && st.step());
             } else {
                 do {
                     rm.put(st.column_string(0), null);
-                } while (st.step());
+                } while (0 < limit-- && st.step());
             }
             return rm;
         } else {
@@ -648,7 +661,7 @@ public class AnSQLite {
      */
     public final JSON.Array execute (String statement) 
     throws Exception {
-        return resultset(prepared(statement));
+        return resultset(prepared(statement), _limit);
     }
     /**
      * 
@@ -661,13 +674,13 @@ public class AnSQLite {
     throws Exception {
         Stmt st = prepared(statement);
         bind(st, parameters);
-        return resultset(st);
+        return resultset(st, _limit);
     }
     public final JSON.Array execute (String statement, Iterable parameters) 
     throws Exception {
         Stmt st = prepared(statement);
         bind(st, parameters.iterator());
-        return resultset(st);
+        return resultset(st, _limit);
     }
     /**
      * 
@@ -677,7 +690,7 @@ public class AnSQLite {
      */
     public final JSON.Object map (String statement) 
     throws Exception {
-        return resultmap(prepared(statement));
+        return resultmap(prepared(statement), _limit);
     }
     /**
      * 
@@ -690,13 +703,13 @@ public class AnSQLite {
     throws Exception {
         Stmt st = prepared(statement);
         bind(st, parameters);
-        return resultmap(st);
+        return resultmap(st, _limit);
     }
     public final JSON.Object map (String statement, Iterable parameters) 
     throws Exception {
         Stmt st = prepared(statement);
         bind(st, parameters.iterator());
-        return resultmap(st);
+        return resultmap(st, _limit);
     }
     /**
      * 
@@ -711,11 +724,11 @@ public class AnSQLite {
         JSON.Array result = new JSON.Array();
         Stmt st = prepared(statement);
         bind(st, ((Iterable) parameters.next()).iterator());
-        result.add(resultset(st));
+        result.add(resultset(st, _limit));
         while (parameters.hasNext()) {
             st.reset();
             bind(st, ((Iterable) parameters.next()).iterator());
-            result.add(resultset(st));
+            result.add(resultset(st, _limit));
         }
         return result;
     }
